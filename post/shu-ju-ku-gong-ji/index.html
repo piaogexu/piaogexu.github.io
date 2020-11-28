@@ -1,0 +1,265 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>数据库攻击 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="数据库攻击 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="mysql服务攻击
+关于msf常用攻击mysql插件如下：
+1. auxiliary/scanner/mysql/mysql_login
+2. exploit/multi/mysql/mysql_udf_payload
+3. exploit..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              数据库攻击
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                3 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h3 id="mysql服务攻击">mysql服务攻击</h3>
+<p>关于msf常用攻击mysql插件如下：</p>
+<pre><code>1. auxiliary/scanner/mysql/mysql_login
+2. exploit/multi/mysql/mysql_udf_payload
+3. exploit/windows/mysql/mysql_mof
+4. exploit/windows/mysql/scrutinizer_upload_exec
+5. auxiliary/scanner/mysql/mysql_hashdump
+6. auxiliary/admin/mysql/mysql_sql
+7. auxiliary/scanner/mysql/mysql_version
+</code></pre>
+<h4 id="1-auxiliaryscannermysqlmysql_login">1、auxiliary/scanner/mysql/mysql_login</h4>
+<p>常用于内网中的批量以及单主机的登录测试。</p>
+<h4 id="2-exploitmultimysqlmysql_udf_payload">2、exploit/multi/mysql/mysql_udf_payload</h4>
+<p>常用于root启动的mysql 并root的udf提权。</p>
+<h4 id="3-exploitwindowsmysqlmysql_mof">3、exploit/windows/mysql/mysql_mof</h4>
+<p>mof提权</p>
+<h4 id="4-exploitwindowsmysqlscrutinizer_upload_exec">4、exploit/windows/mysql/scrutinizer_upload_exec</h4>
+<p>上传文件执行。</p>
+<h4 id="5-auxiliaryscannermysqlmysql_hashdump">5、auxiliary/scanner/mysql/mysql_hashdump</h4>
+<p>mysql的mysql.user表的hash</p>
+<p>而在实战中，mysql_hashdump这个插件相对其他较为少用。一般情况建议使用sql语句： 更直观，更定制化</p>
+<h4 id="6-auxiliaryadminmysqlmysql_sql">6、auxiliary/admin/mysql/mysql_sql</h4>
+<p>执行sql语句。尤其是在目标机没有web界面等无法用脚本执行的环境。</p>
+<h4 id="7-auxiliaryscannermysqlmysql_version">7、auxiliary/scanner/mysql/mysql_version</h4>
+<p>常用于内网中的批量mysql主机发现。</p>
+<h3 id="攻击sql-server-服务">攻击sql server 服务</h3>
+<p>msf 内置关于 mssql 插件如下（部分非测试mssql 插件）</p>
+<p>关于msf常用攻击mssql插件如下：</p>
+<pre><code>1. auxiliary/admin/mssql/mssql_enum
+2. auxiliary/admin/mssql/mssql_enum_sql_logins
+3. auxiliary/admin/mssql/mssql_escalate_dbowner
+4. auxiliary/admin/mssql/mssql_exec
+5. auxiliary/admin/mssql/mssql_sql
+6. auxiliary/admin/mssql/mssql_sql_file
+7. auxiliary/scanner/mssql/mssql_hashdump
+8. auxiliary/scanner/mssql/mssql_login
+9. auxiliary/scanner/mssql/mssql_ping
+10. exploit/windows/mssql/mssql_payload
+11. post/windows/manage/mssql_local_auth_bypass
+</code></pre>
+<h4 id="1-auxiliaryadminmssqlmssql_enum">1. auxiliary/admin/mssql/mssql_enum</h4>
+<p>非常详细的目标机Sql server 信息。</p>
+<h4 id="2auxiliaryadminmssqlmssql_enum_sql_logins">2.auxiliary/admin/mssql/mssql_enum_sql_logins</h4>
+<p>枚举sql logins，速度较慢，不建议使用。</p>
+<h4 id="3auxiliaryadminmssqlmssql_escalate_dbowner">3.auxiliary/admin/mssql/mssql_escalate_dbowner</h4>
+<p>发现dbowner，当sa无法得知密码的时候，或者需要其他账号提供来支撑下一步的内网渗透。</p>
+<h4 id="4auxiliaryadminmssqlmssql_exec">4.auxiliary/admin/mssql/mssql_exec</h4>
+<p>最常用模块之一，当没有激活xp_cmdshell，自动激活。并且调用执行cmd命令。权限继承 Sql server。</p>
+<h4 id="5auxiliaryadminmssqlmssql_sql">5.auxiliary/admin/mssql/mssql_sql</h4>
+<p>最常用模块之一，如果熟悉Sql server 数据库特性，以及sql语句。建议该模块，更稳定。</p>
+<h4 id="6auxiliaryadminmssqlmssql_sql_file">6.auxiliary/admin/mssql/mssql_sql_file</h4>
+<p>当需要执行多条sql语句的时候，或者非常复杂。msf本身支持执行sql文件。授权渗透应用较少，非授权应用较多的模块。</p>
+<h4 id="7auxiliaryscannermssqlmssql_hashdump">7.auxiliary/scanner/mssql/mssql_hashdump</h4>
+<p>mssql的hash导出。如果熟悉sql语句。也可以用mssql_sql模块来执行。</p>
+<h4 id="8auxiliaryscannermssqlmssql_login">8.auxiliary/scanner/mssql/mssql_login</h4>
+<p>内网渗透中的常用模块之一，支持RHOSTS，来批量发现内网mssql主机。mssql的特性除了此种方法。还有其他方法来专门针对mssql主机发现，以后得季会提到。</p>
+<h4 id="9auxiliaryscannermssqlmssql_ping">9.auxiliary/scanner/mssql/mssql_ping</h4>
+<p>查询mssql 实例，实战中，应用较少。信息可能不准确。</p>
+<h4 id="10exploitwindowsmssqlmssql_payload">10.exploit/windows/mssql/mssql_payload</h4>
+<p>非常好的模块之一，在实战中。针对不同时间版本的系统都有着自己独特的方式来上传payload。</p>
+<h4 id="11postwindowsmanagemssql_local_auth_bypass">11.post/windows/manage/mssql_local_auth_bypass</h4>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#mysql%E6%9C%8D%E5%8A%A1%E6%94%BB%E5%87%BB">mysql服务攻击</a>
+<ul>
+<li><a href="#1-auxiliaryscannermysqlmysql_login">1、auxiliary/scanner/mysql/mysql_login</a></li>
+<li><a href="#2-exploitmultimysqlmysql_udf_payload">2、exploit/multi/mysql/mysql_udf_payload</a></li>
+<li><a href="#3-exploitwindowsmysqlmysql_mof">3、exploit/windows/mysql/mysql_mof</a></li>
+<li><a href="#4-exploitwindowsmysqlscrutinizer_upload_exec">4、exploit/windows/mysql/scrutinizer_upload_exec</a></li>
+<li><a href="#5-auxiliaryscannermysqlmysql_hashdump">5、auxiliary/scanner/mysql/mysql_hashdump</a></li>
+<li><a href="#6-auxiliaryadminmysqlmysql_sql">6、auxiliary/admin/mysql/mysql_sql</a></li>
+<li><a href="#7-auxiliaryscannermysqlmysql_version">7、auxiliary/scanner/mysql/mysql_version</a></li>
+</ul>
+</li>
+<li><a href="#%E6%94%BB%E5%87%BBsql-server-%E6%9C%8D%E5%8A%A1">攻击sql server 服务</a>
+<ul>
+<li><a href="#1-auxiliaryadminmssqlmssql_enum">1. auxiliary/admin/mssql/mssql_enum</a></li>
+<li><a href="#2auxiliaryadminmssqlmssql_enum_sql_logins">2.auxiliary/admin/mssql/mssql_enum_sql_logins</a></li>
+<li><a href="#3auxiliaryadminmssqlmssql_escalate_dbowner">3.auxiliary/admin/mssql/mssql_escalate_dbowner</a></li>
+<li><a href="#4auxiliaryadminmssqlmssql_exec">4.auxiliary/admin/mssql/mssql_exec</a></li>
+<li><a href="#5auxiliaryadminmssqlmssql_sql">5.auxiliary/admin/mssql/mssql_sql</a></li>
+<li><a href="#6auxiliaryadminmssqlmssql_sql_file">6.auxiliary/admin/mssql/mssql_sql_file</a></li>
+<li><a href="#7auxiliaryscannermssqlmssql_hashdump">7.auxiliary/scanner/mssql/mssql_hashdump</a></li>
+<li><a href="#8auxiliaryscannermssqlmssql_login">8.auxiliary/scanner/mssql/mssql_login</a></li>
+<li><a href="#9auxiliaryscannermssqlmssql_ping">9.auxiliary/scanner/mssql/mssql_ping</a></li>
+<li><a href="#10exploitwindowsmssqlmssql_payload">10.exploit/windows/mssql/mssql_payload</a></li>
+<li><a href="#11postwindowsmanagemssql_local_auth_bypass">11.post/windows/manage/mssql_local_auth_bypass</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/mssql-xue-xi/">
+              <h3 class="post-title">
+                mssql学习
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

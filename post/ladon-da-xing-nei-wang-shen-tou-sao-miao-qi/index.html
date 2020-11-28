@@ -1,0 +1,549 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ladon大型内网渗透扫描器 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Ladon大型内网渗透扫描器 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="Ladon大型内网渗透扫描器
+简介
+Ladon一款用于大型网络渗透的多线程插件化综合扫描神器，含端口扫描、服务识别、网络资产、密码爆破、高危漏洞检测以及一键GetShell，支持批量A段/B段/C段以及跨网段扫描，支持URL、主机、域名列表..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Ladon大型内网渗透扫描器
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                6 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h3 id="ladon大型内网渗透扫描器">Ladon大型内网渗透扫描器</h3>
+<h4 id="简介">简介</h4>
+<p>Ladon一款用于大型网络渗透的多线程插件化综合扫描神器，含端口扫描、服务识别、网络资产、密码爆破、高危漏洞检测以及一键GetShell，支持批量A段/B段/C段以及跨网段扫描，支持URL、主机、域名列表扫描。7.5版本内置100个功能模块,外部模块18个,通过多种协议以及方法快速获取目标网络存活主机IP、计算机名、工作组、共享资源、网卡地址、操作系统版本、网站、子域名、中间件、开放服务、路由器、数据库等信息，漏洞检测包含MS17010、SMBGhost、Weblogic、ActiveMQ、Tomcat、Struts2系列等，密码爆破13种含数据库(Mysql、Oracle、MSSQL)、FTP、SSH、VNC、Windows(LDAP、SMB/IPC、NBT、WMI、SmbHash、WmiHash、Winrm)、BasicAuth、Tomcat、Weblogic、Rar等，远程执行命令包含(wmiexe/psexec/atexec/sshexec/jspshell),Web指纹识别模块可识别75种（Web应用、中间件、脚本类型、页面类型）等，可高度自定义插件POC支持.NET程序集、DLL(C#/Delphi/VC)、PowerShell等语言编写的插件,支持通过配置INI批量调用任意外部程序或命令，EXP生成器可一键生成漏洞POC快速扩展扫描能力。Ladon支持Cobalt Strike插件化扫描快速拓展内网进行横向移动。</p>
+<h4 id="内置功能模块">内置功能模块</h4>
+<h5 id="1-资产扫描">1、资产扫描</h5>
+<p>例子: Ladon OnlinePC(扫当前机器所处C段，其它模块同理)</p>
+<p>例子: Ladon 192.168.1.8/24 OnlinePC</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>模块名称</th>
+<th>功能说明</th>
+<th>返回结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Ping</td>
+<td>存活主机扫描</td>
+<td>存活IP(探测速度很快3-6秒/C段)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>OnlinePC</td>
+<td>存活主机扫描</td>
+<td>存活IP、Mac地址、机器名、设备制造商</td>
+</tr>
+<tr>
+<td>3</td>
+<td>OnlineIP</td>
+<td>仅存活主机IP</td>
+<td>存活IP</td>
+</tr>
+<tr>
+<td>4</td>
+<td>UrlScan</td>
+<td>URL域名扫描</td>
+<td>同服URL（不验证IP、域名、Web标题）</td>
+</tr>
+<tr>
+<td>5</td>
+<td>SameWeb</td>
+<td>同服域名扫描</td>
+<td>同服URL（验证IP、域名、Web标题）</td>
+</tr>
+<tr>
+<td>6</td>
+<td>WebScan</td>
+<td>Web信息扫描</td>
+<td>存活IP、主机名、Banner、Web标题</td>
+</tr>
+<tr>
+<td>7</td>
+<td>WebDir</td>
+<td>后台目录扫描</td>
+<td>地址、HTTP状态</td>
+</tr>
+<tr>
+<td>8</td>
+<td>SubDomain</td>
+<td>子域名爆破</td>
+<td>子域名 (可用DomainIP/HostIP解析)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>DomainIP</td>
+<td>域名解析IP</td>
+<td>域名、IP</td>
+</tr>
+<tr>
+<td>10</td>
+<td>HostIP</td>
+<td>主机名转IP</td>
+<td>IP、域名</td>
+</tr>
+<tr>
+<td>11</td>
+<td>AdiDnsDump</td>
+<td>域内机器信息获取(非域内请使用LdapScan探测)</td>
+<td>IP、域名</td>
+</tr>
+</tbody>
+</table>
+<h5 id="2-指纹识别服务识别">2、指纹识别/服务识别</h5>
+<p>例子: Ladon OsScan</p>
+<p>例子: Ladon 192.168.1.8/24 OsScan</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>模块名称</th>
+<th>功能说明</th>
+<th>返回结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>OsScan</td>
+<td>操作系统版本探测</td>
+<td>存活IP、工作组\机器名、操作系统、开放服务</td>
+</tr>
+<tr>
+<td>2</td>
+<td>PortScan</td>
+<td>端口扫描含Banner</td>
+<td>主机名、开放端口、服务识别、Banner、Web</td>
+</tr>
+<tr>
+<td>3</td>
+<td>WhatCMS</td>
+<td>86种Web指纹识别</td>
+<td>URL、CMS、邮件系统、登陆页面、中间件(如Apache\Tomecat\IIS)等</td>
+</tr>
+<tr>
+<td>4</td>
+<td>CiscoScan</td>
+<td>思科设备扫描</td>
+<td>存活IP、设备型号、主机名、Boot、硬件版本</td>
+</tr>
+<tr>
+<td>5</td>
+<td>EnumMssql</td>
+<td>枚举Mssql数据库主机</td>
+<td>数据库IP、机器名、SQL版本</td>
+</tr>
+<tr>
+<td>6</td>
+<td>EnumShare</td>
+<td>枚举网络共享资源</td>
+<td>域、存活IP、共享路径</td>
+</tr>
+<tr>
+<td>7</td>
+<td>LdapScan</td>
+<td>不指定密码时，仅探测LDAP服务器</td>
+<td>IP是否LDAP服务器</td>
+</tr>
+<tr>
+<td>8</td>
+<td>FtpScan</td>
+<td>不指定密码时，仅探测FTP服务器</td>
+<td>IP是否FTP服务器</td>
+</tr>
+<tr>
+<td>9</td>
+<td>EthScan</td>
+<td>多网卡主机探测</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h5 id="3-口令检测密码爆破">3、口令检测/密码爆破</h5>
+<p>[自定义端口(IP:端口)、帐密检测(用户 密码)、主机帐密检测(IP 端口 数据库 用户 密码)]</p>
+<p>例子: Ladon SshScan</p>
+<p>例子: Ladon 192.168.1.8/24 SshScan</p>
+<p>例子: Ladon 192.168.1.8:22 SshScan (指定端口)</p>
+<p>例子: Ladon test.rar RarScan</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>模块名称</th>
+<th>功能说明</th>
+<th>返回结果</th>
+<th>依赖</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>SmbScan</td>
+<td>SMB密码爆破(Windows)</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>WmiScan</td>
+<td>Wmi密码爆破(Windowns)</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>NbtScan</td>
+<td>Ipc密码爆破(Windows)</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>LdapScan</td>
+<td>AD域密码爆破(Windows)</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td>SmbHashScan</td>
+<td>SMB HASH密码爆破(Windows)</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>WmiHashScan</td>
+<td>WMI HASH密码爆破(Windows)</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td>SshScan</td>
+<td>SSH密码爆破(Linux)</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>8</td>
+<td>MssqlScan</td>
+<td>Mssql数据库密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>9</td>
+<td>OracleScan</td>
+<td>Oracle数据库密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>10</td>
+<td>MysqlScan</td>
+<td>Mysql数据库密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>11</td>
+<td>WeblogicScan</td>
+<td>Weblogic后台密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>12</td>
+<td>VncScan</td>
+<td>VNC远程桌面密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>13</td>
+<td>FtpScan</td>
+<td>Ftp服务器密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>14</td>
+<td>RarScan</td>
+<td>Rar压缩包密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td>Rar.exe</td>
+</tr>
+<tr>
+<td>15</td>
+<td>TomcatScan</td>
+<td>Tomcat后台登陆密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>16</td>
+<td>HttpBasicScan</td>
+<td>HttpBasic401认证密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>17</td>
+<td>WinrmScan</td>
+<td>Winrm认证密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+<tr>
+<td>18</td>
+<td>NbtScan</td>
+<td>Netbios密码爆破</td>
+<td>检测过程、成功密码、LOG文件</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h5 id="4-漏洞检测漏洞利用">4、漏洞检测/漏洞利用</h5>
+<p>例子: Ladon MS17010</p>
+<p>例子: Ladon 192.168.1.8/24 MS17010</p>
+<p>例子: Ladon http://192.168.1.8 WeblogicExp</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>模块名称</th>
+<th>功能说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>MS17010</td>
+<td>SMB漏洞检测(CVE-2017-0143/CVE-2017-0144/CVE-2017-0145/CVE-2017-0146/CVE-2017-0148)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>SMBGhost</td>
+<td>SMBGhost远程溢出漏洞检测 （CVE-2020-0796）</td>
+</tr>
+<tr>
+<td>3</td>
+<td>WeblogicPoc</td>
+<td>Weblogic漏洞检测(CVE-2019-2725/CVE-2018-2894)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>PhpStudyPoc</td>
+<td>PhpStudy后门检测(phpstudy 2016/phpstudy 2018)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>ActivemqPoc</td>
+<td>ActiveMQ漏洞检测(CVE-2016-3088)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>TomcatPoc</td>
+<td>Tomcat漏洞检测(CVE-2017-12615)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>WeblogicExp</td>
+<td>Weblogic漏洞利用(CVE-2019-2725)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>TomcatExp</td>
+<td>Tomcat漏洞利用(CVE-2017-12615)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Struts2Poc</td>
+<td>Struts2漏洞检测(S2-005/S2-009/S2-013/S2-016/S2-019/S2-032/DevMode)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>ZeroLogon</td>
+<td>CVE-2020-1472域控提权漏洞EXP</td>
+</tr>
+<tr>
+<td>11</td>
+<td>CVE-2020-0688</td>
+<td>CVE-2020-0688 Exchange序列化漏洞利用</td>
+</tr>
+</tbody>
+</table>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#ladon%E5%A4%A7%E5%9E%8B%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F%E6%89%AB%E6%8F%8F%E5%99%A8">Ladon大型内网渗透扫描器</a>
+<ul>
+<li><a href="#%E7%AE%80%E4%BB%8B">简介</a></li>
+<li><a href="#%E5%86%85%E7%BD%AE%E5%8A%9F%E8%83%BD%E6%A8%A1%E5%9D%97">内置功能模块</a>
+<ul>
+<li><a href="#1-%E8%B5%84%E4%BA%A7%E6%89%AB%E6%8F%8F">1、资产扫描</a></li>
+<li><a href="#2-%E6%8C%87%E7%BA%B9%E8%AF%86%E5%88%AB%E6%9C%8D%E5%8A%A1%E8%AF%86%E5%88%AB">2、指纹识别/服务识别</a></li>
+<li><a href="#3-%E5%8F%A3%E4%BB%A4%E6%A3%80%E6%B5%8B%E5%AF%86%E7%A0%81%E7%88%86%E7%A0%B4">3、口令检测/密码爆破</a></li>
+<li><a href="#4-%E6%BC%8F%E6%B4%9E%E6%A3%80%E6%B5%8B%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8">4、漏洞检测/漏洞利用</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

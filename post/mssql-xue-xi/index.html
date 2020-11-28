@@ -1,0 +1,295 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>mssql学习 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="mssql学习 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="SQL Sever 系统数据库
+在我们安装 SQL Server 的时候，会自动创建下面的五个数据库。
+
+
+master：记录了SQL SERVER实例的所有系统级消息，包括实例范围的元数据（如登录帐号）、端点、链接服务器和系统配置设置。
+..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              mssql学习
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                6 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h4 id="sql-sever-系统数据库">SQL Sever 系统数据库</h4>
+<p><strong>在我们安装 <code>SQL Server</code> 的时候，会自动创建下面的五个数据库。</strong></p>
+<ul>
+<li>
+<p><code>master</code>：记录了SQL <code>SERVER</code>实例的所有系统级消息，包括实例范围的元数据（如登录帐号）、端点、链接服务器和系统配置设置。</p>
+</li>
+<li>
+<p><code>msdb</code>：供<code>SQL SERVER</code> 代理服务调度报警和作业以及记录操作员的使用，保存关于调度报警、作业、操作员等信息。（备份还原时）</p>
+</li>
+<li>
+<p><code>model</code>：<code>SQL SERVER</code> 实例上创建的所有数据库的模板。</p>
+</li>
+<li>
+<p><code>tempdb</code>：临时数据库，用于保存临时对象或中间结果集，为数据库的排列等操作提供一个临时工作空间。（每次启动都会重新创建）</p>
+</li>
+<li>
+<p><code>Resource</code>：一个只读数据库，包含了<code>SQL SERVER</code> 的所有系统对象。（隐藏的数据库）</p>
+</li>
+</ul>
+<h4 id="数据库的组成">数据库的组成</h4>
+<p><strong>数据文件</strong></p>
+<ol>
+<li>主要数据文件：扩展名为<code>.mdf</code>，每个数据库有且只能有一个。</li>
+<li>次要数据文件：扩展名为 <code>.ndf</code> ， 可以没有或有多个。</li>
+</ol>
+<p><strong>日志文件</strong></p>
+<p>扩展名为<code>.ldf</code>，用于存放恢复数据库的所有日志信息。</p>
+<p><strong>数据的存储分配</strong></p>
+<ol>
+<li>
+<p>数据文件和日志文件的默认存放位置为：<code>\Programe Files\Microsoft SQL Server\MSSQL.1\MSSQL\Data</code>文件夹。</p>
+</li>
+<li>
+<p>数据的存储分配单位是数据页。一页表是一块8KB的连续磁盘空间。</p>
+</li>
+<li>
+<p>页是存储数据的最小空间分配单位，页的大小决定了数据库表中一行数据的最大大小。</p>
+</li>
+</ol>
+<h4 id="sql-server存储过程">SQL Server存储过程</h4>
+<p><code>SQL Server</code> 中视图通过简单的 <code>SELECT</code> 查询来解决复杂的查询，但是视图不能提供业务逻辑功能，而存储过程可以办到这点。</p>
+<p>存储过程 <code>Procedure</code> 是一组为了完成特定功能的 <code>SQL</code> 语句集合，经编译后存储在数据库中，用户通过指定存储过程的名称并给出参数来执行。</p>
+<p>存储过程中可以包含逻辑控制语句和数据操纵语句，它可以接受参数、输出参数、返回单个或多个结果集以及返回值。</p>
+<p>由于存储过程在创建时即在数据库服务器上进行了编译并存储在数据库中，所以存储过程运行要比单个的 <code>SQL</code> 语句块要快。同时由于在调用时只需用提供存储过程名和必要的参数信息，所以在一定程度上也可以减少网络流量、简单网络负担。</p>
+<h5 id="存储过程的优点">存储过程的优点</h5>
+<p>下面是一些在使用存储过程的主要优点：</p>
+<ul>
+<li>存储过程允许标准组件式编程<br>
+存储过程创建后可以在程序中被多次调用执行，而不必重新编写该存储过程的SQL语句。而且数据库专业人员可以随时对存储过程进行修改，但对应用程序源代码却毫无影响，从而极大的提高了程序的可移植性。</li>
+<li>存储过程能够实现较快的执行速度 如果某一操作包含大量的T-SQL语句代码，分别被多次执行，那么存储过程要比批处理的执行速度快得多。因为存储过程是预编译的，在首次运行一个存储过程时，查询优化器对其进行分析、优化，并给出最终被存在系统表中的存储计划。而批处理的T-SQL语句每次运行都需要预编译和优化，所以速度就要慢一些。</li>
+<li>存储过程减轻网络流量 对于同一个针对数据库对象的操作，如果这一操作所涉及到的T-SQL语句被组织成一存储过程，那么当在客户机上调用该存储过程时，网络中传递的只是该调用语句，否则将会是多条SQL语句。从而减轻了网络流量，降低了网络负载。</li>
+<li>存储过程可被作为一种安全机制来充分利用<br>
+系统管理员可以对执行的某一个存储过程进行权限限制，从而能够实现对某些数据访问的限制，避免非授权用户对数据的访问，保证数据的安全。</li>
+</ul>
+<h5 id="sql-server-创建一个存储过程">SQL Server 创建一个存储过程</h5>
+<p>我们需要使用 <code>CREATE PROCEDURE</code> 语句创建一个存储过程，接着要补充存储过程的代码，如果存储过程将要接受参数，它们需要被包括在名称后，如下:</p>
+<pre><code>CREATE PROCEDURE myStoredProcedure AS
+...
+
+OR
+
+CREATE PROCEDURE myStoredProcedure @{Parameter Name} {data type} AS
+...
+</code></pre>
+<p><strong>实例</strong><br>
+下述代码创建了一个被称为 <code>“LatestTasks”</code> 的存储过程。</p>
+<p>它接受一个参数名为 <code>@Count</code>. 当调用这个存储过程，通过 <code>@count</code> 参数，它决定你想要多少行返回。</p>
+<p>代码如下：</p>
+<pre><code>CREATE PROCEDURE LatestTasks @Count int AS
+SET ROWCOUNT @Count
+SELECT TaskName AS LatestTasks, DateCreated
+FROM Tasks
+ORDER BY DateCreated DESC
+</code></pre>
+<h5 id="sql-server-执行存储过程">SQL Server 执行存储过程</h5>
+<p>常用系统存储过程有：</p>
+<pre><code>exec sp_databases; --查看数据库
+exec sp_tables;        --查看表
+exec sp_columns student;--查看列
+exec sp_helpIndex student;--查看索引
+exec sp_helpConstraint student;--约束
+exec sp_stored_procedures;
+exec sp_helptext 'sp_stored_procedures';--查看存储过程创建、定义语句
+exec sp_rename student, stuInfo;--修改表、索引、列的名称
+exec sp_renamedb myTempDB, myDB;--更改数据库名称
+exec sp_defaultdb 'master', 'myDB';--更改登录名的默认数据库
+exec sp_helpdb;--数据库帮助，查询数据库信息
+exec sp_helpdb master;
+</code></pre>
+<p>系统存储过程示例：</p>
+<pre><code>--表重命名
+exec sp_rename 'stu', 'stud';
+select * from stud;
+--列重命名
+exec sp_rename 'stud.name', 'sName', 'column';
+exec sp_help 'stud';
+--重命名索引
+exec sp_rename N'student.idx_cid', N'idx_cidd', N'index';
+exec sp_help 'student';
+--查询所有存储过程
+select * from sys.objects where type = 'P';
+select * from sys.objects where type_desc like '%pro%' and name like 'sp%';
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#sql-sever-%E7%B3%BB%E7%BB%9F%E6%95%B0%E6%8D%AE%E5%BA%93">SQL Sever 系统数据库</a></li>
+<li><a href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E7%BB%84%E6%88%90">数据库的组成</a></li>
+<li><a href="#sql-server%E5%AD%98%E5%82%A8%E8%BF%87%E7%A8%8B">SQL Server存储过程</a>
+<ul>
+<li><a href="#%E5%AD%98%E5%82%A8%E8%BF%87%E7%A8%8B%E7%9A%84%E4%BC%98%E7%82%B9">存储过程的优点</a></li>
+<li><a href="#sql-server-%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E5%AD%98%E5%82%A8%E8%BF%87%E7%A8%8B">SQL Server 创建一个存储过程</a></li>
+<li><a href="#sql-server-%E6%89%A7%E8%A1%8C%E5%AD%98%E5%82%A8%E8%BF%87%E7%A8%8B">SQL Server 执行存储过程</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/sqlserver-shen-tou/">
+              <h3 class="post-title">
+                sqlserver渗透
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

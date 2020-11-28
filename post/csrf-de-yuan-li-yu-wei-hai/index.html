@@ -1,0 +1,220 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>csrf的原理与危害 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="csrf的原理与危害 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="csrf的原理与危害
+CSRF全称为跨站请求伪造（Cross-site request forgery），是一种网络攻击方式，也被称为 one-click attack 或者 session riding。
+CSRF攻击利用网站对于用户网页..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              csrf的原理与危害
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                4 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h4 id="csrf的原理与危害">csrf的原理与危害</h4>
+<p>CSRF全称为跨站请求伪造（<code>Cross-site request forgery</code>），是一种网络攻击方式，也被称为 <code>one-click attack</code> 或者 <code>session riding</code>。</p>
+<p>CSRF攻击利用网站对于用户网页浏览器的信任，挟持用户当前已登陆的Web应用程序，去执行并非用户本意的操作</p>
+<h4 id="csrf造成的常见危害与利用分类">csrf造成的常见危害与利用分类：</h4>
+<pre><code>1、对网站管理员进行攻击
+ 
+2、修改受害网站上的用户账户和数据
+ 
+3、账户劫持
+ 
+4、传播CSRF蠕虫进行大规模攻击
+ 
+5、利用csrf进行拖库
+ 
+6、利用其他漏洞进行组合拳攻击
+ 
+7、针对路由器的csrf攻击
+</code></pre>
+<p>1、对网站管理员进行攻击</p>
+<p>诱骗管理员点击存在漏洞的链接，执行增加删除网站管理账户的操作，从而进行下一步渗透得到网站shell权限。</p>
+<p>2、修改受害网站上的用户账户和数据</p>
+<p>对账户密码进行重置，改邮箱绑定，修改个人资料、个人设置，删除用户发布的文章帖子等。</p>
+<p>3、账户劫持</p>
+<p>修改密码处没有验证原有密码，无token验证，发送一个修改密码的链接即可。或者发送一个修改绑定邮箱的链接，在进行密码重置。</p>
+<p>4、传播CSRF蠕虫进行大规模攻击</p>
+<p>此类攻击发生的场景一般在SNS站点，批量关注、发微博、改个人资料处。</p>
+<h4 id="解决方案">解决方案</h4>
+<p>对于CSRF的防御通常有以下三种方法：</p>
+<p>1、使用验证码</p>
+<p>csrf攻击一般都是在受害者不知情的情况下进行发起的，使用验证码可以有效的防止攻击，但是每次请求都要输入验证码会影响用户体验，所以通常只在用户登陆注册，还有一些特定业务场景下使用，比如银行转账。如何使用验证码要根据业务和场景来决定。</p>
+<p>2、验证http Referer</p>
+<p>http头中的referer字段记录了请求来源地址，比如从 http://www.test.com 点击链接到 http://m.test.com 之后，那么referer就是 http://www.test.com 这个地址。攻击者在对受害者进行攻击的时候，是在攻击者自己的服务器上构建自己的恶意脚本，诱骗受害者点击，所以此时的referer值就是攻击者自己的URL地址。<br>
+通过以上可知，csrf攻击都是跨域发起的，所以在服务端针对referer字段验证是否属于安全可靠的域名，可在一定程度上有效防御此类攻击。<br>
+但是此类方法并非万无一失，在低版本存在漏洞的浏览器中，黑客可以篡改referer值。另一种情况是csrf结合xss进行攻击，此时就不需要跨域发起，也可以绕过referer验证。</p>
+<p>3、使用token</p>
+<p>在说token如何防御csrf攻击之前，我们先了解下token的工作原理。<br>
+当用户第一次进行登陆的时候，客户端会通过用户名和密码去请求服务器登陆，服务端在收到请求后会验证客户端传来的用户名和密码，如果验证通过，服务器就会签发一个token发给客户端，并且将token放到session中，客户端收到token后存储到本地，以后客户端只要每次请求服务器就要带上token，经过服务器验证通过后才会返回响应数据，否则报错。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#csrf%E7%9A%84%E5%8E%9F%E7%90%86%E4%B8%8E%E5%8D%B1%E5%AE%B3">csrf的原理与危害</a></li>
+<li><a href="#csrf%E9%80%A0%E6%88%90%E7%9A%84%E5%B8%B8%E8%A7%81%E5%8D%B1%E5%AE%B3%E4%B8%8E%E5%88%A9%E7%94%A8%E5%88%86%E7%B1%BB">csrf造成的常见危害与利用分类：</a></li>
+<li><a href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88">解决方案</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/sql-zhu-ru/">
+              <h3 class="post-title">
+                SQL 注入
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

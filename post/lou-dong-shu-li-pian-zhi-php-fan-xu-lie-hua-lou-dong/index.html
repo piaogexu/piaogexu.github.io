@@ -1,0 +1,273 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>漏洞梳理篇之php反序列化漏洞 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="漏洞梳理篇之php反序列化漏洞 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="漏洞梳理篇之php反序列化漏洞
+序列化函数serialize()
+序列化的目的是方便数据的传输和存储。当在php中创建了一个对象后，可以通过serialize()函数把这个对象转变成一个字符串，保存对象的值方便之后的传递与使用。测试代码如下..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              漏洞梳理篇之php反序列化漏洞
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                3 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h3 id="漏洞梳理篇之php反序列化漏洞">漏洞梳理篇之php反序列化漏洞</h3>
+<h4 id="序列化函数serialize">序列化函数serialize()</h4>
+<p>序列化的目的是方便数据的传输和存储。当在<code>php</code>中创建了一个对象后，可以通过<code>serialize()</code>函数把这个对象转变成一个字符串，保存对象的值方便之后的传递与使用。测试代码如下；</p>
+<pre><code>&lt;?php
+class chybeta{
+    var $test = '123';
+}
+$class1 = new chybeta;
+$class1_ser = serialize($class1);
+print_r($class1_ser);
+?&gt;
+#创建一个对象，然后序列化并输出
+</code></pre>
+<p>代码执行输出结果：<code>O:7:“chybeta”:1:{s:4:“test”;s:3:“123”;}</code><br>
+<img src="https://i.loli.net/2020/10/13/I2YnaTUqvBcg4w6.png" alt="1602575071_1_.jpg" loading="lazy"></p>
+<h4 id="反序列化函数unserialize">反序列化函数unserialize()</h4>
+<p>与 <code>serialize()</code> 对应的，<code>unserialize()</code>可以从已存储的表示中创建<code>PHP</code>的值，单就本次所关心的环境而言，可以从序列化后的结果中恢复对象。测试代码：</p>
+<pre><code>&lt;?php
+class chybeta{
+    var $test = '123';
+}
+$class2 = 'O:7:&quot;chybeta&quot;:1:{s:4:&quot;test&quot;;s:3:&quot;123&quot;;}';    
+print_r($class2);
+echo &quot;&lt;/br&gt;&quot;;
+$class2_unser = unserialize($class2);
+print_r($class2_unser);
+?&gt;
+#给定一串序列化后的字符将其反序列化并打印
+</code></pre>
+<p>执行结果：</p>
+<figure data-type="image" tabindex="1"><img src="https://i.loli.net/2020/10/13/oc7IbXS2A56dRjh.png" alt="1602575279_1_.jpg" loading="lazy"></figure>
+<h4 id="php反序列化漏洞">php反序列化漏洞</h4>
+<p>由于未对用户输入的序列化字符串进行检测，导致攻击者控制反序列化过程，从而导致代码执行，SQL注入，目录遍历等不可控后果。</p>
+<h5 id="漏洞触发条件">漏洞触发条件</h5>
+<ul>
+<li>
+<p>unserialize函数的变量可控</p>
+</li>
+<li>
+<p>php文件中存在可利用的类</p>
+</li>
+<li>
+<p>类中有魔术方法。</p>
+</li>
+</ul>
+<p><code>php</code>中有一类特殊的方法叫<code>“Magic function”</code>，在反序列化的过程中会自动触发这些魔术方法。</p>
+<ul>
+<li>
+<p><code>__construct()</code>：当对象创建(<code>new</code>)时会自动调用。但在<code>unserialize()</code>时是不会自动调用的</p>
+</li>
+<li>
+<p><code>__destruct()</code>：当对象被销毁时会自动调用</p>
+</li>
+<li>
+<p><code>__wakeup()</code> ：<code>unserialize()</code>时会自动调用</p>
+</li>
+</ul>
+<p><code>unserialize()</code>导致<code>__wakeup()</code>或<code>__destruct()</code>的直接调用，中间无需其他过程。因此最理想的情况就是一些漏洞/危害代码存在于<code>__wakeup()</code>或<code>__destruct()</code>等构造函数中，当我们控制序列化字符串时可以去直接触发它们。</p>
+<p>针对 <code>__wakeup()</code> 场景实验，序列化漏洞代码如下：</p>
+<pre><code>&lt;?php
+class chybeta{
+    var $test = '123';
+    function __wakeup(){
+        $fp = fopen(&quot;shell.php&quot;,&quot;w&quot;) ;
+        fwrite($fp,$this-&gt;test);
+        fclose($fp);
+    }
+}
+$class3 = $_GET['test'];
+print_r($class3);
+echo &quot;&lt;/br&gt;&quot;;
+$class3_unser = unserialize($class3);
+?&gt;
+</code></pre>
+<h5 id="反序列化漏洞思路">反序列化漏洞思路</h5>
+<ol>
+<li>
+<p>本地搭建好环境后，通过<code>serialize()</code> 得到我们要的序列化字符串，例如这里序列化phpinfo得到序列化内容为：<code>O:7:“chybeta”:1:{s:4:“test”;s:19:&quot;&lt;?php phpinfo(); ?&gt;&quot;;}</code></p>
+</li>
+<li>
+<p>执行含有php反序列化漏洞的代码，即访问<code>http://localhost/index.php?test=O:7:%22chybeta%22:1:{s:4:%22test%22;s:19:%22%3C?php%20phpinfo();?%3E%22;}</code></p>
+</li>
+</ol>
+<p>3.通过源代码知，把对象中的test值赋为 “<code>&lt;?php phpinfo(); ?&gt;</code>”,调用<code>unserialize()</code>函数，通过<code>__wakeup()</code>执行代码将传入的参数进行反序列化处理，成功显示了phpinfo页面：在反序列化该数据时，自动触发了构造函数,执行<code>phpinfo()</code>。</p>
+<p>1</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E6%A2%B3%E7%90%86%E7%AF%87%E4%B9%8Bphp%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E">漏洞梳理篇之php反序列化漏洞</a>
+<ul>
+<li><a href="#%E5%BA%8F%E5%88%97%E5%8C%96%E5%87%BD%E6%95%B0serialize">序列化函数serialize()</a></li>
+<li><a href="#%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%87%BD%E6%95%B0unserialize">反序列化函数unserialize()</a></li>
+<li><a href="#php%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E">php反序列化漏洞</a>
+<ul>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6">漏洞触发条件</a></li>
+<li><a href="#%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E%E6%80%9D%E8%B7%AF">反序列化漏洞思路</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/php-yi-xie-chang-jian-de-lou-dong-shu-li/">
+              <h3 class="post-title">
+                PHP一些常见的漏洞梳理
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

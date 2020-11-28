@@ -1,0 +1,301 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>一些信息收集命令 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="一些信息收集命令 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="windows
+检查当前shell权限
+whoami /user &amp;&amp; whoami /priv
+
+查看系统信息
+systeminfo 
+
+查看网络连接状态
+netstat -ano
+
+机器名
+hostname
+
+查看当前操..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              一些信息收集命令
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                3 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h2 id="windows">windows</h2>
+<h3 id="检查当前shell权限">检查当前shell权限</h3>
+<pre><code>whoami /user &amp;&amp; whoami /priv
+</code></pre>
+<h3 id="查看系统信息">查看系统信息</h3>
+<pre><code>systeminfo 
+</code></pre>
+<h3 id="查看网络连接状态">查看网络连接状态</h3>
+<pre><code>netstat -ano
+</code></pre>
+<h3 id="机器名">机器名</h3>
+<pre><code>hostname
+</code></pre>
+<h3 id="查看当前操作系统">查看当前操作系统</h3>
+<pre><code>wmic OS get Caption,CSDVersion,OSArchitecture,Version
+</code></pre>
+<h3 id="查杀软">查杀软</h3>
+<pre><code>WMIC /Node:localhost /Namespace:\\root\SecurityCenter2 Path AntiVirusProduct Get displayName /Format:List
+</code></pre>
+<h3 id="查看当前安装的程序">查看当前安装的程序</h3>
+<pre><code>wmic product get name,version
+</code></pre>
+<h3 id="查看在线用户">查看在线用户</h3>
+<pre><code>quser
+</code></pre>
+<h3 id="查看网络配置">查看网络配置</h3>
+<pre><code>ipconfig /all
+</code></pre>
+<h3 id="查看进程">查看进程</h3>
+<pre><code>tasklist /v 
+</code></pre>
+<h3 id="查看当前域">查看当前域</h3>
+<pre><code>net config workstation
+</code></pre>
+<h3 id="远程桌面连接历史记录">远程桌面连接历史记录</h3>
+<pre><code>cmdkey /l
+</code></pre>
+<h3 id="查看本机上的用户账户列表">查看本机上的用户账户列表</h3>
+<pre><code>net user
+</code></pre>
+<h3 id="查看本机用户xxx的信息">查看本机用户XXX的信息</h3>
+<pre><code>net user  &lt;用户名&gt;
+</code></pre>
+<h3 id="查看域用户xxx的信息">查看域用户XXX的信息</h3>
+<pre><code>net user /domain                        #显示所在域的用户名单
+net user &lt;域用户&gt; /domain               #获取某个域用户的详细信息
+net user /domain &lt;域用户&gt; &lt;password&gt;    #修改与用户密码，需要域管理员权限
+</code></pre>
+<h3 id="域">域</h3>
+<pre><code>nltest /domain_trusts /all_trusts /v /server:&lt;ip&gt;       #返回所有信任ip的域信任列表
+nltest /dsgetdc:hack /server:&lt;ip&gt;                       #返回域控和其相应的ip地址
+
+net user /domain                                        #获取与用户列表
+net group &quot;domain admins&quot; /domain                       #获取域管理员列表
+net group &quot;domain controllers&quot; /domain                  #查看域控制器（如果有多台）
+net group &quot;domain computers&quot;  /domain                   #查看域机器
+net group /domain                                       #查询域里面的工作组
+
+net localgroup administrators                           #本机管理员[通常含有域用户]
+net localgroup administrators /domain                   #登录本机的域管理员
+net localgroup administrators workgroup\user001 /add    #域用户添加到本机
+
+net view                                                #查看同一域内机器列表
+net view \\ip                                           #查看某ip共享
+net view \\GHQ                                          #查看GHQ计算机的共享资源列表
+net view \\domain                                       #查看内网存在多少个域
+net view /domian:ZXY                                    #查看ZXY域中的机器列表
+net accounts /domain                                    #查询与用户密码过期等信息
+</code></pre>
+<h2 id="linux">linux</h2>
+<h3 id="查看当前用户权限">查看当前用户权限</h3>
+<pre><code>whoami
+</code></pre>
+<h3 id="查看网卡配置">查看网卡配置</h3>
+<pre><code>ifconfig
+</code></pre>
+<h3 id="查看端口状态">查看端口状态</h3>
+<pre><code>netstat -anpt
+</code></pre>
+<h3 id="查看进程状态">查看进程状态</h3>
+<pre><code>ps -ef 
+</code></pre>
+<h3 id="查看管理员的历史输入命令">查看管理员的历史输入命令</h3>
+<pre><code>cat /root/.bash_history
+</code></pre>
+<h3 id="查找某个配置文件">查找某个配置文件</h3>
+<pre><code>find / name *.cfg
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#windows">windows</a>
+<ul>
+<li><a href="#%E6%A3%80%E6%9F%A5%E5%BD%93%E5%89%8Dshell%E6%9D%83%E9%99%90">检查当前shell权限</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%B3%BB%E7%BB%9F%E4%BF%A1%E6%81%AF">查看系统信息</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%BD%91%E7%BB%9C%E8%BF%9E%E6%8E%A5%E7%8A%B6%E6%80%81">查看网络连接状态</a></li>
+<li><a href="#%E6%9C%BA%E5%99%A8%E5%90%8D">机器名</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E5%BD%93%E5%89%8D%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F">查看当前操作系统</a></li>
+<li><a href="#%E6%9F%A5%E6%9D%80%E8%BD%AF">查杀软</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E5%BD%93%E5%89%8D%E5%AE%89%E8%A3%85%E7%9A%84%E7%A8%8B%E5%BA%8F">查看当前安装的程序</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E5%9C%A8%E7%BA%BF%E7%94%A8%E6%88%B7">查看在线用户</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE">查看网络配置</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E8%BF%9B%E7%A8%8B">查看进程</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E5%BD%93%E5%89%8D%E5%9F%9F">查看当前域</a></li>
+<li><a href="#%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2%E8%BF%9E%E6%8E%A5%E5%8E%86%E5%8F%B2%E8%AE%B0%E5%BD%95">远程桌面连接历史记录</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E6%9C%AC%E6%9C%BA%E4%B8%8A%E7%9A%84%E7%94%A8%E6%88%B7%E8%B4%A6%E6%88%B7%E5%88%97%E8%A1%A8">查看本机上的用户账户列表</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E6%9C%AC%E6%9C%BA%E7%94%A8%E6%88%B7xxx%E7%9A%84%E4%BF%A1%E6%81%AF">查看本机用户XXX的信息</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E5%9F%9F%E7%94%A8%E6%88%B7xxx%E7%9A%84%E4%BF%A1%E6%81%AF">查看域用户XXX的信息</a></li>
+<li><a href="#%E5%9F%9F">域</a></li>
+</ul>
+</li>
+<li><a href="#linux">linux</a>
+<ul>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E5%BD%93%E5%89%8D%E7%94%A8%E6%88%B7%E6%9D%83%E9%99%90">查看当前用户权限</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%BD%91%E5%8D%A1%E9%85%8D%E7%BD%AE">查看网卡配置</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%AB%AF%E5%8F%A3%E7%8A%B6%E6%80%81">查看端口状态</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81">查看进程状态</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%AE%A1%E7%90%86%E5%91%98%E7%9A%84%E5%8E%86%E5%8F%B2%E8%BE%93%E5%85%A5%E5%91%BD%E4%BB%A4">查看管理员的历史输入命令</a></li>
+<li><a href="#%E6%9F%A5%E6%89%BE%E6%9F%90%E4%B8%AA%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6">查找某个配置文件</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/nei-wang-zhu-ji-fa-xian/">
+              <h3 class="post-title">
+                内网主机发现
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

@@ -1,0 +1,262 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>内网主机发现 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="内网主机发现 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="内网主机发现
+基于UDP发现内网存活主机
+1、nmap 扫描
+nmap -sU -T5 -sV --max-retries 1 192.168.1.100 -p 500
+
+2、msf 扫描
+msf &gt; use auxiliary/sc..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              内网主机发现
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                2 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h2 id="内网主机发现">内网主机发现</h2>
+<h3 id="基于udp发现内网存活主机">基于UDP发现内网存活主机</h3>
+<h4 id="1-nmap-扫描">1、nmap 扫描</h4>
+<pre><code>nmap -sU -T5 -sV --max-retries 1 192.168.1.100 -p 500
+</code></pre>
+<h4 id="2-msf-扫描">2、msf 扫描</h4>
+<pre><code>msf &gt; use auxiliary/scanner/discovery/udp_probe
+msf &gt; use auxiliary/scanner/discovery/udp_sweep
+</code></pre>
+<h4 id="3-unicornscan扫描">3、unicornscan扫描</h4>
+<p>linux 下推荐使用</p>
+<pre><code>root@John:~# unicornscan -mU 192.168.1.100
+</code></pre>
+<h4 id="scanline-扫描">ScanLine 扫描</h4>
+<p>项目地址：</p>
+<p>https://www.mcafee.com/ca/downloads/free-tools/scanline.aspx</p>
+<p>McAfee出品，win下推荐使用。需要管理员权限。</p>
+<h3 id="基于arp发现内网存活主机">基于arp发现内网存活主机</h3>
+<h4 id="1-nmap扫描">1、nmap扫描</h4>
+<pre><code>root@John:~# nmap -sn -PR 192.168.1.1/24
+</code></pre>
+<h4 id="2-msf扫描">2、msf扫描</h4>
+<pre><code>msf &gt; use auxiliary/scanner/discovery/arp_sweep
+msf auxiliary(arp_sweep) &gt; show options
+
+Module options (auxiliary/scanner/discovery/arp_sweep):
+
+Name Current Setting Required Description
+---- --------------- -------- -----------
+INTERFACE no The name of the interface
+RHOSTS yes The target address range or CIDR identifier
+SHOST no Source IP Address
+SMAC no Source MAC Address
+THREADS 1 yes The number of concurrent threads
+TIMEOUT 5 yes The number of seconds to wait for new data
+
+msf auxiliary(arp_sweep) &gt; set RHOSTS 192.168.1.0/24
+RHOSTS =&gt; 192.168.1.0/24
+msf auxiliary(arp_sweep) &gt; set THREADS 10
+</code></pre>
+<h4 id="3-netdiscover">3、netdiscover</h4>
+<pre><code>root@John:~# netdiscover -r 192.168.1.0/24 -i wlan0
+</code></pre>
+<h4 id="4-arp-scanlinux">4、arp-scan(linux)</h4>
+<p>(推荐)速度与快捷 项目地址：</p>
+<p>https://linux.die.net/man/1/arp-scan</p>
+<p>arp-scan没有内置kali，需要下载安装。</p>
+<h4 id="5-powershell">5、Powershell</h4>
+<pre><code>c:\tmp&gt;powershell.exe -exec bypass -Command &quot;Import-Module .\arpscan.ps1;Invoke-ARPScan -CIDR 192.168.1.0/24&quot;
+</code></pre>
+<h4 id="6-arp-scannet">6、arp scannet</h4>
+<p>项目地址：</p>
+<p>https://sourceforge.net/projects/arpscannet/files/arpscannet/arpscannet 0.4/</p>
+<h4 id="7-arp-scanwindows">7、arp-scan(windows)</h4>
+<p>(推荐)速度与快捷</p>
+<pre><code>arp-scan.exe -t 192.168.1.1/24
+</code></pre>
+<p>项目地址：</p>
+<p>https://github.com/QbsuranAlang/arp-scan-windows-/tree/master/arp-scan （非官方）</p>
+<h4 id="8-arp-pingexe">8、arp-ping.exe</h4>
+<pre><code>arp-ping.exe 192.168.1.100
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E5%86%85%E7%BD%91%E4%B8%BB%E6%9C%BA%E5%8F%91%E7%8E%B0">内网主机发现</a>
+<ul>
+<li><a href="#%E5%9F%BA%E4%BA%8Eudp%E5%8F%91%E7%8E%B0%E5%86%85%E7%BD%91%E5%AD%98%E6%B4%BB%E4%B8%BB%E6%9C%BA">基于UDP发现内网存活主机</a>
+<ul>
+<li><a href="#1-nmap-%E6%89%AB%E6%8F%8F">1、nmap 扫描</a></li>
+<li><a href="#2-msf-%E6%89%AB%E6%8F%8F">2、msf 扫描</a></li>
+<li><a href="#3-unicornscan%E6%89%AB%E6%8F%8F">3、unicornscan扫描</a></li>
+<li><a href="#scanline-%E6%89%AB%E6%8F%8F">ScanLine 扫描</a></li>
+</ul>
+</li>
+<li><a href="#%E5%9F%BA%E4%BA%8Earp%E5%8F%91%E7%8E%B0%E5%86%85%E7%BD%91%E5%AD%98%E6%B4%BB%E4%B8%BB%E6%9C%BA">基于arp发现内网存活主机</a>
+<ul>
+<li><a href="#1-nmap%E6%89%AB%E6%8F%8F">1、nmap扫描</a></li>
+<li><a href="#2-msf%E6%89%AB%E6%8F%8F">2、msf扫描</a></li>
+<li><a href="#3-netdiscover">3、netdiscover</a></li>
+<li><a href="#4-arp-scanlinux">4、arp-scan(linux)</a></li>
+<li><a href="#5-powershell">5、Powershell</a></li>
+<li><a href="#6-arp-scannet">6、arp scannet</a></li>
+<li><a href="#7-arp-scanwindows">7、arp-scan(windows)</a></li>
+<li><a href="#8-arp-pingexe">8、arp-ping.exe</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/dai-li-chi/">
+              <h3 class="post-title">
+                代理池
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

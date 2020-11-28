@@ -1,0 +1,266 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SQL 注入 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1606548080714">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="SQL 注入 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="SQL 注入
+一、Sql注入简介
+Sql 注入攻击是通过将恶意的 Sql 查询或添加语句插入到应用的输入参数中，再在后台 Sql 服务器上解析执行进行的攻击，它目前黑客对数据库进行攻击的最常用手段之一。
+二、Web 程序三层架构
+三层架构(..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1606548080714" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              SQL 注入
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-28
+              </span>
+              <span>
+                4 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h4 id="sql-注入">SQL 注入</h4>
+<h5 id="一-sql注入简介">一、Sql注入简介</h5>
+<p>Sql 注入攻击是通过将恶意的 Sql 查询或添加语句插入到应用的输入参数中，再在后台 Sql 服务器上解析执行进行的攻击，它目前黑客对数据库进行攻击的最常用手段之一。</p>
+<h5 id="二-web-程序三层架构">二、Web 程序三层架构</h5>
+<p>三层架构(<code>3-tier architecture</code>) 通常意义上就是将整个业务应用划分为：</p>
+<ul>
+<li>
+<p>界面层（User Interface layer）</p>
+</li>
+<li>
+<p>业务逻辑层（Business Logic Layer）</p>
+</li>
+<li>
+<p>数据访问层（Data access layer）。</p>
+</li>
+</ul>
+<p>区分层次的目的即为了“高内聚低耦合”的思想。在软件体系架构设计中，分层式结构是最常见，也是最重要的一种结构被应用于众多类型的软件开发。<br>
+由数据库驱动的Web应用程序依从三层架构的思想也分为了三层：</p>
+<ul>
+<li>
+<p>表示层。</p>
+</li>
+<li>
+<p>业务逻辑层（又称领域层）</p>
+</li>
+<li>
+<p>数据访问层（又称存储层）</p>
+</li>
+</ul>
+<p>拓扑结构如下图所示<br>
+<img src="https://i.loli.net/2020/10/13/ATgkqDXRCWvVpZH.png" alt="1602567135_1_.jpg" loading="lazy"></p>
+<p>在上图中，用户访问实验楼主页进行了如下过程：</p>
+<ul>
+<li>
+<p>在 Web 浏览器中输入 <code>www.shiyanlou.com</code> 连接到实验楼服务器。</p>
+</li>
+<li>
+<p>业务逻辑层的 Web 服务器从本地存储中加载 index.php 脚本并解析。</p>
+</li>
+<li>
+<p>脚本连接位于数据访问层的 DBMS（数据库管理系统），并执行 Sql 语句。</p>
+</li>
+<li>
+<p>数据访问层的数据库管理系统返回 Sql 语句执行结果给 Web 服务器。</p>
+</li>
+<li>
+<p>业务逻辑层的 Web 服务器将 Web 页面封装成 HTML 格式发送给表示层的 Web 浏览器。</p>
+</li>
+<li>
+<p>表示层的 Web 浏览器解析 HTML 文件，将内容展示给用户。</p>
+</li>
+</ul>
+<p>在三层架构中，所有通信都必须要经过中间层，简单地说，三层架构是一种线性关系。</p>
+<h5 id="sql-注入产生原因及威胁">Sql 注入产生原因及威胁：</h5>
+<p>当我们访问动态网页时, Web 服务器会向数据访问层发起 Sql 查询请求，如果权限验证通过就会执行 Sql 语句。<br>
+这种网站内部直接发送的Sql请求一般不会有危险，但实际情况是很多时候需要结合用户的输入数据动态构造 Sql 语句，如果用户输入的数据被构造成恶意 Sql 代码，Web 应用又未对动态构造的 Sql 语句使用的参数进行审查，则会带来意想不到的危险。</p>
+<p>Sql 注入带来的威胁主要有如下几点</p>
+<ul>
+<li>
+<p>猜解后台数据库，这是利用最多的方式，盗取网站的敏感信息。</p>
+</li>
+<li>
+<p>绕过认证，列如绕过验证登录网站后台。</p>
+</li>
+<li>
+<p>注入可以借助数据库的存储过程进行提权等操作</p>
+</li>
+</ul>
+<h5 id="sql注入分类">Sql注入分类</h5>
+<p>1、常见的sql注入按照参数类型可分为两种：数字型和字符型。</p>
+<p>当发生注入点的参数为整数时，比如 ID，num，page等，这种形式的就属于数字型注入漏洞。同样，当注入点是字符串时，则称为字符型注入，字符型注入需要引号来闭合。</p>
+<p>2、也可以根据数据库返回的结果，分为回显注入、报错注入、盲注。</p>
+<p>回显注入：可以直接在存在注入点的当前页面中获取返回结果。</p>
+<p>报错注入：程序将数据库的返回错误信息直接显示在页面中，虽然没有返回数据库的查询结果，但是可以构造一些报错语句从错误信息中获取想要的结果。</p>
+<p>盲注：程序后端屏蔽了数据库的错误信息，没有直接显示结果也没有报错信息，只能通过数据库的逻辑和延时函数来判断注入的结果。根据表现形式的不同，盲注又分为based boolean和based time两种类型。</p>
+<p>3、按照注入位置及方式不同分为：post注入，get注入，cookie注入，盲注，延时注入，搜索注入，base64注入，无论此种分类如何多，都可以归纳为以上两种形式。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#sql-%E6%B3%A8%E5%85%A5">SQL 注入</a>
+<ul>
+<li><a href="#%E4%B8%80-sql%E6%B3%A8%E5%85%A5%E7%AE%80%E4%BB%8B">一、Sql注入简介</a></li>
+<li><a href="#%E4%BA%8C-web-%E7%A8%8B%E5%BA%8F%E4%B8%89%E5%B1%82%E6%9E%B6%E6%9E%84">二、Web 程序三层架构</a></li>
+<li><a href="#sql-%E6%B3%A8%E5%85%A5%E4%BA%A7%E7%94%9F%E5%8E%9F%E5%9B%A0%E5%8F%8A%E5%A8%81%E8%83%81">Sql 注入产生原因及威胁：</a></li>
+<li><a href="#sql%E6%B3%A8%E5%85%A5%E5%88%86%E7%B1%BB">Sql注入分类</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://piaogexu.github.io/post/xss-lou-dong/">
+              <h3 class="post-title">
+                XSS漏洞
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
