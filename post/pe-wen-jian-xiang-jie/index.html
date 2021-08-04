@@ -1,92 +1,96 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>PE文件详解 | Gridea</title>
-<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1628070601503">
-<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+    <meta charset="utf-8" >
+
+<title>PE文件详解 | just do it </title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1628071029843">
 <link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
-<link rel="alternate" type="application/atom+xml" title="PE文件详解 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 
 
 
     <meta name="description" content="PE文件
-[toc]
 介绍
-PE文件是windows操作系统下使用的可执行文件格式。它是微软在UNIX平台的COFF（Common Object File Format，通用对象文件格式）基础上制作而成的，最初（正如Portable这个单词..." />
+PE文件是windows操作系统下使用的可执行文件格式。它是微软在UNIX平台的COFF（Common Object File Format，通用对象文件格式）基础上制作而成的，最初（正如Portable这个单词所代表的那样..." />
     <meta name="keywords" content="" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
-    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
   </head>
   <body>
-    <div class="main">
-      <div class="main-content">
-        <div class="site-header">
-  <a href="https://piaogexu.github.io">
-  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1628070601503" alt="">
-  </a>
-  <h1 class="site-title">
-    Gridea
-  </h1>
-  <p class="site-description">
-    温故而知新
-  </p>
-  <div class="menu-container">
-    
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://piaogexu.github.io">
+        <img src="https://piaogexu.github.io/images/avatar.png?v=1628071029843" class="site-logo">
+        <h1 class="site-title">just do it </h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
       
-        <a href="/archives" class="menu">
-          归档
-        </a>
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
       
-    
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
       
-        <a href="/tags" class="menu">
-          标签
-        </a>
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
       
-    
-      
-        <a href="/post/about" class="menu">
-          关于
-        </a>
-      
-    
+    </div>
   </div>
-  <div class="social-container">
-    
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
       
-    
+        
       
-    
+        
       
-    
+        
       
-    
+        
       
-    
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
   </div>
 </div>
 
-        <div class="post-detail">
-          <article class="post">
-            <h2 class="post-title">
-              PE文件详解
-            </h2>
-            <div class="post-info">
-              <span>
-                2021-08-04
-              </span>
-              <span>
-                10 min read
-              </span>
-              
-            </div>
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PE文件详解</h2>
+            <div class="post-date">2021-08-04</div>
             
-            <div class="post-content-wrapper">
-              <div class="post-content">
-                <h1 id="pe文件">PE文件</h1>
-<p>[toc]</p>
+            <div class="post-content" v-pre>
+              <h1 id="pe文件">PE文件</h1>
 <h3 id="介绍">介绍</h3>
 <p>PE文件是windows操作系统下使用的可执行文件格式。它是微软在UNIX平台的COFF（Common Object File Format，通用对象文件格式）基础上制作而成的，最初（正如Portable这个单词所代表的那样）设计用来提高程序在不同操作系统上的移植性 ，但实际上这种文件格式仅用在windows系列的操作系统下。</p>
 <p>PE文件是指32位的可执行文件，也称为PE32。64位的可执行文件称为PE+或者PE32+，是（PE32）文件的一种扩展形式。</p>
@@ -317,111 +321,41 @@ typedef struct _IMAGE_FILE_HEADER{
                        RAW = RVA - VirtualAddress + PointerToRawData
 </code></pre>
 
-              </div>
-              <div class="toc-container">
-                <ul class="markdownIt-TOC">
-<li><a href="#pe%E6%96%87%E4%BB%B6">PE文件</a><br>
-*
-<ul>
-<li><a href="#%E4%BB%8B%E7%BB%8D">介绍</a></li>
-<li><a href="#pe%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F">PE文件格式</a>
-<ul>
-<li><a href="#%E5%9F%BA%E6%9C%AC%E7%BB%93%E6%9E%84">基本结构</a></li>
-<li><a href="#vaerva">VA&amp;ERVA</a></li>
-</ul>
-</li>
-<li><a href="#pe%E5%A4%B4">PE头</a>
-<ul>
-<li><a href="#dos%E5%A4%B4">DOS头</a></li>
-<li><a href="#dos-%E5%AD%98%E6%A0%B9">DOS 存根</a></li>
-<li><a href="#nt-%E5%A4%B4">NT 头</a></li>
-<li><a href="#nt%E5%A4%B4%E5%A4%B4%E6%96%87%E4%BB%B6">NT头：头文件</a>
-<ul>
-<li><a href="#machine">Machine</a></li>
-<li><a href="#numberofsections">NumberOfSections</a></li>
-<li><a href="#sizeofoptionalheader">SizeOfOptionalHeader</a></li>
-<li><a href="#characteristics">Characteristics</a></li>
-</ul>
-</li>
-<li><a href="#nt-%E5%A4%B4-%E5%8F%AF%E9%80%89%E5%A4%B4">NT 头： 可选头</a>
-<ul>
-<li><a href="#magic">Magic</a></li>
-<li><a href="#addressofentrypoint">AddressOfEntryPoint</a></li>
-<li><a href="#imagebase">ImageBase</a></li>
-<li><a href="#sectionalignmentfilealignment">SectionAlignment，FileAlignment</a></li>
-<li><a href="#sizeofimage">SizeOfImage</a></li>
-<li><a href="#sizeofheader">SizeOfHeader</a></li>
-<li><a href="#subsystem">Subsystem</a></li>
-<li><a href="#numberofrvaandsizes">NumberOfRvaAndSizes</a></li>
-<li><a href="#datadirectory">DataDirectory</a></li>
-</ul>
-</li>
-<li><a href="#%E8%8A%82%E5%8C%BA%E5%A4%B4">节区头</a></li>
-<li><a href="#rva-to-raw">RVA to RAW</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-              </div>
             </div>
-          </article>
+            
+            
+
+            
+
+          </div>
+
         </div>
-
-        
-
-        
-
-        <div class="site-footer">
-  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
-  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
-    <i class="ri-rss-line"></i> RSS
-  </a>
-</div>
-
       </div>
     </div>
 
-    <script>
-      hljs.initHighlightingOnLoad()
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
 
-      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+AOS.init();
 
-      // This should probably be throttled.
-      // Especially because it triggers during smooth scrolling.
-      // https://lodash.com/docs/4.17.10#throttle
-      // You could do like...
-      // window.addEventListener("scroll", () => {
-      //    _.throttle(doThatStuff, 100);
-      // });
-      // Only not doing it here to keep this Pen dependency-free.
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
 
-      window.addEventListener("scroll", event => {
-        let fromTop = window.scrollY;
+</script>
 
-        mainNavLinks.forEach((link, index) => {
-          let section = document.getElementById(decodeURI(link.hash).substring(1));
-          let nextSection = null
-          if (mainNavLinks[index + 1]) {
-            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
-          }
-          if (section.offsetTop <= fromTop) {
-            if (nextSection) {
-              if (nextSection.offsetTop > fromTop) {
-                link.classList.add("current");
-              } else {
-                link.classList.remove("current");    
-              }
-            } else {
-              link.classList.add("current");
-            }
-          } else {
-            link.classList.remove("current");
-          }
-        });
-      });
 
-    </script>
+  <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
   </body>
 </html>

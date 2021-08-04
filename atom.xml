@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://piaogexu.github.io</id>
-    <title>Gridea</title>
-    <updated>2021-08-04T09:50:05.861Z</updated>
+    <title>just do it </title>
+    <updated>2021-08-04T09:59:39.924Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://piaogexu.github.io"/>
     <link rel="self" href="https://piaogexu.github.io/atom.xml"/>
     <subtitle>温故而知新</subtitle>
     <logo>https://piaogexu.github.io/images/avatar.png</logo>
     <icon>https://piaogexu.github.io/favicon.ico</icon>
-    <rights>All rights reserved 2021, Gridea</rights>
+    <rights>All rights reserved 2021, just do it </rights>
     <entry>
         <title type="html"><![CDATA[PE文件详解]]></title>
         <id>https://piaogexu.github.io/post/pe-wen-jian-xiang-jie/</id>
@@ -17,7 +17,6 @@
         </link>
         <updated>2021-08-04T09:42:04.000Z</updated>
         <content type="html"><![CDATA[<h1 id="pe文件">PE文件</h1>
-<p>[toc]</p>
 <h3 id="介绍">介绍</h3>
 <p>PE文件是windows操作系统下使用的可执行文件格式。它是微软在UNIX平台的COFF（Common Object File Format，通用对象文件格式）基础上制作而成的，最初（正如Portable这个单词所代表的那样）设计用来提高程序在不同操作系统上的移植性 ，但实际上这种文件格式仅用在windows系列的操作系统下。</p>
 <p>PE文件是指32位的可执行文件，也称为PE32。64位的可执行文件称为PE+或者PE32+，是（PE32）文件的一种扩展形式。</p>
