@@ -1,0 +1,427 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PE文件详解 | Gridea</title>
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1628070601503">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="PE文件详解 | Gridea - Atom Feed" href="https://piaogexu.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="PE文件
+[toc]
+介绍
+PE文件是windows操作系统下使用的可执行文件格式。它是微软在UNIX平台的COFF（Common Object File Format，通用对象文件格式）基础上制作而成的，最初（正如Portable这个单词..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://piaogexu.github.io">
+  <img class="avatar" src="https://piaogexu.github.io/images/avatar.png?v=1628070601503" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              PE文件详解
+            </h2>
+            <div class="post-info">
+              <span>
+                2021-08-04
+              </span>
+              <span>
+                10 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="pe文件">PE文件</h1>
+<p>[toc]</p>
+<h3 id="介绍">介绍</h3>
+<p>PE文件是windows操作系统下使用的可执行文件格式。它是微软在UNIX平台的COFF（Common Object File Format，通用对象文件格式）基础上制作而成的，最初（正如Portable这个单词所代表的那样）设计用来提高程序在不同操作系统上的移植性 ，但实际上这种文件格式仅用在windows系列的操作系统下。</p>
+<p>PE文件是指32位的可执行文件，也称为PE32。64位的可执行文件称为PE+或者PE32+，是（PE32）文件的一种扩展形式。</p>
+<h2 id="pe文件格式">PE文件格式</h2>
+<p><strong>PE文件种类</strong></p>
+<table>
+<thead>
+<tr>
+<th>种类</th>
+<th>主扩展名</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可执行系列</td>
+<td>EXE、SCR</td>
+</tr>
+<tr>
+<td>库系列</td>
+<td>DLL、OCX、CPL、DRV</td>
+</tr>
+<tr>
+<td>驱动程序系列</td>
+<td>SYS、VXD</td>
+</tr>
+<tr>
+<td>对象文件系列</td>
+<td>OBJ</td>
+</tr>
+</tbody>
+</table>
+<p>严格地说，OBJ（对象）文件之外的所有文件都是可执行的。DLL、SYS文件等虽然不能直接在Shell（Explorer.exe）中运行，但可以使用其它方法（调试器、服务等）执行。</p>
+<p>下面以记事本（notepad.exe）程序进行简单的说明，首先使用Hex Editor打开记事本程序。</p>
+<p>下图是notepad.exe文件的起始部分，也是PE文件的头部份（PE header）。notepad.exe 文件运行需要的所有信息就存储在这个 PE 头中。如何加载到内存、从何处开始运行、运行中需要的DLL有哪些、需要多大的栈/堆内存等，大量信息以结构体形式存储在PE头中。换而言之，学习PE文件格式就是学习PE头中的结构体。</p>
+<figure data-type="image" tabindex="1"><img src="https://i.loli.net/2021/08/04/plnfGmVXhtDWaY1.png" alt="1628070204_1_.jpg" loading="lazy"></figure>
+<h3 id="基本结构">基本结构</h3>
+<p>notepad.exe 具有普通PE文件的基本结构。</p>
+<p>从DOS头（DOS header）到节区头（Section header）是PE头文件，其下的节区合称PE体。文件中使用偏移（offset），内存中使用VA（Virtual address，虚拟地址）来表示位置。文件加载到内存时，情况就会发生变化（节区大小、位置等）。文件的内容一般可以分为代码（.test）、数据（.data）、资源（.rsrc）节，分别保存。</p>
+<p>各节区头定义了各节区在文件或内存中的大小、位置、属性等。</p>
+<p>PE头与节区的尾部存在一个区域，称为NULL填充（NULL padding）。计算机中，为了提高处理文件、内存、网络包的效率，使用“最小基本单位”这一单位，PE文件中也类似。文件/内存中节区的起始位置应该在个文件/内存最小单位的倍数位置上，空白区域将在NULL填充。</p>
+<h3 id="vaerva">VA&amp;ERVA</h3>
+<p>VA指的是进程虚拟内存的绝对地址，RVA（Relative Virtual Address，相对虚拟地址）指从某个基准位置（ImageBase）开始的相对地址。VA与RVA满足下面关系：</p>
+<pre><code>            RVA+ImageBase=VA
+</code></pre>
+<p>PE头文件信息大多以RVA形式存在。原因在于，PE文件（主要是DLL）加载到进程虚拟内存的特定位置时，该位置可能已加载了其他PE文件（DLL）。此时必须通过重定位（Relocation）加载到其他空白的位置，若PE头信息使用的是VA，则无法正常访问，因此使用RVA来定位信息，即使发生了重定位，只要相对基准位置的相对地址没有变化，就能正常访问到指定信息，不会出现任何问题。</p>
+<h2 id="pe头">PE头</h2>
+<h3 id="dos头">DOS头</h3>
+<p>微软创建PE文件格式时，人们正广泛使用DOS文件，所有微软充分考虑了PE文件对DOS文件的兼容性。其结果是在PE头的最前面添加一个<code>IMAGE_DOS_HEADER</code>结构体，用来扩展已有的DOS EXE 头。</p>
+<pre><code>代码  IMAGE_DOS_HEADER
+
+typedef struct _IMAGE_DOS_HEADER{
+    WOED    e_magic;            //DOS signature :4D5A (&quot;MZ&quot;)
+    WOED    e_cblp;
+    WOED    e_cp;
+    WOED    e_crlc;
+    WOED    e_cparhdr;
+    WOED    e_minalloc;
+    WOED    e_maxalloc;
+    WOED    e_ss;
+    WOED    e_sp;
+    WOED    e_csum;
+    WOED    e_ip;
+    WOED    e_cs;
+    WOED    e_lfarls;
+    WOED    e_ovno;
+    WOED    e_res[4];
+    WOED    e_oemid;
+    WOED    e_oeminfo;
+    WOED    e_res2[10];
+    LONG        e_lfanew;           //offset to NT header
+    
+}
+</code></pre>
+<p>IMAGE_DOS_HEADER 结构体的大小为64字节。在该结构体中必须知道2个重要成员：e_magic 与 e_lfanew</p>
+<pre><code>e_magic:    DOS签名（signature , 4D5A =&gt; ASCII 值 &quot;MZ&quot;）。
+e_lfanew:   指示NT头的偏移（根据不同文件拥有可变值）。
+</code></pre>
+<p>所有PE文件在开始部分（e_magic）都有 DOS 签名（&quot;MZ&quot;）。e_lfanew 值指向NT 头文件所在位置（NT头的名称为 IMAGE_NT_HEADER）。</p>
+<p>使用Hex Editor打开notepad.exe，查看IMAGE_DOS_HEADER结构体，如下所以：</p>
+<figure data-type="image" tabindex="2"><img src="https://i.loli.net/2021/08/04/jS9AZOxPhoiRY1H.png" alt="1628070343_1_.jpg" loading="lazy"></figure>
+<pre><code>注：一个名叫 Mark Zbikowski的开发人员在微软设计了 DOS 可执行文件，MZ即取自其名字i的首字母
+</code></pre>
+<p>根据PE规范，文件开始的2个字节为4D5A,e_lfanew值为000000F8(不是F800000)</p>
+<pre><code>    Inter系列的CPU以逆序存储数据，这称为小端序标识法。
+</code></pre>
+<h3 id="dos-存根">DOS 存根</h3>
+<p>DOS存根（stub）在DOS头下方，是个可选，切大小不固定（即使没有dos存根，文件也能正常运行）。DOS存根由代码与数据混合而成。下图就是notepad.exe的DOS存根。</p>
+<figure data-type="image" tabindex="3"><img src="https://i.loli.net/2021/08/04/QCMkvJ5BhiRbANs.png" alt="ZMGO_3_PGB_REY44_9HKH_L.png" loading="lazy"></figure>
+<p>如上图，文件偏移40~4D区域为16位的汇编指令。32位的Windows OS 中不会运行该命令（由于被识别为PE文件，所以完全忽视改代码）。</p>
+<h3 id="nt-头">NT 头</h3>
+<p>NT头IMAGE_NT_HEADERS结构体</p>
+<pre><code>代码    IMAGE_NT_HEADERS
+tyupedef    struct  _IMAGE_NT_HEADERS{
+        DWORD                       Signature;    //PE Signature : 5045 0000 (&quot;PE&quot; 00)
+        IMAGE_FILE_HEADER           FileHeader;
+        IMAGE_OPTIONAL_HEADER32     OptionalHeader;
+} IMAGE_NT_HEADER32,*PIMAGE_NT_HEADER32;
+</code></pre>
+<p>IMAGE_NT_HEADERS结构体由3个成员组成，第一个成员为签名（Signature）结构体，其值为50450000h（&quot;PE&quot;00）。另外两个成员分别为文件头（File Header）与可选头（Optional Header）结构体。</p>
+<p>IMAGE_NT_HEADERS 结构体的大小为F8，相当大。</p>
+<figure data-type="image" tabindex="4"><img src="https://i.loli.net/2021/08/04/VS6edOa3Ki5yHZQ.png" alt="6D9`A0_O3_Z3S_S_9LBTPCY.png" loading="lazy"></figure>
+<h3 id="nt头头文件">NT头：头文件</h3>
+<p>头文件是表现文件大致属性的IMAGE_FILE_HEADER结构体。</p>
+<pre><code>代码
+
+typedef struct _IMAGE_FILE_HEADER{
+    WORD    Machine;    
+    WORD    NumberOfSections;
+    DWORD   TimeDataStamp;
+    DWORD   PointerToSymbolTable;
+    DWORD   NumberOfSymbols;
+    WORD    SizeOfOptionalHeader;
+    WORD    Characteristics;
+}IMAGE_FILE_HEADER,*PIMAGE_FILE_HEADER;
+</code></pre>
+<h4 id="machine">Machine</h4>
+<p>每个CPU都拥有的唯一Machine码，兼容32位Intel x86 芯片的Machine码位14C。x64: 8664。</p>
+<h4 id="numberofsections">NumberOfSections</h4>
+<p>NumberOfSections用来指出文件中存在的节区数量。该值一定要大于0，且当定义的节区数量与实际节区不用时，将发生运行错误。</p>
+<h4 id="sizeofoptionalheader">SizeOfOptionalHeader</h4>
+<p>IMAGE_NT_HEADER结构体的最后一位成员为IMAGE_OPTIONAL_HEADER32 结构体。SizeOfOptionalHeader成员用来指出IMAGE_OPTIONAL_HEADER32结构体的长度。windows PE装载器需要查看IMAGE_FILE_HEADER的SizeOfOptionalHeader值，从而识别出IMAGE_OPTIONAL_HEADER32结构体的大小。</p>
+<p>PE32+格式的文件中使用的是IMAGE_OPTIONAL_HEADER64结构体，而不是IMAGE_OPTIONAL_HEADER32结构体。2个结构体的尺寸是不用的，所以需要在SizeOfOptionalHeader成员中明确指出结构体的大小。</p>
+<h4 id="characteristics">Characteristics</h4>
+<p>该字段用于标识文件的属性，文件是否可以运行的形态、是否为DLL文件等信息，以 bit OR形式组合起来。</p>
+<p><strong>IMAGE_FILE_HEADER</strong></p>
+<p>在Hex Editor 中查看notepad.exe的IMAGE_FILE_HEADER结构体。<br>
+<img src="https://i.loli.net/2021/08/04/9tx3lVD4EwvLnjH.png" alt="BOXBWBMJH1BJ_GAHOAFL~XY.png" loading="lazy"></p>
+<h3 id="nt-头-可选头">NT 头： 可选头</h3>
+<pre><code>
+
+</code></pre>
+<p>在IMAGE_OPTIONAL_HEADER32结构体中需要关注下列成员。这些值是文件运行必需的，设置错误将导致文件无法正常运行。</p>
+<h4 id="magic">Magic</h4>
+<p>为IMAGE_OPTIONAL_HEADER32结构体时，Magic码为 10B；为IMAGE_OPTIONAL_HEADER64结构体时，Magic码为20B。</p>
+<h4 id="addressofentrypoint">AddressOfEntryPoint</h4>
+<p>AddressOfEntryPoint 持有EP的RVA值。该值指出程序最先执行的代码起始地址，相当重要。</p>
+<h4 id="imagebase">ImageBase</h4>
+<p>进程虚拟内存的范围是0~FFFFFFFF(32位系统)。PE文件被加载到如此大的内存中时，ImageBase指出文件的优先装入地址。</p>
+<p>EXE、DLL文件被装载到用户内存的0<sub>7FFFFFFF中，SYS文件被载入内核内存的80000000</sub>FFFFFFFF中。执行PE装载器先创建进程，再将文件载入内存，然后把EIP寄存器的值设置为 Image+AddressOfEntryPoint。</p>
+<h4 id="sectionalignmentfilealignment">SectionAlignment，FileAlignment</h4>
+<p>PE文件的Body部分划分为若干节区，这些节存储着不同类别的数据。FileAlignment指定了节区在磁盘文件中的最小单位，而SectionAlignment则指定了节区在内存中的最小单位（两个参数的值可能相同也可能不同）。磁盘文件或内存的节区的大小必定为FileAlignment或SectionAlignment值的整数倍。</p>
+<h4 id="sizeofimage">SizeOfImage</h4>
+<p>加载到内存时，SizeOfImage指定了PE Image 在虚拟内存中所占空间的大小。一般而言，文件的大小与加载到内存中的大小时不同的（节区头中定义了各节装载的位置与占有内存的大小）</p>
+<h4 id="sizeofheader">SizeOfHeader</h4>
+<p>SizeOfHeader 用来指出整个PE头的大小。该值也必须是FileAlignment的整数倍。第一节区所在位置与SizeOFHeaders距开始偏移的量相同。</p>
+<h4 id="subsystem">Subsystem</h4>
+<p>该Subsystem值用来区分系统驱动文件（<em>.sys）与普通的可执行文件（</em>.exe,*.dll）。对应关系如下。</p>
+<table>
+<thead>
+<tr>
+<th>值</th>
+<th>含义</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Driver文件</td>
+<td>系统驱动（如：ntfs.sys）</td>
+</tr>
+<tr>
+<td>2</td>
+<td>GUI文件</td>
+<td>控制台窗口（如：notepad.exe）</td>
+</tr>
+<tr>
+<td>3</td>
+<td>CUI文件</td>
+<td>控制台应用程序（如：cmd.exe）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="numberofrvaandsizes">NumberOfRvaAndSizes</h4>
+<p>NumberOfRvaAndSizes 用来指定 DataDirectory （IMAGE_OPTIONAL_HEADER32结构体的最后一个成员）数组的个数。虽然结构体定义中明确指出了数组的个数为IMAGE_NUMBEROF_DIRECTORY_ENTRIES(16) ，但是PE装载器通过查看NumberOfRvaAndSizes值来识别数组大小，换而言之，数组的大小也可能不是16。</p>
+<h4 id="datadirectory">DataDirectory</h4>
+<pre><code>
+</code></pre>
+<p>其中包含了EXPORT/IMPORT/RESOURCE 、TLS Direction。</p>
+<p><strong>IMAGE_OPTIONAL_HEADER</strong></p>
+<p>结构如下所示：</p>
+<figure data-type="image" tabindex="5"><img src="https://i.loli.net/2021/08/04/143bngmrqu6sdRL.png" alt="UVU1S_KQ1SSDK_6VBKL9__0.png" loading="lazy"></figure>
+<h3 id="节区头">节区头</h3>
+<p>节区头把各个节区的属性记录在节区头中（节区属性中文件有文件/内存的起始位置、大小、访问权限）。</p>
+<p>把PE文件创建成多个节区的结构的好处是，这样可以保证程序的安全性。</p>
+<pre><code>IMAGE_SECTION_HEADER //节区头结构体
+</code></pre>
+<p>IMAGE_SECTION_HEADER结构体的重要成员，如下所示：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VirtualSize</td>
+<td>内存中节区所占大小</td>
+</tr>
+<tr>
+<td>VirtualADdress</td>
+<td>内存中节区起始地址（RVA）</td>
+</tr>
+<tr>
+<td>SizeOfRawData</td>
+<td>磁盘文件节区所占大小</td>
+</tr>
+<tr>
+<td>PointerToRawData</td>
+<td>磁盘文件中节区起始位置</td>
+</tr>
+<tr>
+<td>Characteristics</td>
+<td>节区属性（bit OR）</td>
+</tr>
+</tbody>
+</table>
+<figure data-type="image" tabindex="6"><img src="https://i.loli.net/2021/08/04/o1au5e4UfiIzJQs.png" alt="`_PEEP_@ZW__MZB_I@~VG97.png" loading="lazy"></figure>
+<h3 id="rva-to-raw">RVA to RAW</h3>
+<p>PE文件加载到内存时，每个节区都要准确完成内存地址与文件偏移间的映射。这种映射一般称为 RVA to RAW，方法如下：</p>
+<ol>
+<li>查找RVA所在节区。</li>
+<li>使用简单公式计算文件偏移（RAW）。</li>
+</ol>
+<p>根据IMAGE_SECTION_HEADER结构体。换算公式如下：</p>
+<pre><code>    RAW - PointerToRawData = RVA - VirtualAddress
+                       RAW = RVA - VirtualAddress + PointerToRawData
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#pe%E6%96%87%E4%BB%B6">PE文件</a><br>
+*
+<ul>
+<li><a href="#%E4%BB%8B%E7%BB%8D">介绍</a></li>
+<li><a href="#pe%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F">PE文件格式</a>
+<ul>
+<li><a href="#%E5%9F%BA%E6%9C%AC%E7%BB%93%E6%9E%84">基本结构</a></li>
+<li><a href="#vaerva">VA&amp;ERVA</a></li>
+</ul>
+</li>
+<li><a href="#pe%E5%A4%B4">PE头</a>
+<ul>
+<li><a href="#dos%E5%A4%B4">DOS头</a></li>
+<li><a href="#dos-%E5%AD%98%E6%A0%B9">DOS 存根</a></li>
+<li><a href="#nt-%E5%A4%B4">NT 头</a></li>
+<li><a href="#nt%E5%A4%B4%E5%A4%B4%E6%96%87%E4%BB%B6">NT头：头文件</a>
+<ul>
+<li><a href="#machine">Machine</a></li>
+<li><a href="#numberofsections">NumberOfSections</a></li>
+<li><a href="#sizeofoptionalheader">SizeOfOptionalHeader</a></li>
+<li><a href="#characteristics">Characteristics</a></li>
+</ul>
+</li>
+<li><a href="#nt-%E5%A4%B4-%E5%8F%AF%E9%80%89%E5%A4%B4">NT 头： 可选头</a>
+<ul>
+<li><a href="#magic">Magic</a></li>
+<li><a href="#addressofentrypoint">AddressOfEntryPoint</a></li>
+<li><a href="#imagebase">ImageBase</a></li>
+<li><a href="#sectionalignmentfilealignment">SectionAlignment，FileAlignment</a></li>
+<li><a href="#sizeofimage">SizeOfImage</a></li>
+<li><a href="#sizeofheader">SizeOfHeader</a></li>
+<li><a href="#subsystem">Subsystem</a></li>
+<li><a href="#numberofrvaandsizes">NumberOfRvaAndSizes</a></li>
+<li><a href="#datadirectory">DataDirectory</a></li>
+</ul>
+</li>
+<li><a href="#%E8%8A%82%E5%8C%BA%E5%A4%B4">节区头</a></li>
+<li><a href="#rva-to-raw">RVA to RAW</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://piaogexu.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
