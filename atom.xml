@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://piaogexu.github.io</id>
     <title>just do it </title>
-    <updated>2021-08-05T03:12:47.914Z</updated>
+    <updated>2021-08-05T08:27:17.280Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://piaogexu.github.io"/>
     <link rel="self" href="https://piaogexu.github.io/atom.xml"/>
@@ -245,6 +245,122 @@ typedef struct _IMAGE_FILE_HEADER{
 <p>根据IMAGE_SECTION_HEADER结构体。换算公式如下：</p>
 <pre><code>    RAW - PointerToRawData = RVA - VirtualAddress
                        RAW = RVA - VirtualAddress + PointerToRawData
+</code></pre>
+<h3 id="iat">IAT</h3>
+<p>IAT (Import Address Table,导入地址表)用来记录程序正在使用哪些库中的哪些函数。</p>
+<h4 id="dll">DLL</h4>
+<p>DLL（Dynamic Link Library） 动态链接库。</p>
+<p>加载DLL的方式有两种：</p>
+<ul>
+<li>显示加载（Explicit Linking），程序使用DLL时加载，使用完毕后释放内存。</li>
+<li>隐式加载（Implicit Linking）, 程序开始时即一同加载DLL，程序终止时再释放占用的内存。</li>
+</ul>
+<h3 id="image_import_descriptor">IMAGE_IMPORT_DESCRIPTOR</h3>
+<p><code>IMAGE_IMPORT_DESCRIPTOR</code> 结构体中记录着PE文件要导入哪些库文件。</p>
+<pre><code>Import 导入，向库提供服务（函数）
+Export 导出，从库向其他PE文件提供服务（函数）
+</code></pre>
+<p>执行一个普通程序往往需要多个导入库，导入多少个库就存在多少个  <code>IMAGE_IMPORT_DESCRIPTOR</code> 结构体，这些结构体形成了数组，且结构体数组最后以NULL结构体结束。</p>
+<pre><code>重要成员
+IMAGE_IMPORT_DESCRIPTOR（20字节）
+    
+    OriginalFirstThunk（0-3字节）       INT的地址（RVA）
+    NAME（12-15字节）                   库名称字符串的地址（RVA）
+    FirstThunk（16-19字节）             IAT的地址（RVA）
+</code></pre>
+<p><code>IMAGE_IMPORT_DESCRIPTOR</code>不在PE头而在PE体中，但是找其位置信息在PE头中，IMAGE_OPTIONAL_HEADER32.DataDirectory[1].VirttualAddress的值即是<code>IMAGE_IMPORT_DESCRIPTOR</code>结构体数组的起始地址（RVA值）。<code>IMAGE_IMPORT_DESCRIPTOR</code>结构体数组也被称为<code>IMPORT Directory Table</code>。</p>
+<figure data-type="image" tabindex="7"><img src="https://i.loli.net/2021/08/05/aMSxveT7gJIdONK.png" alt="1628151543_1_.jpg" loading="lazy"></figure>
+<p>通过<code>RVA to RAW</code>公式，计算出文件偏移为<code>6A04</code>。</p>
+<pre><code>计算过程
+    首先 7604（RVA） 在第一节区，故在节区头找到 
+        VirtualAddress   = 1000
+        PointerToRawData = 400
+    则：
+        RAW = RVA - VirtualAddress + PointerToRawData
+            =6A04
+</code></pre>
+<p>第一个成员在磁盘文件中的位置为：</p>
+<figure data-type="image" tabindex="8"><img src="https://i.loli.net/2021/08/05/RgPj9xzviKO7pL8.png" alt="1628151589_1_.jpg" loading="lazy"></figure>
+<p>故第一个<code>IMAGE_IMPORT_DESCRIPTOR</code>结构体数组各个元素如下所示</p>
+<pre><code>文件偏移        成员                      RVA         RAW
+6A04        OriginalFirstThunk(INT)     00007990    00006D90
+6A10            Name                    00007AAC    00006EAC
+6A14        FirstThunk(IAT)             000012C4    000006C4
+</code></pre>
+<h4 id="库名称name">库名称（Name）</h4>
+<p>RVA:7AAC -&gt; RAW:6EAC</p>
+<figure data-type="image" tabindex="9"><img src="https://i.loli.net/2021/08/05/IFvXQim7sLp1cEd.png" alt="1628151628_1_.jpg" loading="lazy"></figure>
+<h4 id="originalfirstthunk-int">OriginalFirstThunk - INT</h4>
+<p>INT 是一个包含导入函数信息（Ordinal,Name）的结构体指针数组，只有获得了这些信息才能在加载到进程内存中的库中准确求得相应函数的起始地址。</p>
+<p>跟踪<code>OriginalFirstTunk</code>成员<code>RVA:7990 -&gt; RAW:6D90</code></p>
+<figure data-type="image" tabindex="10"><img src="https://i.loli.net/2021/08/05/65wvFdSIK9gUakO.png" alt="1628151659_1_.jpg" loading="lazy"></figure>
+<p>跟踪数组的第一个值 7A7A(RVA)（RAW:6E7A） ，进入该地址可以看见导入的API函数的名称字符串。</p>
+<figure data-type="image" tabindex="11"><img src="https://i.loli.net/2021/08/05/piAgO2JftQl3XVr.png" alt="1628151701_1_.jpg" loading="lazy"></figure>
+<h3 id="image_import_by_name">IMAGE_IMPORT_BY_NAME</h3>
+<p>7A7A(RVA) -&gt; 6E7A(RAW)</p>
+<p>文件偏移的最初的两个字节值（000F）为 <code>Ordinal</code> ，是库中函数的固有编号。<code>Ordinal</code> 的后面为函数名称字符串 <code>PageSetuoDlgw</code>。</p>
+<figure data-type="image" tabindex="12"><img src="71146D554F3E4E88B9C97372866CB890" alt="image" loading="lazy"></figure>
+<h3 id="firstthunk-iatimport-address-table">FirstThunk - IAT（Import Address Table）</h3>
+<p>IAT的RVA：12C4 即为 RAW：6C4</p>
+<figure data-type="image" tabindex="13"><img src="https://i.loli.net/2021/08/05/ILp3GTsV71Ei2AR.png" alt="1628151741_1_.jpg" loading="lazy"></figure>
+<p>图中的文件偏移 6C4~6EB区域即为IAT数组区域，对应comdlg32.dll库。它与INT类似，有结构体指针数组组成，且以NULL结尾。</p>
+<p>IAT的第一个元素值被编码为76324906，该值没有实际意义，notepad.exe文件加载到内存时，准确的地址值会取代该值。它是API的准确的起始地址。</p>
+<h2 id="eat">EAT</h2>
+<p>EAT 是一种核心机制，它使得不同的应用程序可以调用库文件中提供的函数。</p>
+<p>PE文件中仅有一个用来说明库EAT的<code>IMAGE_EXPORT_DIRECTORY</code>结构体。</p>
+<p>可以在PE文件的PE头中查找到<code>IMAGE_EXPORT_DIRECTORY</code>结构体的位置。<code>IMAGE_OPTIONAL_HEADER32.DataDirectory[0].VirtualAddress</code>值即是<code>IMAGE_EXPORT_DIRECTORY</code>结构体数组的起始地址（也是RVA的值）。</p>
+<figure data-type="image" tabindex="14"><img src="https://i.loli.net/2021/08/05/4saoCwW3EfbtG1y.png" alt="1628151770_1_.jpg" loading="lazy"></figure>
+<p>第一个4字节为VirtualAddress，第2个四字节为Size成员。</p>
+<h3 id="image_export_directory">IMAGE_EXPORT_DIRECTORY</h3>
+<pre><code>IMAGE_EXPORT_DIRECTORY (40字节)
+    NumberOfFunctions（20-23字节）  实际导出函数个数
+    NumberOfNames   （24-27字节）   Export函数中具名的函数个数
+    AddressOfFunctions（28-31字节） Export函数地址数组
+    AddressOfNames  （32-35字节）   函数名称地址数组
+    AddressOfNameOrdinals(36-39字节)Ordinal地址数组
+</code></pre>
+<h3 id="练习">练习</h3>
+<p>从<code>kernel32.dll</code>文件的EAT中查找<code>AddAtomW</code>函数</p>
+<figure data-type="image" tabindex="15"><img src="https://i.loli.net/2021/08/05/Zty6j2sgPoUzVEK.png" alt="1628151808_1_.jpg" loading="lazy"></figure>
+<figure data-type="image" tabindex="16"><img src="https://i.loli.net/2021/08/05/1ByzflouFQvpM2O.png" alt="1628151849_1_.jpg" loading="lazy"></figure>
+<p>由图可知<code>IMAGE_EXPORT_DIRECTORY</code>结构体的RAW为 1A2C 。</p>
+<figure data-type="image" tabindex="17"><img src="https://i.loli.net/2021/08/05/hGpTrtXFVOkbzuJ.png" alt="1628151891_1_.jpg" loading="lazy"></figure>
+<pre><code>文件偏移        成员                值          RAW
+1A38            Name               00004B8E     3F8E   
+1A40         NumberOfNames         0000039B     ----
+1A44         NumberOfFunctions     0000039B     ----
+1A48         AddressOfFuntions     00002654     1A54
+1A4C          AddressOfNames       00003538     2938
+1A50       AddressOfNameOrdinals   0000441C     381C
+</code></pre>
+<h4 id="函数名称数组">函数名称数组</h4>
+<p><code>AddressOfNames</code>成员的值为： RVA = 3538,即 RAW = 2938 。</p>
+<figure data-type="image" tabindex="18"><img src="https://i.loli.net/2021/08/05/lJUa2ceHbRFMvk8.png" alt="1628151927_1_.jpg" loading="lazy"></figure>
+<p>此处为4字节RVA组成的数组。数组元素个数为NumberOfNames（39B）逐一跟随所有的RVA值即可发现函数名称字符串</p>
+<h4 id="查找指定的函数名称">查找指定的函数名称</h4>
+<p>要查找函数名称字符串为“AddAAtomW”，只要在找到第三个元素的值即可（RVA：004BBC -&gt; RAW：3FBC）</p>
+<figure data-type="image" tabindex="19"><img src="https://i.loli.net/2021/08/05/NeG1JDkiXTtUzSV.png" alt="1628151976_1_.jpg" loading="lazy"></figure>
+<figure data-type="image" tabindex="20"><img src="https://i.loli.net/2021/08/05/NdXJPf9Q5iHMKF8.png" alt="1628152013_1_.jpg" loading="lazy"></figure>
+<h2 id="自己的一些心得笔记">自己的一些心得笔记</h2>
+<pre><code>dos头大小为64字节（40h）
+    e_lfanew（倒数4个字节）  成员值是NT头的偏移，即 IMAGE_NT_HEADER 的起始位置。
+
+NT头文件大小为 20（14h） 字节
+    NumberOfSections(3，4字节)          节区的个数
+    SizeOfOptionHeader（16，17字节）    可选头大小
+    
+    注：e_lfanew + 18h(Signature(4h)+NT_HEADER_FILE(14h)) + SizeOfOptionHeader =  IMAGE_SECTION_HEADER 偏移
+    
+IMAGE_OPTIONAL_HEADER  NT可选头
+    AddressOfEntryPoint（17-20字节）    起始代码入口点
+    ImageBase (29-32字节)               PE文件装入内存时，文件的优先装入位置。
+    SizeOfheaders（61-64字节）      指出PE头大小，即第一节区所在的位置。
+    
+IMAGE_SECTION_HEADER (40字节) 节区头
+    8-11字节：VirtSize              内存中节区所占大小
+    VirtualAddress（12-15字节）     内存中节区的起始地址
+    SizeOfRawData（16-19字节）      磁盘文件中节区所占大小
+    PointerToRawData（20-23字节）   磁盘文件中节区起始位置
 </code></pre>
 ]]></content>
     </entry>
