@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1628152231317">
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1628153029678">
 <link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
 
 
@@ -30,7 +30,7 @@ PE文件是windows操作系统下使用的可执行文件格式。它是微软�
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://piaogexu.github.io">
-        <img src="https://piaogexu.github.io/images/avatar.png?v=1628152231317" class="site-logo">
+        <img src="https://piaogexu.github.io/images/avatar.png?v=1628153029678" class="site-logo">
         <h1 class="site-title">just do it </h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -376,7 +376,7 @@ IMAGE_IMPORT_DESCRIPTOR（20字节）
 <figure data-type="image" tabindex="12"><img src="71146D554F3E4E88B9C97372866CB890" alt="image" loading="lazy"></figure>
 <h3 id="firstthunk-iatimport-address-table">FirstThunk - IAT（Import Address Table）</h3>
 <p>IAT的RVA：12C4 即为 RAW：6C4</p>
-<figure data-type="image" tabindex="13"><img src="https://i.loli.net/2021/08/05/ILp3GTsV71Ei2AR.png" alt="1628151741_1_.jpg" loading="lazy"></figure>
+<figure data-type="image" tabindex="13"><img src="https://i.loli.net/2021/08/05/M78s6bJZo9diPAj.png" alt="1628152986_1_.jpg" loading="lazy"></figure>
 <p>图中的文件偏移 6C4~6EB区域即为IAT数组区域，对应comdlg32.dll库。它与INT类似，有结构体指针数组组成，且以NULL结尾。</p>
 <p>IAT的第一个元素值被编码为76324906，该值没有实际意义，notepad.exe文件加载到内存时，准确的地址值会取代该值。它是API的准确的起始地址。</p>
 <h2 id="eat">EAT</h2>
