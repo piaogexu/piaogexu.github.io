@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://piaogexu.github.io</id>
     <title>just do it </title>
-    <updated>2021-08-05T08:54:57.672Z</updated>
+    <updated>2021-08-06T01:42:14.565Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://piaogexu.github.io"/>
     <link rel="self" href="https://piaogexu.github.io/atom.xml"/>
@@ -10,6 +10,111 @@
     <logo>https://piaogexu.github.io/images/avatar.png</logo>
     <icon>https://piaogexu.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, just do it </rights>
+    <entry>
+        <title type="html"><![CDATA[UPack的头文件分析]]></title>
+        <id>https://piaogexu.github.io/post/upack-de-tou-wen-jian-fen-xi/</id>
+        <link href="https://piaogexu.github.io/post/upack-de-tou-wen-jian-fen-xi/">
+        </link>
+        <updated>2021-08-06T01:31:08.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="upack的头文件分析">UPack的头文件分析</h1>
+<h2 id="重叠头文件">重叠头文件</h2>
+<p>由于PE View 打开文件会出现bug，使用Stud_PE工具打开经过UPack压缩之后的文件。</p>
+<figure data-type="image" tabindex="1"><img src="https://i.loli.net/2021/08/06/s2jdo57QNt4GcyA.png" alt="21.png" loading="lazy"></figure>
+<p>mz文件头（IMAGE_DOS_HEADER）中有以下两个重要成员：</p>
+<pre><code>(offset 0)  e_magic :   Magic number = 4D5A('MZ')
+(offset 3C) e_lfanew:   File address of new exe header
+</code></pre>
+<p><code>e_lfanew</code>指出了PE头的便宜位置即<code>IMAGE_NT_HHEADERS</code>的起始位置。<code>IMAGE_NT_HHEADERS</code>的起始位置是可以变的。正常情况下</p>
+<pre><code>e_lfanew = MZ头文件大小（40） + DOS存根大小（可变：VC++下为A0）
+</code></pre>
+<p>UPack中的<code>e_lfanew</code>的值为10，这部违反PE的规范，只是钻了空子，这样MZ文件头和PE文件头就重叠到一起了。</p>
+<h3 id="image_file_headersizeofoptionalheader">IMAGE_FILE_HEADER.SizeOfOptionalHeader</h3>
+<p>修改<code>IMAGE_FILE_HEADER.SizeOfOptionalHeader</code>的值，可以向头文件插入解压代码。<br>
+<code>IMAGE_FILE_HEADER.SizeOfOptionalHeader</code>的值用来指出<code>IMAGE_OPTIONAL_HEADER</code>结构体的长度。</p>
+<figure data-type="image" tabindex="2"><img src="https://i.loli.net/2021/08/06/sXcEk2LfaPKlqm8.png" alt="20M0T9EW_E_Y1_6HPUR_T.png" loading="lazy"></figure>
+<p>在PE32文件中 <code>IMAGE_OPTIONAL_HEADER</code> 的结构体大小为<code>E0</code>，此处的<code>SizeOfOptionalHeader</code>为148。</p>
+<p>故节区头<code>IMAGE_SECTION_HEADER</code>的的起始位置为 170 （<code>IMAGE_OPTIONAL_HEADER</code>的起始位置偏移（28）+ <code>SizeOfOptionalHeader</code>（148） = 170）</p>
+<p><code>IMAGE_OPTIONAL_HEADER</code>结束的位置为 D7 ，<code>IMAGE_SECTION_HEADER</code>的起始位置为 170，查看中间位置，如下所示：</p>
+<figure data-type="image" tabindex="3"><img src="https://i.loli.net/2021/08/06/V5DBuIrRoCSscWK.png" alt="_2YC_X48QG`IZ0AEI_DI1_5.png" loading="lazy"></figure>
+<p>此处是UPack代码。而不是PE头文件信息。使用PE相关的工具对其进行识别为PE文件信息，就会引发错误，导致程序无法运行。</p>
+<h3 id="image_optional_headernumberofrvaandsizes">IMAGE_OPTIONAL_HEADER.NumberOfRvaAndSizes</h3>
+<p><code>NumberOfRvaAndSizes</code>用来指定<code>DataDirectory</code>（<code>IMAGE_OPTIONAL_HEADER32</code>结构体的最后一个成员）数组的个数。PE装载器通过查看<code>NumberOfRvaAndSizes</code>的值来识别数组的大小，换而言之数组的大小也可能不是16。</p>
+<figure data-type="image" tabindex="4"><img src="https://i.loli.net/2021/08/06/Rpf9Vv3Kdque1mx.png" alt="_7_N_C6L_BIUO5N0HXJ26GC.png" loading="lazy"></figure>
+<p><code>IMAGE_DATA_DIRECTORY</code>结构体的数组元素个数已经固定为 10（16进制的10等于十进制的16），但是由于UPack将<code>NumberOfRawAndSize</code>的值作为数组元素的个数。<code>IMAGE_DATA_DIRECTORY</code>结构体数组的后6个元素被忽略。</p>
+<h3 id="image_section_header">IMAGE_SECTION_HEADER</h3>
+<p><code>IMAGE_SECTION_HEADER</code>结构体中，UPack会。把自身数据记录到程序运行不需要的项目。这与UPack向PE文件头中不使用的区域覆写自身代码与数据的方法是一样的。</p>
+<p><code>IMAGE_SECTION_HEADER</code>结构体中对程序运行没有意义的选项为：</p>
+<pre><code>DWORD PointerTORelocations;
+DWORD PoterToLinenumbers;
+WORD NumberOfRelocations;
+WORD NumberOfLinenumbers;
+</code></pre>
+<h3 id="重叠节区">重叠节区</h3>
+<p>UPack的主要特征就是可以随意重叠PE节区与头文件。</p>
+<p>使用Stud_PE提供的简略试图查看UPack的<code>IMAGE_SECTION_HEADER</code>。</p>
+<figure data-type="image" tabindex="5"><img src="https://i.loli.net/2021/08/06/DQra2NlIyYMRzH1.png" alt="_M_W0ZAKT2@4DN6_TMTF`76.png" loading="lazy"></figure>
+<p>第一个节区与第三个节区的文件起始偏移（RawOffset）值都为10。便宜10是头文件区域，UPack中该位置起即为字节区域。</p>
+<p>第一个节区和第三个节区的起始文件偏移（RawOffset）与在文件中的大小（RawSize）是完全一直的。但是节区内存的起始RVA（VirtualOffset）项与内存大小（VirtualSize）值是不一样的。</p>
+<p>综上所示：UPack会对PE文件头、第一个节区、第三个节区进行重叠。</p>
+<p>根据节区头（<code>IMAGE_SECTION_HEADER</code>）中定义的值，PE装载器会将文件偏移 0~1FF 的区域分别映射到3个不同的内存位置（文件头、第一个节区、第三个节区）。也就是说，用相同的文件映像可以分别创建出处于不同位置的、大小不同的内存映像。</p>
+<p>文件的头（第一个节区/第三个节区）区域大小为200，其实这是非常小的。相反第二个节区（2nd Section）尺寸（AE28）非常大，占据了文件的大部分区域，源文件（notepad.exe）即压缩在此。</p>
+<p>另一个需要注意的是内存中的第一个节区区域，它的内存尺寸大小为1400，与原文件（notepad.exe）的SizeImage具有相同的值，也就是说，压缩在第二个节区中的文件映像会被原样解压缩到第一个节区（notepad.exe的内存映像）。另外，元notepa.exe拥有的三个节区，它们被解压到一个节区。</p>
+<h3 id="总结">总结</h3>
+<p>压缩的notepad.exe在内存的第二个节区，解压缩的同时被记录到第一个节区。重要的是，notepad.exe(源文件)的内存映射会被整体解压，所以程序能够正常运行（地址变的准确而一致）。</p>
+<h3 id="rva-to-raw">RVA to RAW</h3>
+<p>各种PE实用程序对UPack束手无策的原因就是无法正确进行 RVA -&gt; RAW 的变换。</p>
+<p>RVA -&gt; RAW 公式为</p>
+<pre><code>RAW = RVA - VirtualAddress + PointerTORawData
+
+VirtualAddress、PointerToRawData 是从RAW所在的节区头中获取的值，它们都是已知的值（Known value）。
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://i.loli.net/2021/08/06/W6KGkoV1tAvxTyI.png" alt="4UIABBI42125Q8`_RD_ADT1.png" loading="lazy"></figure>
+<p>根据上述公式算一下EP 的文件偏移量（RAW） ， UPack的EP是 RVA 1018 。</p>
+<figure data-type="image" tabindex="7"><img src="https://i.loli.net/2021/08/06/TFY4HoqOGncpdxX.png" alt="I_0AU_U9__H5_CRCQ_NS.png" loading="lazy"></figure>
+<pre><code>RAW = RVA - 1000 + 10 = 28
+</code></pre>
+<p>使用 Hex Editor 打开 RAW 28 区查看</p>
+<figure data-type="image" tabindex="8"><img src="https://i.loli.net/2021/08/06/5IGxPMRUl6KF1Vd.png" alt="V1OHP1_3N_7TS3REM0KYG.png" loading="lazy"></figure>
+<p>RAW 28 区 不是代码区，而是（Ordinal：010B）&quot;loadLibraryA&quot;字符串区域。</p>
+<p>出现这样的情况是因为 第一个节区的PointerToRawData值为10。</p>
+<p>一般而言，指向节区开始的文件偏移的 <code>PointerToRawData</code>值应该是<code>FileAlignment</code>的整数倍。UPack的<code>FileAlignment</code>为200，故<code>PointerToRawData</code>值应为0、200、400、600等值。PE装载器发先第一个节区的<code>PointerToRawData（10）</code>不是<code>FileAlignment（200）</code>的整数倍时，它会强制将其识别为整数倍（该情况下为0）.这使得UPack文件能够正常运行，但是许多PE相关实用程序都会发生错误。</p>
+<h3 id="导入表">导入表</h3>
+<p>要在Hex Editor 查看 <code>IMAGE_IMPORT_DESCRIPTOR</code>结构体，首先要从<code>Directory Table</code>中获取 IDT（IMAGE_IMPORT_DESCRIPTOR结构体数组）的地址</p>
+<figure data-type="image" tabindex="9"><img src="https://i.loli.net/2021/08/06/jq2DtrWmk1unSlQ.png" alt="UV_3PF6Q_IXAZPUN7B__`QR.png" loading="lazy"></figure>
+<p>右侧的8个字节大小的data就是指向导入表的<code>IMAGE_DATA_DIRECTORY</code>结构体。前面四个字节为导入表的地址（RVA:271EE）。后面四个字节的大小时导入表的大小（Size(14h)）</p>
+<figure data-type="image" tabindex="10"><img src="https://i.loli.net/2021/08/06/3VWOhkdlQ6zrPUq.png" alt="A3BB__DZ42X2_8JA__IJR6Q.png" loading="lazy"></figure>
+<p>RVA -&gt; RAW 变换</p>
+<pre><code>RAW = RVA(271EE) - VirtualOfSet(27000) + RawOffset(0)
+    = 1EE
+</code></pre>
+<p>使用Hex Editor 查看文件偏移</p>
+<figure data-type="image" tabindex="11"><img src="https://i.loli.net/2021/08/06/ZpdXfcFq61E5nrj.png" alt="U`G_6N3@I0C3U5XBFS_Z6OQ.png" loading="lazy"></figure>
+<p>根据 PE 规范 导入表是由一系列<code>IMAGE_IMPORT_DESCRIPTOR</code>结构体组成的数组，最后以一个内容为NULL的结构体结束。</p>
+<p>上图 咋一看违反了 PE 规范，但是注意红线，该条线表示文件中第三个节区的结束。故运行时偏移在200以下的本部分不会映射到第三个节区内存。故第三个节区加载到内存时，文件偏移0<sub>1FF的区域映射到内存的27000</sub>271FF区域，而（第三个节区其余的内存区域）27000~28000区域全部填充为NULL。</p>
+<h3 id="导入地址表">导入地址表</h3>
+<p>通过上图得到映射关系</p>
+<pre><code>IMAGE_IMPORT_DESCRIPTOR (20字节)
+
+偏移        成员                                 RVA
+1EE    OriginalFirstThunk（INT）(0-3字节)         0
+1FA         Name(12-15字节)                       2
+1FE    FirstThunk（IAT）(16-19字节)              11E8
+</code></pre>
+<p>Name的RVA值为2，它属于Header区域，在Header区域 RVA与RAW是一样的。</p>
+<figure data-type="image" tabindex="12"><img src="https://i.loli.net/2021/08/06/hKxdSQOilDMwGAy.png" alt="TIZC_~__B39QG_A__935TRI.png" loading="lazy"></figure>
+<p>可以看见UPack将 Import DLL 写到了该处。</p>
+<p>IAT的RVA值为 11E8 故在第一个节区</p>
+<figure data-type="image" tabindex="13"><img src="https://i.loli.net/2021/08/06/djwY276xL9cBZfS.png" alt="ZFUYMDD2E_R_7R3_APNNX`C.png" loading="lazy"></figure>
+<pre><code>RVA -&gt; RAW
+RAW = RVA(11E8) - VirtualOffset(1000) + RawOffset(0) = 1E8 
+</code></pre>
+<figure data-type="image" tabindex="14"><img src="https://i.loli.net/2021/08/06/bYzoEt4NvUnqVX3.png" alt="2ZT`__4@F_I1UPPRU___I_4.png" loading="lazy"></figure>
+<p>可以看见此处有导入了两个API，分别是 RVA 28 与 BE 。</p>
+<p>都是header区域，所以 RVA=RAW，如下</p>
+<figure data-type="image" tabindex="15"><img src="https://i.loli.net/2021/08/06/I9eWncP5qkVEjBF.png" alt="JZ_6QJHQD8KN5N9M5U81F94.png" loading="lazy"></figure>
+<figure data-type="image" tabindex="16"><img src="https://i.loli.net/2021/08/06/oYX15keBHANWV6I.png" alt="W1O@__HPP1SMTD2I0JCXWHQ.png" loading="lazy"></figure>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[PE文件详解]]></title>
         <id>https://piaogexu.github.io/post/pe-wen-jian-xiang-jie/</id>
