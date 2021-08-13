@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1628844601737">
+<link rel="shortcut icon" href="https://piaogexu.github.io/favicon.ico?v=1628844731198">
 <link rel="stylesheet" href="https://piaogexu.github.io/styles/main.css">
 
 
@@ -32,7 +32,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://piaogexu.github.io">
-        <img src="https://piaogexu.github.io/images/avatar.png?v=1628844601737" class="site-logo">
+        <img src="https://piaogexu.github.io/images/avatar.png?v=1628844731198" class="site-logo">
         <h1 class="site-title">just do it </h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -520,7 +520,7 @@ extern &quot;C&quot; {
 <p>从下图可以看出，IDT 的地址（RVA）为 84CC 。 接下来在 PEView 中直接查看 IDT （在 PEView<br>
 工具栏中设置地址视图选项为 RVA ）。</p>
 <figure data-type="image" tabindex="3"><img src="https://i.loli.net/2021/08/13/AWtKaOLnecZl53M.png" alt="3.jpg" loading="lazy"></figure>
-<p>从上图可以看出，TextView.exe 的 IDT 存在与 <code>.rdata</code> 节区。 IDT 是由 <code>IMAGE_IMPORT_DESCRIPTOR</code>(以下简称 IID) 结构体组成的数组，且数组的末尾以 NULL 结构体结束。由于每个导入的 DLL 文件都对应 1 个 IID 结构体（每个 IID 结构体的大小为 0<em>14字节），所以下图中的整个 IID 区域为RVA：84CC ~ 852F(整体大小为：0</em>14<em>5 = 0</em>64字节)</p>
+<p>从上图可以看出，TextView.exe 的 IDT 存在与 <code>.rdata</code> 节区。 IDT 是由 <code>IMAGE_IMPORT_DESCRIPTOR</code>(以下简称 IID) 结构体组成的数组，且数组的末尾以 NULL 结构体结束。由于每个导入的 DLL 文件都对应 1 个 IID 结构体（每个 IID 结构体的大小为 0<code>*1</code>4字节），所以下图中的整个 IID 区域为RVA：84CC ~ 852F(整体大小为：0<code>*</code>14<code>*</code>5 = 0<code>*</code>64字节)</p>
 <figure data-type="image" tabindex="4"><img src="https://i.loli.net/2021/08/13/VgfXsP5wltqkIBa.png" alt="4.jpg" loading="lazy"></figure>
 <p>IID 结构体的定义</p>
 <pre><code>IMAGE_IMPORT_DESCRIPTOR
