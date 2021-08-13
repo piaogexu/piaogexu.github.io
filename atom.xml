@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://piaogexu.github.io</id>
     <title>just do it </title>
-    <updated>2021-08-06T01:45:11.460Z</updated>
+    <updated>2021-08-13T08:50:06.489Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://piaogexu.github.io"/>
     <link rel="self" href="https://piaogexu.github.io/atom.xml"/>
@@ -10,6 +10,594 @@
     <logo>https://piaogexu.github.io/images/avatar.png</logo>
     <icon>https://piaogexu.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, just do it </rights>
+    <entry>
+        <title type="html"><![CDATA[通过修改PE文件加载DLL]]></title>
+        <id>https://piaogexu.github.io/post/tong-guo-xiu-gai-pe-wen-jian-jia-zai-dll/</id>
+        <link href="https://piaogexu.github.io/post/tong-guo-xiu-gai-pe-wen-jian-jia-zai-dll/">
+        </link>
+        <updated>2021-08-13T08:37:08.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="通过修改pe文件加载dll">通过修改PE文件加载DLL</h1>
+<p>[toc]<br>
+除了前面面所讲的 DLL 动态注入技术外，还可以采用“手工修改可执行文件”的方式加载用户指定的 DLL 文件。</p>
+<h2 id="目标">目标</h2>
+<p>这个实验的目标是：直接修改<code>TextView.exe</code>文件，使其在运行时自动加载<code>myhack.dll</code>文件。</p>
+<h3 id="textviewexe">TextView.exe</h3>
+<p><code>TextView.exe</code>是一个非常简单的文本查看程序，只要用鼠标将要查看的文本文件拖动（Drop）到其中，即可通过它查看文本文件的内容。如下</p>
+<figure data-type="image" tabindex="1"><img src="https://i.loli.net/2021/08/13/aHWAwzuB42ohNvE.png" alt="1.jpg" loading="lazy"></figure>
+<p>使用 PEView 工具查看<code>TextView.exe</code>可执行文件的 <code>IDT</code>(<code>Import directory Table</code>,导入目录表)。</p>
+<figure data-type="image" tabindex="2"><img src="https://i.loli.net/2021/08/13/bEhi3ZSzYKDaF2M.png" alt="2.jpg" loading="lazy"></figure>
+<p>从上图可以看到，<code>TextView.exe</code>中直接导入的 DLL 文件为 <code>KERNEL32.dll</code> 、<code>USER32.dll</code>、 <code>GDI32.dll</code>、 <code>SHELL32.dll</code>。</p>
+<h2 id="myhack32dll-源代码">myhack32.dll 源代码</h2>
+<p>这一节用来分析 <code>myhack3.dll</code>的源代码。</p>
+<pre><code>// dllmain.cpp : 定义 DLL 应用程序的入口点。
+#include &quot;pch.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;windows.h&quot;
+#include &quot;shlobj.h&quot;
+#include &quot;Wininet.h&quot;
+#include &quot;tchar.h&quot;
+
+#pragma comment(lib, &quot;Wininet.lib&quot;)
+
+#define DEF_BUF_SIZE  (4096)
+#define DEF_URL L&quot;http://www.baidu.com/index.html&quot;
+#define DEF_INDEX_FILE L&quot;index.html&quot;
+HWND g_hWnd = NULL;
+
+
+#ifdef __cplusplus
+extern &quot;C&quot; {
+#endif
+    //  导出函数，但是没有任何功能，仅仅保持dll文件的形式上完整。
+    __declspec(dllexport) void dummy()
+    {
+        return;
+    }
+#ifdef __cplusplus
+}
+#endif
+
+
+//DownloadURL  下载 szURL 中指定网站的文件，并将其保存在 szFile 目录。
+BOOL DownloadURL(LPCTSTR szURL, LPCTSTR szFile)
+{
+    BOOL            bRet = FALSE;
+    HINTERNET	    hInternet = NULL, hURL = NULL;
+    BYTE            pBuf[DEF_BUF_SIZE] = { 0, };
+    DWORD           dwBytesRead = 0;
+    FILE* pFile = NULL;
+    errno_t         err = 0;
+
+    hInternet = InternetOpen(L&quot;ReverseCore&quot;,
+        INTERNET_OPEN_TYPE_PRECONFIG,
+        NULL,
+        NULL,
+        0);
+    if (NULL == hInternet)
+    {
+        OutputDebugString(L&quot;InternetOpen() failed!&quot;);
+        return FALSE;
+    }
+
+    hURL = InternetOpenUrl(hInternet,
+        szURL,
+        NULL,
+        0,
+        INTERNET_FLAG_RELOAD,
+        0);
+    if (NULL == hURL)
+    {
+        OutputDebugString(L&quot;InternetOpenUrl() failed!&quot;);
+        goto _DownloadURL_EXIT;
+    }
+
+    if (err = _tfopen_s(&amp;pFile, szFile, L&quot;wt&quot;))
+    {
+        OutputDebugString(L&quot;fopen() failed!&quot;);
+        goto _DownloadURL_EXIT;
+    }
+
+    while (InternetReadFile(hURL, pBuf, DEF_BUF_SIZE, &amp;dwBytesRead))
+    {
+        if (!dwBytesRead)
+            break;
+
+        fwrite(pBuf, dwBytesRead, 1, pFile);
+    }
+
+    bRet = TRUE;
+
+_DownloadURL_EXIT:
+    if (pFile)
+        fclose(pFile);
+
+    if (hURL)
+        InternetCloseHandle(hURL);
+
+    if (hInternet)
+        InternetCloseHandle(hInternet);
+
+    return bRet;
+}
+
+
+BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam)
+{
+    DWORD dwPID = 0;
+
+    GetWindowThreadProcessId(hWnd, &amp;dwPID);
+
+    if (dwPID == (DWORD)lParam)
+    {
+        g_hWnd = hWnd;
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+HWND GetWindowHandleFromPID(DWORD dwPID)
+{
+    EnumWindows(EnumWindowsProc, dwPID);
+
+    return g_hWnd;
+}
+
+
+//DropFile 函数将下载的 index.html 文件 拖到 TextView_Path.exe进程并显示其内容。
+BOOL DropFile(LPCTSTR wcsFile)
+{
+    HWND            hWnd = NULL;
+    DWORD           dwBufSize = 0;
+    BYTE* pBuf = NULL;
+    DROPFILES* pDrop = NULL;
+    char            szFile[MAX_PATH] = { 0, };
+    HANDLE          hMem = 0;
+
+    WideCharToMultiByte(CP_ACP, 0, wcsFile, -1,
+        szFile, MAX_PATH, NULL, NULL);
+
+    dwBufSize = sizeof(DROPFILES) + strlen(szFile) + 1;
+
+    if (!(hMem = GlobalAlloc(GMEM_ZEROINIT, dwBufSize)))
+    {
+        OutputDebugString(L&quot;GlobalAlloc() failed!!!&quot;);
+        return FALSE;
+    }
+
+    pBuf = (LPBYTE)GlobalLock(hMem);
+
+    pDrop = (DROPFILES*)pBuf;
+    pDrop-&gt;pFiles = sizeof(DROPFILES);
+    strcpy_s((char*)(pBuf + sizeof(DROPFILES)), strlen(szFile) + 1, szFile);
+
+    GlobalUnlock(hMem);
+
+    if (!(hWnd = GetWindowHandleFromPID(GetCurrentProcessId())))
+    {
+        OutputDebugString(L&quot;GetWndHandleFromPID() failed!!!&quot;);
+        return FALSE;
+    }
+
+    PostMessage(hWnd, WM_DROPFILES, (WPARAM)pBuf, NULL);
+
+    return TRUE;
+}
+
+
+DWORD WINAPI ThreadProc(LPVOID lParam)
+{
+    TCHAR szPath[MAX_PATH] = { 0, };
+    TCHAR* p = NULL;
+
+    OutputDebugString(L&quot;ThreadProc() start...&quot;);
+
+    GetModuleFileName(NULL, szPath, sizeof(szPath));
+
+    if (p = _tcsrchr(szPath, L'\\'))
+    {
+        _tcscpy_s(p + 1, wcslen(DEF_INDEX_FILE) + 1, DEF_INDEX_FILE);
+
+        OutputDebugString(L&quot;DownloadURL()&quot;);
+        if (DownloadURL(DEF_URL, szPath))
+        {
+            OutputDebugString(L&quot;DropFlie()&quot;);
+            DropFile(szPath);
+        }
+    }
+
+    OutputDebugString(L&quot;ThreadProc() end...&quot;);
+
+    return 0;
+}
+
+
+
+
+BOOL APIENTRY DllMain( HMODULE hModule,
+                       DWORD  ul_reason_for_call,
+                       LPVOID lpReserved
+                     )
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+        CloseHandle(CreateThread(NULL, 0, ThreadProc, NULL, 0, NULL));
+        break;
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
+    return TRUE;
+}
+</code></pre>
+<h3 id="dllmain">DllMain()</h3>
+<pre><code>#include &quot;pch.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;windows.h&quot;
+#include &quot;shlobj.h&quot;
+#include &quot;Wininet.h&quot;
+#include &quot;tchar.h&quot;
+
+#pragma comment(lib, &quot;Wininet.lib&quot;)
+
+#define DEF_BUF_SIZE  (4096)
+#define DEF_URL L&quot;http://www.google.com/index.html&quot;
+#define DEF_INDEX_FILE L&quot;index.html&quot;
+
+
+DWORD WINAPI ThreadProc(LPVOID lParam)
+{
+    TCHAR szPath[MAX_PATH] = { 0, };
+    TCHAR* p = NULL;
+
+    OutputDebugString(L&quot;ThreadProc() start...&quot;);
+
+    GetModuleFileName(NULL, szPath, sizeof(szPath));
+
+    if (p = _tcsrchr(szPath, L'\\'))
+    {
+        _tcscpy_s(p + 1, wcslen(DEF_INDEX_FILE) + 1, DEF_INDEX_FILE);
+
+        OutputDebugString(L&quot;DownloadURL()&quot;);
+        if (DownloadURL(DEF_URL, szPath))
+        {
+            OutputDebugString(L&quot;DropFlie()&quot;);
+            DropFile(szPath);
+        }
+    }
+
+    OutputDebugString(L&quot;ThreadProc() end...&quot;);
+    return 0;
+}
+
+
+BOOL APIENTRY DllMain( HMODULE hModule,
+                       DWORD  ul_reason_for_call,
+                       LPVOID lpReserved
+                     )
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+        CloseHandle(CreateThread(NULL, 0, ThreadProc, NULL, 0, NULL));
+        break;
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
+    return TRUE;
+}
+</code></pre>
+<p><code>DLLMain()</code>函数的功能非常简单，创建线程运行指定的线程过程（ThreadProc） 中调用<code>DownloadURL()</code>与<code>DropFile()</code>函数。</p>
+<h3 id="downloadurl">DownloadURL()</h3>
+<pre><code>//DownloadURL  下载 szURL 中指定网站的文件，并将其保存在 szFile 目录。
+BOOL DownloadURL(LPCTSTR szURL, LPCTSTR szFile)
+{
+    BOOL            bRet = FALSE;
+    HINTERNET	    hInternet = NULL, hURL = NULL;
+    BYTE            pBuf[DEF_BUF_SIZE] = { 0, };
+    DWORD           dwBytesRead = 0;
+    FILE* pFile = NULL;
+    errno_t         err = 0;
+
+    hInternet = InternetOpen(L&quot;ReverseCore&quot;,
+        INTERNET_OPEN_TYPE_PRECONFIG,
+        NULL,
+        NULL,
+        0);
+    if (NULL == hInternet)
+    {
+        OutputDebugString(L&quot;InternetOpen() failed!&quot;);
+        return FALSE;
+    }
+
+    hURL = InternetOpenUrl(hInternet,
+        szURL,
+        NULL,
+        0,
+        INTERNET_FLAG_RELOAD,
+        0);
+    if (NULL == hURL)
+    {
+        OutputDebugString(L&quot;InternetOpenUrl() failed!&quot;);
+        goto _DownloadURL_EXIT;
+    }
+
+    if (err = _tfopen_s(&amp;pFile, szFile, L&quot;wt&quot;))
+    {
+        OutputDebugString(L&quot;fopen() failed!&quot;);
+        goto _DownloadURL_EXIT;
+    }
+
+    while (InternetReadFile(hURL, pBuf, DEF_BUF_SIZE, &amp;dwBytesRead))
+    {
+        if (!dwBytesRead)
+            break;
+
+        fwrite(pBuf, dwBytesRead, 1, pFile);
+    }
+
+    bRet = TRUE;
+
+_DownloadURL_EXIT:
+    if (pFile)
+        fclose(pFile);
+
+    if (hURL)
+        InternetCloseHandle(hURL);
+
+    if (hInternet)
+        InternetCloseHandle(hInternet);
+
+    return bRet;
+}
+</code></pre>
+<p><code>DownloadURL()</code>函数会下载参数<code>szURL</code>中指定的网页文件，并将其保存到<code>szFile</code>目录。</p>
+<h3 id="dropfile">DropFile()</h3>
+<pre><code>BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam)
+{
+    DWORD dwPID = 0;
+
+    GetWindowThreadProcessId(hWnd, &amp;dwPID);
+
+    if (dwPID == (DWORD)lParam)
+    {
+        g_hWnd = hWnd;
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+HWND GetWindowHandleFromPID(DWORD dwPID)
+{
+    EnumWindows(EnumWindowsProc, dwPID);
+
+    return g_hWnd;
+}
+
+
+//DropFile 函数将下载的 index.html 文件 拖到 TextView_Path.exe进程并显示其内容。
+BOOL DropFile(LPCTSTR wcsFile)
+{
+    HWND            hWnd = NULL;
+    DWORD           dwBufSize = 0;
+    BYTE* pBuf = NULL;
+    DROPFILES* pDrop = NULL;
+    char            szFile[MAX_PATH] = { 0, };
+    HANDLE          hMem = 0;
+
+    WideCharToMultiByte(CP_ACP, 0, wcsFile, -1,
+        szFile, MAX_PATH, NULL, NULL);
+
+    dwBufSize = sizeof(DROPFILES) + strlen(szFile) + 1;
+
+    if (!(hMem = GlobalAlloc(GMEM_ZEROINIT, dwBufSize)))
+    {
+        OutputDebugString(L&quot;GlobalAlloc() failed!!!&quot;);
+        return FALSE;
+    }
+
+    pBuf = (LPBYTE)GlobalLock(hMem);
+
+    pDrop = (DROPFILES*)pBuf;
+    pDrop-&gt;pFiles = sizeof(DROPFILES);
+    strcpy_s((char*)(pBuf + sizeof(DROPFILES)), strlen(szFile) + 1, szFile);
+
+    GlobalUnlock(hMem);
+
+    if (!(hWnd = GetWindowHandleFromPID(GetCurrentProcessId())))
+    {
+        OutputDebugString(L&quot;GetWndHandleFromPID() failed!!!&quot;);
+        return FALSE;
+    }
+
+    PostMessage(hWnd, WM_DROPFILES, (WPARAM)pBuf, NULL);
+
+    return TRUE;
+}
+</code></pre>
+<p><code>DropFile()</code>函数将下载的<code>index.html</code>文件拖到<code>TextView_Patch.exe</code>进程并显示其内容。</p>
+<h3 id="dummy">dummy()</h3>
+<pre><code>#ifdef __cplusplus
+extern &quot;C&quot; {
+#endif
+    //  导出函数，但是没有任何功能，仅仅保持dll文件的形式上完整。
+    __declspec(dllexport) void dummy()
+    {
+        return;
+    }
+#ifdef __cplusplus
+}
+#endif
+</code></pre>
+<p><code>dummy()</code>导出函数，但是没有任何功能，仅仅保持dll文件的形式上完整。</p>
+<p>在PE文件中导入某个 DLL ，实质就是在文件代码内调用该 DLL 提供的导出函数。PE 文件头中记录着 DLL 名称、函数名称等信息。因此，<code>myhack3.dll</code>至少需要向外提供一个以上的导出函数才能保持形式上的完整性。</p>
+<h2 id="修改textviewexe-文件的准备工作">修改TextView.exe 文件的准备工作</h2>
+<h3 id="修改思路">修改思路</h3>
+<p>PE文件中导入的 dll 信息以结构体列表的形式存储在 IDT 中。重要将 myhack3.dll 添加到列表尾部就可以了。 当然，此前需要确认一下 IDT 中有无足够的空间。</p>
+<h3 id="查看idt-是否有足够的空间">查看IDT 是否有足够的空间</h3>
+<p>首先，使用 PEView 查看 TextView.exe  的 IDT 地址（PE 文件头的 IMAGE_OPTIONAL_HEADER 结构体中导入表 RVA 值即为 IDT 的RVA值）。</p>
+<p>从下图可以看出，IDT 的地址（RVA）为 84CC 。 接下来在 PEView 中直接查看 IDT （在 PEView<br>
+工具栏中设置地址视图选项为 RVA ）。</p>
+<figure data-type="image" tabindex="3"><img src="https://i.loli.net/2021/08/13/AWtKaOLnecZl53M.png" alt="3.jpg" loading="lazy"></figure>
+<p>从上图可以看出，TextView.exe 的 IDT 存在与 <code>.rdata</code> 节区。 IDT 是由 <code>IMAGE_IMPORT_DESCRIPTOR</code>(以下简称 IID) 结构体组成的数组，且数组的末尾以 NULL 结构体结束。由于每个导入的 DLL 文件都对应 1 个 IID 结构体（每个 IID 结构体的大小为 0<em>14字节），所以下图中的整个 IID 区域为RVA：84CC ~ 852F(整体大小为：0</em>14<em>5 = 0</em>64字节)</p>
+<figure data-type="image" tabindex="4"><img src="https://i.loli.net/2021/08/13/VgfXsP5wltqkIBa.png" alt="4.jpg" loading="lazy"></figure>
+<p>IID 结构体的定义</p>
+<pre><code>IMAGE_IMPORT_DESCRIPTOR
+
+typedef struct _IMAGE_IMPORT_DESCRIPTOR
+{
+    union{
+        DWORD Characteristics;
+        DWOED OriginalFirstThunk;   //RVA to INT(Import Name Table)
+    };                          
+    DWORD   TimeDataStamp;
+    DWORD   ForwarderChain;         
+    DWORD   Name;                   //RVA to DLL Name String    
+    DWORD   FirstThunk;             //RVA to IAT(Import Address Table)
+}IMAGE_IMPORT_DESCRIPTOR;
+</code></pre>
+<p>在 PEView 工具栏将视图改为 File Offset，可以看到 IDT 的文件偏移为 76CC，如下图所示</p>
+<figure data-type="image" tabindex="5"><img src="https://i.loli.net/2021/08/13/pFNLn2CkUitDXQs.png" alt="5.jpg" loading="lazy"></figure>
+<p>使用 HxD 使用工具打开 TextView文件，找到 76CC 地址，如下图所示</p>
+<figure data-type="image" tabindex="6"><img src="https://i.loli.net/2021/08/13/m7DOYdT3CRfqy2F.png" alt="6.jpg" loading="lazy"></figure>
+<p>IDT 的文件偏移为 76CC ~ 772F ，整个大小为64字节，共有5个 IID 结构体，其中最后一个为 NULL<br>
+结构体。从图中可以看出 IDT 尾部存在其它数据，没有足够的空间来添加 myhack3.dll 的 IID 结构体。</p>
+<h3 id="移动-idt">移动 IDT</h3>
+<p>在这种情况下，我们首先要把整个 IDT 转移到其他更广阔的位置。然后在添加新的 IID。确定移动的目标位置时，可以使用下面三种方式：</p>
+<ul>
+<li>查找文件中大的空白区域</li>
+<li>增加文件最后一个节区的大小</li>
+<li>在文件末尾添加新的节区</li>
+</ul>
+<p>首先第一种，即查找文件中的空白区域（程序运行时未使用的区域）。正如下图所示，<code>.rdata</code>节区尾部恰好存在大片空白区域（一般来说，节区或文件末尾都存在空白区域，PE 文件中这种空白区域称为 Null-Padding 区域）。</p>
+<figure data-type="image" tabindex="7"><img src="https://i.loli.net/2021/08/13/TCzs4rDy6xWNE7g.png" alt="7.jpg" loading="lazy"></figure>
+<p>下面，就需要把原来的 IDT 移动到该 Null-Padding 区域（RVA：8C60 ~ 8DFF）中合适的位置即可。在此之前需要确认一下该区域（RVA：8C60 ~ 8DFF）是否是空白空用区域（Null-Padding区域）。</p>
+<p>需要注意的是，并不是文件中所有区域都会被无条件加载到进程的虚拟内存，只有节区头中明确记录的区域才会被加载。使用 PEView 工具查看 TextView.exe 文件的 <code>.rdata</code> 节区头，如下所示：</p>
+<figure data-type="image" tabindex="8"><img src="https://i.loli.net/2021/08/13/BHSfn3EdA9VuX4g.png" alt="8.jpg" loading="lazy"></figure>
+<p>节区头中存储着对应节区的位置，大小，属性等信息。整理<code>.rdata</code>节区头中信息，如下表所示</p>
+<table>
+<thead>
+<tr>
+<th>条目</th>
+<th>值</th>
+<th>注释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pointer to Raw Data</td>
+<td>5200</td>
+<td>[文件]节区起始位置</td>
+</tr>
+<tr>
+<td>Size of Raw Data</td>
+<td>2E00</td>
+<td>[文件]节区大小</td>
+</tr>
+<tr>
+<td>RVA</td>
+<td>6000</td>
+<td>[内存]节区起始位置</td>
+</tr>
+<tr>
+<td>Virtual Size</td>
+<td>2C56</td>
+<td>[内存]节区大小</td>
+</tr>
+</tbody>
+</table>
+<p>从节区头中信息可以看出，<code>.rdata</code>节区在磁盘文件与内存中的大小是不同的。</p>
+<p><code>.rdata</code> 节区在磁盘文件中的大小为 <code>2E00</code>,而文件执行后被加载到内存时，程序实际使用的数据大小（映射大小）仅为 2C56 ，剩余未被使用的区域大小为 1AA （2E00 - 2C56）。在这段空白区域创建 IDT 是不会有什么问题的。</p>
+<p>空白区域<br>
+RVA：8C56 - 8E00   --&gt; RAW : 7E56 - 8000</p>
+<p>故下图的 Null-Padding 区域是可以使用的，接下来我们在 RVA：8C80（RAW：7E80）位置创建 IDT。</p>
+<figure data-type="image" tabindex="9"><img src="https://i.loli.net/2021/08/13/7WJV6EhqXfnkt3l.png" alt="9.jpg" loading="lazy"></figure>
+<h2 id="修改textviewexe">修改TextView.exe</h2>
+<p>先把 TextView.exe 复制到工作文件夹，重命名为<code>TextView_Patch.exe</code>。下面使用<code>TextView_Patch.exe</code>文件进行练习打补丁。基本操作步骤是：先使用 PEView 打开 TextView.exe 原文件，查看各种 PE 信息，然后使用 HxD 打开 TextView_Patch 文件进行修改。</p>
+<h3 id="修改导入表的rva值">修改导入表的RVA值</h3>
+<p><code>IMAGE_OPTIONAL_HEADERD</code>的导入表结构体成员用来指出 IDT 的位置（RVA）与大小，如下所示</p>
+<figure data-type="image" tabindex="10"><img src="https://i.loli.net/2021/08/13/2fcxjaQ3DBX19Ei.png" alt="10.jpg" loading="lazy"></figure>
+<p>TextView.exe 文件中，导入表的 RVA 值为 84CC 。接下来，将导入表的 RVA 值更改为新 IDT 的 RVA 值 8C80,在 Size 原值64字节的基础上再加 14字节（IID 结构体的大小），修改为78字节，如下所示。</p>
+<figure data-type="image" tabindex="11"><img src="https://i.loli.net/2021/08/13/Ee1xp8y57JBajLG.png" alt="11.jpg" loading="lazy"></figure>
+<p>从现在开始，导入表位于 RVA: 8C80(RAW : 7E80)地址出。</p>
+<h3 id="删除导入表">删除导入表</h3>
+<p><code>BOUND IMPORT TABLE</code>(绑定导出表)是一种提高 DLL 加载速度的技术，如下</p>
+<figure data-type="image" tabindex="12"><img src="https://i.loli.net/2021/08/13/4TZVzafoWYgS9lQ.png" alt="12.jpg" loading="lazy"></figure>
+<p>若向正常导入 myhack3.dll ，需要向绑定导入表添加信息。但是幸运的是，该绑定导入表是个可选选项，不是必须存在的，所以可以删除（修改其值为 0 即可）以获取更大便利。当然绑定导入表完全不存在也没有关系，但若存在，且其内信息记录错误，则会在程序运行时引发错误。本示例 TextView.exe  文件中，绑定导入表各项的值均为 0 ，不需要再修改。修改文件时，一定要注意检查绑定导入表中的数据。</p>
+<h3 id="创建新-idt">创建新 IDT</h3>
+<p>先使用 Hex Editor 完全复制原 IDT（RAW:76CC ~ 772F）,然后覆写（Past write）到 IDT 的新位置（RAW ：7E80 ），如下图所示</p>
+<figure data-type="image" tabindex="13"><img src="https://i.loli.net/2021/08/13/bynhmUiRXSEgdI1.png" alt="13.jpg" loading="lazy"></figure>
+<p>然后在新的IDT 尾部（RAW：7ED0）添加与 myhack3.dll 对应的 IID （后面会单独讲解各个成员的数据）</p>
+<pre><code>//IMAGE_IMPORT_DESCRIPTOR
+typedef struct _IMAGE_IMPORT_DESCRIPTOR{
+    union{
+        DWORD Characteristics;
+        DWORD OriginalFirstThunk;   //00008D00  =&gt; RVA to INT
+    };
+    DWORD   TimeDataStamp;          //0
+    DWORD   ForwarderChain;         //0
+    DWORD   Name;                   //00008D10  =&gt; RVA to DLL Name
+    DWORD   FirstThunk;             //00008D20  =&gt; RVA to IAT
+} IMAGE_IMPORT_DESCRIPTOR;
+</code></pre>
+<p>在准确位置（RAW：7ED0）写入相关数据，如下所示</p>
+<figure data-type="image" tabindex="14"><img src="https://i.loli.net/2021/08/13/w4a6qpYScrgPsOu.png" alt="14.jpg" loading="lazy"></figure>
+<h3 id="设置name-int-iat">设置Name、INT、IAT</h3>
+<p>前面添加的 IID 结构体成员拥有指向其他数据结构（INT、Name、IAT）的RVA值。因此，必须准确设置这些数据结构才能保证 TextView_Patch.exe 文件的正常运行。由前面的设置可知 INT、Name、IAT的 RVA/RAW 的值整理如下</p>
+<table>
+<thead>
+<tr>
+<th>字段名</th>
+<th>RVA</th>
+<th>RAW</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>INT</td>
+<td>8D00</td>
+<td>7F00</td>
+</tr>
+<tr>
+<td>Name</td>
+<td>8D10</td>
+<td>7F10</td>
+</tr>
+<tr>
+<td>IAT</td>
+<td>8D20</td>
+<td>7F20</td>
+</tr>
+</tbody>
+</table>
+<p>这些地址（RVA：8D00，8D10，8D20）就位于新建的IDT（RVA：8C80）下方。当然也可以选择其他符合条件的区域。在 HxD 编辑器中转到 7F00  地址处，输入相应值，如下图所示</p>
+<figure data-type="image" tabindex="15"><img src="https://i.loli.net/2021/08/13/U2kmHRwtfjXhVpM.png" alt="15.jpg" loading="lazy"></figure>
+<p>为了更好地理解以上内容，使用 PEView 打开 TextView_Patch.exe 文件查看同一区域，查看时使用 RVA 视图方式，如下所示</p>
+<figure data-type="image" tabindex="16"><img src="https://i.loli.net/2021/08/13/ibRglsdEWoGxpMJ.png" alt="16.jpg" loading="lazy"></figure>
+<p>8CD0地址处存在着 myhack3.dll 的结构体，其中3各主要成员（RVA of INT 、RVA of Name、RVA of IAT）的值分别时实际 INT 、Name、IAT的指针。</p>
+<p>简单来说，INT（Import Name Table，导入名称表）是 RVA 数组，数组的各个元素都是一个 RVA 地址，该地址由导入函数的 Ordinal（2个字节）+ Func Name String 结构体构成，数组的末尾为 NULL。 上图中 INT 有一个元素，其值为 8D30，该地址是要导入的函数的 Ordinal（2字节）与函数的名称字符串（“dummy”）。</p>
+<p>Name 是包含导入函数的 DLL 文件名称字符串，在 8D10 地址处可以看到<code>myhack3.dll</code>字符串。</p>
+<p>IAT 也是RVA 数组，各元素既可以拥有与 INT 相同的值，也可以拥有其他不用的值（若 INT 中的数据准确，IAT 也可以拥有其他不同值）。反正实际运行时，PE 装载器会将虚拟内存中的 IAT 替换为实际函数的地址</p>
+<h3 id="修改-iat-节区的属性值">修改 IAT 节区的属性值</h3>
+<p>加载 PE 文件到内存时，PE装载器会修改 IAT ，写入函数的实际地址，所以相关节区一定要拥有 WRITE（可写）属性。只有这样，PE 装载器才能正常进行写入操作。使用 PEView查看<code>.rdata</code>节区头，如下所示</p>
+<figure data-type="image" tabindex="17"><img src="https://i.loli.net/2021/08/13/SliFt6GLvqN3K9k.png" alt="17.jpg" loading="lazy"></figure>
+<p>向原属性（ChAracteristics）40000040 添加 IMAGE_SCN_MEM_WRITE(80000000)属性值，执行 bit OR 运算，最终属性值变为 C0000040 ， 如下图所示</p>
+<figure data-type="image" tabindex="18"><img src="https://i.loli.net/2021/08/13/Rl5ib7ur6UVPpyT.png" alt="18.jpg" loading="lazy"></figure>
+<h3 id="检测验证">检测验证</h3>
+<p>首先使用 PEView 工具打开修改后的 TextView_Patch.exe 文件，查看其 IDT ，如下所示</p>
+<figure data-type="image" tabindex="19"><img src="https://i.loli.net/2021/08/13/3H5j897aYw2oKk4.png" alt="19.jpg" loading="lazy"></figure>
+<p>向 IDT 导入 myhack3.dll 的 IID 结构体已设置正常。如下所示， myhack3.dll 的 dummy() 函数被添加到 INT。</p>
+<figure data-type="image" tabindex="20"><img src="https://i.loli.net/2021/08/13/MompvFtRqg72ely.png" alt="20.jpg" loading="lazy"></figure>
+<p>从文件结构来说修改成功，接下来运行文件看看程序是否能正常运行。将TextView_Patch.exe和myhack3.dll 放入相同文件夹，然后运行 TextView_Patch.exe 文件，结果如下所示：</p>
+<figure data-type="image" tabindex="21"><img src="https://i.loli.net/2021/08/13/qxdOhFHoNCtQ4S8.png" alt="21.jpg" loading="lazy"></figure>
+<p>可以看见 TextView_Patch.exe 成功加载了 myhack.dll 文件并下载了指定网站的 index.html 文件，并在 TextView_Patch.exe 中显示。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[UPack的头文件分析]]></title>
         <id>https://piaogexu.github.io/post/upack-de-tou-wen-jian-fen-xi/</id>
